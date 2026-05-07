@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JokeMoo Store | บริการขาย NETFLIX PREMIUM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image" href="logo.png">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="pageLoader" class="page-loader">
+        <div class="page-loader-card">
+            <div class="page-loader-spinner"></div>
+            <p>กำลังโหลดเว็บไซต์...</p>
+        </div>
+    </div>
+
+    <div id="maintenanceOverlay" class="maintenance-overlay hidden">
+        <div class="maintenance-card">
+            <h2>เว็บไซต์กำลังอัพเดท</h2>
+            <p>ขณะนี้เว็บไซต์อยู่ในโหมดอัพเดท กรุณาติดต่อข่าวสารหรือสอบถามผ่านช่องทางด้านล่าง</p>
+            <div class="maintenance-links">
+                <a href="https://www.facebook.com/profile.php?id=61584369622351" target="_blank" rel="noopener noreferrer">Facebook</a>
+                <a href="https://line.me/R/ti/p/%40106zyrpm" target="_blank" rel="noopener noreferrer">Line</a>
+            </div>
+        </div>
+    </div>
+
+    <nav class="topbar">
+        <div class="brand">
+            <img src="logo.png" alt="JokeMoo Store" class="logo-circle" />
+            <div>
+                <h1>JokeMoo Store</h1>
+                <p>บริการเช่าไอดีราคาประหยัด ปลอดภัย 100%</p>
+            </div>
+        </div>
+        <div class="actions">
+            <div id="userBadge" class="user-badge hidden"></div>
+            <button id="cartBtn" class="button button-primary">
+                <i class="fas fa-shopping-cart"></i> ตะกร้า <span id="cartCount">0</span>
+            </button>
+        </div>
+    </nav>
+
+    <main>
+        <section class="hero">
+            <div class="hero-content">
+                <span class="eyebrow">Premium Service</span>
+                <h2>ดูหนัง ไม่ต้องรอคิวนาน</h2>
+                <p>รับรหัสผ่านทันทีหลังชำระเงิน รวดเร็ว ปลอดภัย มั่นใจได้ในคุณภาพ</p>
+                <button id="heroShopBtn" class="button button-primary btn-lg">
+                    เลือกแพ็กเกจเลย <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+            <div class="hero-card">
+                <div class="feature-card"><i class="fas fa-bolt"></i> รับรหัสไวใน 3 นาที</div>
+                <div class="feature-card"><i class="fas fa-shield-alt"></i> การันตีตลอดอายุการใช้งาน</div>
+                <div class="feature-card"><i class="fas fa-headset"></i> ดูแลโดยแอดมิน 24 ชม.</div>
+            </div>
+        </section>
+
+        <section id="promotionBanner" class="promotion-banner hidden"></section>
+
+        <section class="products">
+            <h3><i class="fas fa-tags"></i> แพ็คเกจยอดนิยม</h3>
+            <div id="products" class="product-grid"></div>
+        </section>
+
+        <!-- 🔽 เพิ่มส่วน FAQ ตรงนี้ 🔽 -->
+        <section id="faq" class="faq-section">
+            <div class="faq-header">
+                <h3><i class="fas fa-question-circle"></i> คำถามที่พบบ่อย (FAQ)</h3>
+                <p>รวมข้อสงสัยที่ลูกค้ามักถาม เพื่อความรวดเร็วในการสั่งซื้อ</p>
+            </div>
+            <div class="faq-container">
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>1. รับรหัสผ่านอย่างไรหลังชำระเงิน?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <p>หลังยืนยันการโอนสำเร็จ เพิ่มเพื่อน Line <strong>@106zyrpm</strong> เพื่อแจ้งสลิปโอน แอดมินจะตรวจสอบและส่งรหัสผ่านให้ภายใน 1-5 นาที</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>2. ไอดี Netflix เป็นของแท้หรือไม่?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <p>ใช่ครับ ทุกไอดีเป็นบัญชีพรีเมียมแท้ 100% ซื้อตรงจากผู้ให้บริการอย่างเป็นทางการ มั่นใจได้ในความเสถียรและคุณภาพระดับ Ultra HD</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>3. หากไอดีมีปัญหา หรือดูไม่ได้ สามารถเคลมได้หรือไม่?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <p>ได้ครับ เราการันตีการใช้งานตลอดอายุแพ็กเกจ หากพบปัญหาเข้าไม่ได้ หรือรหัสเปลี่ยน สามารถแจ้งแอดมินได้ทันที โดยไม่มีค่าใช้จ่ายเพิ่มแน่นอนค้าบ</p>
+                    </div>
+                </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- 🔼 จบส่วน FAQ 🔼 -->
+
+        <section id="reviews" class="review-section">
+            <div class="review-header">
+                <h3><i class="fas fa-star"></i> รีวิวจากลูกค้า</h3>
+                <p>แชร์ประสบการณ์จริงจากลูกค้าที่ใช้บริการจริงเพื่อสร้างความมั่นใจในการชื้อขายยิ่งขึ้น</p>
+            </div>
+
+            <div class="review-grid">
+                <div class="review-card review-list-card">
+                    <div class="review-list-header">
+                        <div>
+                            <h4>รีวิวล่าสุด</h4>
+                            <p class="review-card-subtitle">เลื่อนดูรีวิวจากลูกค้าตัวจริงได้ง่าย ๆ</p>
+                        </div>
+                        <div class="review-nav">
+                            <button id="reviewCarouselPrev" type="button" class="carousel-btn hidden"><i class="fas fa-chevron-left"></i></button>
+                            <button id="reviewCarouselNext" type="button" class="carousel-btn hidden"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                        <div id="reviewPageIndicator" class="review-page-indicator">1 / 1</div>
+                    </div>
+                    <div id="reviewListWrapper" class="review-list-wrapper">
+                        <div id="reviewList" class="review-list"></div>
+                    </div>
+                    <div id="reviewNoData" class="no-reviews">ยังไม่มีรีวิวสามารถแชร์ประสบการณ์ได้เลย</div>
+                </div>
+
+                <div class="review-card review-form-card">
+                    <h4>ส่งรีวิวของคุณ</h4>
+                    <form id="reviewForm" class="review-form">
+                        <div class="review-form-group">
+                            <label for="reviewName">ชื่อ</label>
+                            <input id="reviewName" type="text" placeholder="เช่น น้องพี" required>
+                        </div>
+                        <div class="review-form-group">
+                            <label for="reviewRating">คะแนน</label>
+                            <select id="reviewRating">
+                                <option value="5">5 ดาว — ดีเยี่ยม</option>
+                                <option value="4">4 ดาว — ดีมาก</option>
+                                <option value="3">3 ดาว — ดี</option>
+                                <option value="2">2 ดาว — ธรรมดา</option>
+                                <option value="1">1 ดาว — ต้องปรับปรุง</option>
+                            </select>
+                        </div>
+                        <div class="review-form-group">
+                            <label for="reviewComment">ความคิดเห็น</label>
+                            <textarea id="reviewComment" rows="5" placeholder="เช่น* รีวิวของคุณ เช่น บริการรวดเร็ว คุณภาพดี" required></textarea>
+                        </div>
+                        <div class="review-form-group review-image-upload">
+                            <label>รูปภาพรีวิว (ถ้าหากมีรูป)</label>
+                            <label class="file-input-button" for="reviewImage">
+                                <i class="fas fa-image"></i>
+                                เพิ่มรูป
+                                <input id="reviewImage" type="file" accept="image/*">
+                            </label>
+                            <div id="reviewImagePreview" class="image-upload-preview hidden">
+                                <img id="reviewPreviewImg" alt="Preview รูปรีวิว">
+                            </div>
+                            <p class="review-form-note">รองรับรูปภาพ JPG / PNG ขนาดไม่เกิน 1MB</p>
+                        </div>
+                        <button type="submit" class="button button-primary full-width">
+                            ส่งรีวิวของฉัน <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Cart Modal -->
+    <div id="cartPanel" class="overlay hidden">
+        <div class="modal-container cart-modal">
+            <div class="cart-header">
+                <h3><i class="fas fa-shopping-bag"></i> ตะกร้าสินค้าของคุณ</h3>
+                <button id="closeCart" class="close-btn"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="cartItems"></div>
+            <div class="cart-summary">
+                <span>ยอดรวมทั้งหมด</span>
+                <span id="cartTotal" class="total-price">฿0</span>
+            </div>
+            <button id="checkoutBtn" class="button button-primary full-width">
+                กดคลิ้กเพื่อสั่งซื้อ <i class="fab fa-line"></i>
+            </button>
+            <p class="cart-note">เมื่อกดแล้วจะเปิดแชท Line เพื่อแจ้งแอดมินและสั่งซื้อสินค้า</p>
+        </div>
+    </div>
+
+    
+
+    <footer>
+        <p>&copy; 2026 JokeMoo Store. All rights reserved.</p>
+    </footer>
+
+    <a href="https://line.me/R/ti/p/%40106zyrpm" class="contact-admin-button" target="_blank" rel="noopener noreferrer">
+        <i class="fab fa-line"></i>
+        ติดต่อแอดมิน
+    </a>
+    <div id="toast" class="toast"></div>
+    <script src="config.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
