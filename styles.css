@@ -358,8 +358,9 @@ main { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 16px;
+  padding: 12px;
   animation: fadeIn 0.2s ease;
+  overflow-y: auto;
 }
 
 .modal-overlay.hidden {
@@ -391,10 +392,12 @@ main { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
   align-items: center;
   justify-content: center;
   background: linear-gradient(180deg, var(--surface), #fbfdff);
-  padding: 12px;
+  padding: 14px;
   border-radius: 14px;
   width: 100%;
-  max-width: 420px; /* keep compact like mobile on desktop */
+  max-width: 420px;
+  max-height: 90vh;
+  overflow-y: auto;
   box-shadow: 0 18px 50px rgba(2,6,23,0.28);
   color: var(--text-main);
 }
@@ -432,12 +435,13 @@ main { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
 }
 .promotion-modal-title {
   margin: 0;
-  font-size: 1.35rem;
+  font-size: clamp(1.1rem, 4vw, 1.35rem);
   color: var(--primary);
   font-weight: 800;
+  line-height: 1.2;
 }
 .promotion-modal-title.emph {
-  font-size: 1.6rem;
+  font-size: clamp(1.3rem, 5vw, 1.6rem);
   color: #004e92;
   background: linear-gradient(90deg, #004e92, #00b4db);
   -webkit-background-clip: text;
@@ -447,8 +451,8 @@ main { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
 .promotion-modal-desc {
   margin: 0;
   color: var(--text-muted);
-  line-height: 1.5;
-  font-size: 0.98rem;
+  line-height: 1.45;
+  font-size: clamp(0.85rem, 3.5vw, 0.98rem);
 }
 .promotion-modal-actions {
   display: flex;
@@ -489,19 +493,32 @@ main { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
 }
 
 @media (max-width: 820px) {
-  .promotion-modal-content { padding: 12px; max-width: 92vw; }
+  .promotion-modal-content { padding: 12px; max-width: 90vw; max-height: 90vh; }
+  .promotion-modal-body { gap: 14px; }
   .promotion-modal-image-wrap { max-width: 100%; }
-  .promotion-modal-info { max-width: 100%; }
+  .promotion-modal-info { max-width: 100%; gap: 8px; }
 }
 
-@media (max-width: 520px) {
-  .promotion-modal-content { padding: 12px; max-width: 96vw; }
-  .promotion-modal-body { flex-direction: column; gap: 12px; }
+@media (max-width: 640px) {
+  .promotion-modal-content { padding: 10px; max-width: 95vw; max-height: 90vh; }
+  .promotion-modal-body { gap: 10px; }
   .promotion-modal-image-wrap { flex: 0 0 100%; max-width: 100%; }
-  .promotion-modal-info { flex-basis: 100%; }
-  .modal-close { top: 8px; right: 8px; }
-  .promotion-modal-actions { flex-direction: column; gap: 10px; }
-  .promotion-modal-actions .button { width: 100%; }
+  .promotion-modal-info { flex-basis: 100%; gap: 6px; }
+  .promotion-modal-actions { flex-direction: column; gap: 8px; }
+  .promotion-modal-actions .button { width: 100%; padding: 10px 14px; font-size: 0.9rem; }
+  .promotion-modal-actions .open-promo-site { min-width: auto; }
+  .promotion-modal-actions .close-promo { min-width: auto; }
+  .modal-close { top: 6px; right: 6px; width: 36px; height: 36px; font-size: 1.2rem; }
+}
+
+@media (max-width: 480px) {
+  .promotion-modal-content { padding: 8px; max-width: 98vw; max-height: 90vh; }
+  .promotion-modal-body { gap: 8px; }
+  .promotion-modal-image-wrap { max-width: 100%; }
+  .promotion-modal-info { gap: 5px; }
+  .promotion-modal-actions { gap: 6px; }
+  .promotion-modal-actions .button { padding: 8px 12px; font-size: 0.85rem; }
+  .modal-close { top: 4px; right: 4px; width: 32px; height: 32px; font-size: 1rem; }
 }
 
 .modal-close {
