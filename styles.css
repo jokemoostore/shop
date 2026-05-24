@@ -358,7 +358,7 @@ main { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 12px;
+  padding: 8px;
   animation: fadeIn 0.2s ease;
   overflow-y: auto;
 }
@@ -392,11 +392,11 @@ main { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
   align-items: center;
   justify-content: center;
   background: linear-gradient(180deg, var(--surface), #fbfdff);
-  padding: 12px;
-  border-radius: 14px;
+  padding: 10px;
+  border-radius: 12px;
   width: 100%;
   max-width: 360px;
-  max-height: 85vh;
+  max-height: 88vh;
   overflow-y: auto;
   box-shadow: 0 18px 50px rgba(2,6,23,0.28);
   color: var(--text-main);
@@ -404,13 +404,13 @@ main { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
 .promotion-modal-body {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
   width: 100%;
 }
 .promotion-modal-image-wrap {
   flex: 0 0 100%;
-  max-width: 360px;
+  max-width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -426,10 +426,10 @@ main { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
 .promotion-modal-image-wrap img:hover { transform: scale(1.01); }
 .promotion-modal-info {
   flex: 0 0 100%;
-  max-width: 360px;
+  max-width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
   text-align: center;
 }
@@ -493,32 +493,48 @@ main { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
 }
 
 @media (max-width: 820px) {
-  .promotion-modal-content { padding: 12px; max-width: 85vw; max-height: 85vh; }
-  .promotion-modal-body { gap: 10px; }
+  .promotion-modal-content { padding: 10px; max-width: 360px; max-height: 88vh; }
+  .promotion-modal-body { gap: 8px; }
   .promotion-modal-image-wrap { max-width: 100%; }
-  .promotion-modal-info { max-width: 100%; gap: 8px; }
+  .promotion-modal-info { gap: 6px; }
 }
 
-@media (max-width: 640px) {
-  .promotion-modal-content { padding: 10px; max-width: 95vw; max-height: 90vh; }
-  .promotion-modal-body { gap: 10px; }
-  .promotion-modal-image-wrap { flex: 0 0 100%; max-width: 100%; }
-  .promotion-modal-info { flex-basis: 100%; gap: 6px; }
-  .promotion-modal-actions { flex-direction: column; gap: 8px; }
-  .promotion-modal-actions .button { width: 100%; padding: 10px 14px; font-size: 0.9rem; }
-  .promotion-modal-actions .open-promo-site { min-width: auto; }
-  .promotion-modal-actions .close-promo { min-width: auto; }
-  .modal-close { top: 6px; right: 6px; width: 36px; height: 36px; font-size: 1.2rem; }
+@media (max-width: 600px) {
+  .promotion-modal-content { padding: 9px; max-width: 92vw; max-height: 87vh; }
+  .promotion-modal-body { gap: 7px; }
+  .promotion-modal-image-wrap img { border-radius: 10px; }
+  .promotion-modal-info { gap: 5px; }
+  .promotion-modal-title { font-size: clamp(1rem, 3.8vw, 1.25rem); }
+  .promotion-modal-desc { font-size: clamp(0.8rem, 3.2vw, 0.92rem); }
+  .promotion-modal-actions { gap: 7px; }
+  .promotion-modal-actions .button { padding: 9px 12px; font-size: 0.88rem; }
+  .modal-close { top: 5px; right: 5px; width: 34px; height: 34px; font-size: 1.1rem; }
 }
 
 @media (max-width: 480px) {
-  .promotion-modal-content { padding: 8px; max-width: 98vw; max-height: 90vh; }
-  .promotion-modal-body { gap: 8px; }
+  .promotion-modal-content { padding: 8px; max-width: 94vw; max-height: 86vh; }
+  .promotion-modal-body { gap: 6px; }
   .promotion-modal-image-wrap { max-width: 100%; }
-  .promotion-modal-info { gap: 5px; }
+  .promotion-modal-image-wrap img { border-radius: 9px; }
+  .promotion-modal-info { gap: 4px; }
+  .promotion-modal-title { font-size: clamp(0.95rem, 3.5vw, 1.2rem); }
+  .promotion-modal-desc { font-size: clamp(0.75rem, 3vw, 0.88rem); line-height: 1.4; }
   .promotion-modal-actions { gap: 6px; }
-  .promotion-modal-actions .button { padding: 8px 12px; font-size: 0.85rem; }
+  .promotion-modal-actions .button { padding: 8px 11px; font-size: 0.82rem; min-height: 40px; }
   .modal-close { top: 4px; right: 4px; width: 32px; height: 32px; font-size: 1rem; }
+}
+
+@media (max-width: 390px) {
+  .promotion-modal-content { padding: 7px; max-width: 96vw; max-height: 85vh; }
+  .promotion-modal-body { gap: 5px; }
+  .promotion-modal-image-wrap { max-width: 100%; }
+  .promotion-modal-image-wrap img { border-radius: 8px; }
+  .promotion-modal-info { gap: 3px; }
+  .promotion-modal-title { font-size: clamp(0.9rem, 3.2vw, 1.15rem); }
+  .promotion-modal-desc { font-size: clamp(0.7rem, 2.8vw, 0.85rem); line-height: 1.35; }
+  .promotion-modal-actions { gap: 5px; }
+  .promotion-modal-actions .button { padding: 7px 10px; font-size: 0.8rem; min-height: 40px; }
+  .modal-close { top: 3px; right: 3px; width: 30px; height: 30px; font-size: 0.9rem; }
 }
 
 .modal-close {
