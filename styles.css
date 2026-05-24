@@ -388,15 +388,15 @@ main { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
 /* Promotions modal specific styling */
 .promotion-modal-content {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
   justify-content: center;
   background: linear-gradient(180deg, var(--surface), #fbfdff);
-  padding: 14px;
+  padding: 12px;
   border-radius: 14px;
   width: 100%;
-  max-width: 420px;
-  max-height: 90vh;
+  max-width: 360px;
+  max-height: 85vh;
   overflow-y: auto;
   box-shadow: 0 18px 50px rgba(2,6,23,0.28);
   color: var(--text-main);
@@ -404,13 +404,13 @@ main { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
 .promotion-modal-body {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 10px;
   align-items: center;
   width: 100%;
 }
 .promotion-modal-image-wrap {
   flex: 0 0 100%;
-  max-width: 420px;
+  max-width: 360px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -426,10 +426,10 @@ main { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
 .promotion-modal-image-wrap img:hover { transform: scale(1.01); }
 .promotion-modal-info {
   flex: 0 0 100%;
-  max-width: 720px;
+  max-width: 360px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
   text-align: center;
 }
@@ -493,8 +493,8 @@ main { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
 }
 
 @media (max-width: 820px) {
-  .promotion-modal-content { padding: 12px; max-width: 90vw; max-height: 90vh; }
-  .promotion-modal-body { gap: 14px; }
+  .promotion-modal-content { padding: 12px; max-width: 85vw; max-height: 85vh; }
+  .promotion-modal-body { gap: 10px; }
   .promotion-modal-image-wrap { max-width: 100%; }
   .promotion-modal-info { max-width: 100%; gap: 8px; }
 }
