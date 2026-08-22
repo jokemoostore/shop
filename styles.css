@@ -3502,3 +3502,30 @@ main {
     .checkout-steps{padding:8px 18px!important}
   }
 }
+
+/* V22 — save QR button */
+.save-qr-image{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:7px!important;
+  min-height:38px!important;
+  padding:8px 14px!important;
+  margin:2px auto 0!important;
+  border-radius:12px!important;
+  font-size:.78rem!important;
+  font-weight:800!important;
+  background:#ffffff!important;
+  color:#1268c9!important;
+  border:1px solid #cfe2f7!important;
+  box-shadow:0 6px 16px rgba(18,100,216,.07)!important;
+}
+.save-qr-image:hover{
+  transform:translateY(-1px)!important;
+  border-color:#8ebdf0!important;
+  box-shadow:0 8px 20px rgba(18,100,216,.10)!important;
+}
+.save-qr-image:disabled{opacity:.6!important;pointer-events:none!important}
+@media (max-width:640px){
+  .save-qr-image{min-height:36px!important;padding:7px 12px!important;font-size:.72rem!important}
+}

@@ -1984,6 +1984,7 @@ function renderPaymentDetail() {
             <span class="payment-label">QR พร้อมเพย์</span>
             <div class="payment-due-chip"><span>ยอดที่ต้องชำระ</span><strong>${money(total)}</strong></div>
             <div class="payment-qr-box">${image ? `<img src="${escapeMovieText(image)}" alt="QR ชำระเงิน">` : `<div class="payment-qr-empty"><i class="fas fa-qrcode"></i><strong>ยังไม่ได้ตั้งค่า QR</strong><small>ตั้งค่า QR ในเมนูจัดการเว็บ</small></div>`}</div>
+            ${image ? `<button class="button button-outline save-qr-image" type="button" data-qr-src="${escapeMovieText(image)}"><i class="fas fa-download"></i> บันทึก QR</button>` : ''}
             <div class="payment-qr-caption"><h5>${escapeMovieText(cfg.accountName || 'JokeMoo Store')}</h5><p>สแกน QR แล้วตรวจสอบชื่อและยอดก่อนโอน</p></div>
         </div>`;
     } else {
@@ -2531,7 +2532,56 @@ async function init() {
     if (checkoutBackPayment) checkoutBackPayment.addEventListener('click', () => { if (!checkoutState.orderSaved) setCheckoutStep(2); });
     if (confirmPaymentBtn) confirmPaymentBtn.addEventListener('click', copyOrderNumberAndOpenLine);
     document.querySelectorAll('[data-payment-method]').forEach(btn => btn.addEventListener('click', () => selectPaymentMethod(btn.dataset.paymentMethod)));
-    if (paymentDetail) paymentDetail.addEventListener('click', async (event) => { const btn = event.target.closest('.copy-bank-number'); if (!btn) return; try { await navigator.clipboard.writeText(btn.dataset.bankNumber || ''); showToast('คัดลอกเลขบัญชีแล้ว', 'success'); } catch (_) { showToast('คัดลอกไม่สำเร็จ', 'error'); } });
+    if (paymentDetail) paymentDetail.addEventListener('click', async (event) => {
+        const copyBtn = event.target.closest('.copy-bank-number');
+        if (copyBtn) {
+            try {
+                await navigator.clipboard.writeText(copyBtn.dataset.bankNumber || '');
+                showToast('คัดลอกเลขบัญชีแล้ว', 'success');
+            } catch (_) {
+                showToast('คัดลอกไม่สำเร็จ', 'error');
+            }
+            return;
+        }
+
+        const saveQrBtn = event.target.closest('.save-qr-image');
+        if (!saveQrBtn) return;
+        const src = String(saveQrBtn.dataset.qrSrc || '').trim();
+        if (!src) return showToast('ยังไม่ได้ตั้งค่ารูป QR', 'error');
+
+        const triggerDownload = (href, filename) => {
+            const a = document.createElement('a');
+            a.href = href;
+            a.download = filename || 'JOKEMOO-QR.png';
+            a.rel = 'noopener';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        };
+
+        try {
+            saveQrBtn.disabled = true;
+            const response = await fetch(src, { cache: 'no-store' });
+            if (!response.ok) throw new Error('download_failed');
+            const blob = await response.blob();
+            const type = String(blob.type || '').toLowerCase();
+            const ext = type.includes('jpeg') ? 'jpg' : type.includes('webp') ? 'webp' : 'png';
+            const objectUrl = URL.createObjectURL(blob);
+            triggerDownload(objectUrl, `JOKEMOO-QR.${ext}`);
+            setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
+            showToast('บันทึก QR แล้ว', 'success');
+        } catch (_) {
+            try {
+                triggerDownload(src, 'JOKEMOO-QR.png');
+                showToast('กำลังบันทึก QR', 'success');
+            } catch (__) {
+                window.open(src, '_blank', 'noopener');
+                showToast('เปิดรูป QR แล้ว กดบันทึกรูปได้เลย', 'info');
+            }
+        } finally {
+            saveQrBtn.disabled = false;
+        }
+    });
     if (reviewImageInput) reviewImageInput.addEventListener("change", updateImagePreview);
     if (reviewForm) reviewForm.addEventListener("submit", handleReviewSubmit);
     if (reviewCarouselPrev) reviewCarouselPrev.addEventListener('click', () => goReviewPage(-1));
