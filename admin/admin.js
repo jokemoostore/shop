@@ -131,6 +131,14 @@ const adminState = {
   maintenanceMode: false,
 };
 
+const ADMIN_LIVE_SYNC_STORAGE_KEY = 'jokemoo_live_sync';
+const ADMIN_LIVE_SYNC_CHANNEL_NAME = 'jokemoo_live_sync_v1';
+const ADMIN_REALTIME_POLL_MS = 5000;
+let adminLiveSyncChannel = null;
+let adminRealtimeInFlight = false;
+let adminRealtimeTimer = 0;
+let lastAdminDataSignature = '';
+
 function showAdminToast(message, type = 'success') {
   if (!adminToast) return;
   adminToast.innerHTML = `<span class="toast__icon"><i class="fas ${type === 'success' ? 'fa-check' : 'fa-exclamation-triangle'}"></i></span><span class="toast__message">${message}</span>`;
@@ -748,12 +756,15 @@ async function adminApiFetch(action, params = {}) {
   return await fetchAdminGet(action, params);
 }
 
-function notifyIndexReload() {
+function notifyIndexReload(reason = 'admin-change') {
+  const payload = { reason, at: Date.now() };
   try {
-    window.localStorage.setItem('jokemoo_admin_reload', String(Date.now()));
+    window.localStorage.setItem('jokemoo_admin_reload', String(payload.at));
+    window.localStorage.setItem(ADMIN_LIVE_SYNC_STORAGE_KEY, JSON.stringify(payload));
   } catch (error) {
     console.warn('notifyIndexReload failed', error);
   }
+  try { adminLiveSyncChannel?.postMessage(payload); } catch (_) {}
 }
 
 async function adminApiPost(action, payload = {}) {
@@ -1845,10 +1856,85 @@ function attachAdminEvents() {
   }
 }
 
+function makeAdminDataSignature(result) {
+  return JSON.stringify({
+    maintenanceMode: !!result?.maintenanceMode,
+    products: Array.isArray(result?.products) ? result.products : [],
+    reviews: Array.isArray(result?.reviews) ? result.reviews : [],
+    promotions: Array.isArray(result?.promotions) ? result.promotions : [],
+  });
+}
+
+function adminHasUnsavedEditorFocus() {
+  const active = document.activeElement;
+  if (!active || !active.matches?.('input, textarea, select')) return false;
+  const safeIds = new Set(['orderSearchInput','orderPeriodFilter','orderCustomDate','orderCustomMonth','reviewSearchInput','searchInput']);
+  if (safeIds.has(active.id)) return false;
+  return true;
+}
+
+function applyRealtimeAdminData(result) {
+  adminState.products = Array.isArray(result?.products) ? result.products : [];
+  adminState.reviews = Array.isArray(result?.reviews) ? result.reviews : [];
+  splitPromotionsAndMovies(Array.isArray(result?.promotions) ? result.promotions : []);
+  adminState.maintenanceMode = !!result?.maintenanceMode;
+  renderProductTable(adminState.products);
+  renderReviewTable(adminState.reviews, adminState.reviewSearchQuery);
+  renderPromotionTable(adminState.promotions);
+  renderMovieTable(adminState.movies);
+  renderDiscountTable(adminState.discounts);
+  renderWebSettingsEditor();
+  renderOrdersDashboard();
+  renderAdminUsers();
+  updateAdminStats();
+  updateMaintenanceStatus();
+}
+
+async function refreshAdminDataRealtime(force = false) {
+  if (adminRealtimeInFlight || document.hidden || !adminState.currentAdminUser) return;
+  if (!force && adminHasUnsavedEditorFocus()) return;
+  adminRealtimeInFlight = true;
+  try {
+    const result = await adminApiFetch('adminData');
+    const signature = makeAdminDataSignature(result);
+    if (signature === lastAdminDataSignature) return;
+    lastAdminDataSignature = signature;
+    applyRealtimeAdminData(result);
+    updateApiStatus('ซิงก์ข้อมูลล่าสุดแล้ว', 'success');
+  } catch (error) {
+    console.warn('realtime admin refresh failed:', error);
+  } finally {
+    adminRealtimeInFlight = false;
+  }
+}
+
+function scheduleAdminRealtimeRefresh(delay = 100, force = false) {
+  clearTimeout(adminRealtimeTimer);
+  adminRealtimeTimer = setTimeout(() => refreshAdminDataRealtime(force), Math.max(0, Number(delay) || 0));
+}
+
+function initAdminRealtimeSync() {
+  try {
+    if ('BroadcastChannel' in window) {
+      adminLiveSyncChannel = new BroadcastChannel(ADMIN_LIVE_SYNC_CHANNEL_NAME);
+      adminLiveSyncChannel.addEventListener('message', () => scheduleAdminRealtimeRefresh(50, false));
+    }
+  } catch (_) { adminLiveSyncChannel = null; }
+  window.addEventListener('storage', (event) => {
+    if (event.key === ADMIN_LIVE_SYNC_STORAGE_KEY || event.key === 'jokemoo_admin_reload') scheduleAdminRealtimeRefresh(60, false);
+  });
+  window.addEventListener('focus', () => scheduleAdminRealtimeRefresh(20, false), { passive: true });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) scheduleAdminRealtimeRefresh(20, false); }, { passive: true });
+  setInterval(() => {
+    if (!document.hidden && adminState.currentAdminUser) refreshAdminDataRealtime(false);
+  }, ADMIN_REALTIME_POLL_MS);
+}
+
 async function loadAdminData() {
   try {
     updateApiStatus('กำลังโหลดข้อมูลจาก API...', 'loading');
     const result = await adminApiFetch('adminData');
+    lastAdminDataSignature = makeAdminDataSignature(result);
     const products = result.products || [];
     const reviews = result.reviews || [];
     const promotions = result.promotions || [];
@@ -1900,6 +1986,7 @@ function initializeAdmin() {
   attachAdminEvents();
   attachV9AdminEvents();
   attachAdminAuthEvents();
+  initAdminRealtimeSync();
   initializeAdminAuth();
 }
 

@@ -61,9 +61,14 @@ const REVIEWS_PER_PAGE = 4;
 const PENDING_REVIEWS_STORAGE_KEY = 'jokemoo_pending_reviews';
 const REVIEW_SETTINGS_STORAGE_KEY = 'jokemoo_review_settings';
 const ADMIN_RELOAD_STORAGE_KEY = 'jokemoo_admin_reload';
-const SITE_DATA_POLL_INTERVAL_MS = 45000;
+const LIVE_SYNC_STORAGE_KEY = 'jokemoo_live_sync';
+const LIVE_SYNC_CHANNEL_NAME = 'jokemoo_live_sync_v1';
+const CHECKOUT_RETURN_STORAGE_KEY = 'jokemoo_checkout_returned_from_line';
+const SITE_DATA_POLL_INTERVAL_MS = 5000;
 let siteRefreshInFlight = false;
 let lastSiteDataSignature = '';
+let liveSyncChannel = null;
+let realtimeRefreshTimer = 0;
 let reviewPageIndex = 0;
 let pendingReviewImageDataUrl = null;
 
@@ -197,12 +202,36 @@ function applyMaintenanceMode(enabled) {
 }
 
 function handleAdminReloadEvent(event) {
-    if (event.key !== ADMIN_RELOAD_STORAGE_KEY) return;
-    refreshSiteDataIfChanged();
+    if (event.key !== ADMIN_RELOAD_STORAGE_KEY && event.key !== LIVE_SYNC_STORAGE_KEY) return;
+    requestRealtimeRefresh(80);
+}
+
+function requestRealtimeRefresh(delay = 120) {
+    clearTimeout(realtimeRefreshTimer);
+    realtimeRefreshTimer = setTimeout(() => {
+        if (!document.hidden) refreshSiteDataIfChanged();
+    }, Math.max(0, Number(delay) || 0));
+}
+
+function notifyRealtimePeers(reason = 'storefront-change') {
+    const payload = { reason, at: Date.now() };
+    try { window.localStorage.setItem(LIVE_SYNC_STORAGE_KEY, JSON.stringify(payload)); } catch (_) {}
+    try { liveSyncChannel?.postMessage(payload); } catch (_) {}
+}
+
+function initRealtimeSync() {
+    try {
+        if ('BroadcastChannel' in window) {
+            liveSyncChannel = new BroadcastChannel(LIVE_SYNC_CHANNEL_NAME);
+            liveSyncChannel.addEventListener('message', () => requestRealtimeRefresh(60));
+        }
+    } catch (_) { liveSyncChannel = null; }
+    window.addEventListener('focus', () => requestRealtimeRefresh(30), { passive: true });
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) requestRealtimeRefresh(30); }, { passive: true });
 }
 
 async function refreshSiteDataIfChanged() {
-    if (siteRefreshInFlight || document.hidden) return;
+    if (siteRefreshInFlight || document.hidden || document.body.classList.contains('checkout-active')) return;
     siteRefreshInFlight = true;
     try {
         siteDataCache = null;
@@ -219,7 +248,7 @@ async function refreshSiteDataIfChanged() {
         if (signature === lastSiteDataSignature) return;
         lastSiteDataSignature = signature;
 
-        if (Array.isArray(siteData.products) && siteData.products.length) {
+        if (Array.isArray(siteData.products)) {
             state.products = siteData.products;
         }
         if (Array.isArray(siteData.reviews)) {
@@ -386,6 +415,7 @@ async function apiPost(action, payload) {
     }
     if (action === 'submitReview') {
         siteDataCache = null;
+        notifyRealtimePeers(action);
     }
     return result;
 }
@@ -664,8 +694,8 @@ function renderMovies() {
     if (topMovieCount) topMovieCount.textContent = String(top.length);
     if (upcomingMovieCount) upcomingMovieCount.textContent = String(upcoming.length);
     const isEnglish = window.JMI18n && window.JMI18n.lang === 'en';
-    if (topMoviesGrid) topMoviesGrid.innerHTML = top.length ? top.map(renderMovieCard).join('') : `<div class="movie-empty"><i class="fas fa-trophy"></i><strong>${isEnglish ? 'No top movies yet' : 'ยังไม่มีหนังติด TOP'}</strong><small>${isEnglish ? 'Add movies in Admin and they will appear here automatically.' : 'เพิ่มหนังจากหลังบ้าน แล้วรายการจะมาแสดงตรงนี้อัตโนมัติ'}</small></div>`;
-    if (upcomingMoviesGrid) upcomingMoviesGrid.innerHTML = upcoming.length ? upcoming.map(renderMovieCard).join('') : `<div class="movie-empty"><i class="fas fa-calendar-plus"></i><strong>${isEnglish ? 'No upcoming movies yet' : 'ยังไม่มีหนังที่ใกล้จะเข้า'}</strong><small>${isEnglish ? 'Add movies in Admin and they will appear here automatically.' : 'เพิ่มหนังจากหลังบ้าน แล้วรายการจะมาแสดงตรงนี้อัตโนมัติ'}</small></div>`;
+    if (topMoviesGrid) topMoviesGrid.innerHTML = top.length ? top.map(renderMovieCard).join('') : `<div class="movie-empty"><i class="fas fa-trophy"></i><strong>${isEnglish ? 'No top movies yet' : 'ยังไม่มีหนังติด TOP'}</strong><small>${isEnglish ? 'Add movies in Admin and they will appear here automatically.' : 'ขณะนี้ยังไม่มีหนังติด TOP แสดงผล'}</small></div>`;
+    if (upcomingMoviesGrid) upcomingMoviesGrid.innerHTML = upcoming.length ? upcoming.map(renderMovieCard).join('') : `<div class="movie-empty"><i class="fas fa-calendar-plus"></i><strong>${isEnglish ? 'No upcoming movies yet' : 'ยังไม่มีหนังที่ใกล้จะเข้า'}</strong><small>${isEnglish ? 'Add movies in Admin and they will appear here automatically.' : 'ขณะนี้ยังไม่มีหนังที่ใกล้จะเข้า แสดงผล'}</small></div>`;
 }
 
 function getPromotionTimeState(promo) {
@@ -1820,6 +1850,7 @@ async function storeAdminPost(action, payload = {}) {
     const result = await response.json();
     if (!result || !result.success) throw new Error((result && result.message) || 'ไม่สามารถบันทึกการใช้โค้ดได้');
     siteDataCache = null;
+    notifyRealtimePeers(action);
     return result;
 }
 
@@ -1926,14 +1957,13 @@ function setCheckoutStep(step) {
         el.classList.toggle('is-active', n === step);
         el.classList.toggle('is-done', n < step);
     });
-    renderCheckoutSummary(checkoutSummaryStep1);
-    renderCheckoutSummary(checkoutSummaryStep2);
-    renderCheckoutFinal();
+    // Render only what is visible. This avoids rebuilding all checkout sections on every click.
+    if (step === 1) renderCheckoutSummary(checkoutSummaryStep1);
+    else if (step === 2) renderCheckoutSummary(checkoutSummaryStep2);
+    else if (step === 3) renderCheckoutFinal();
 }
 
-function openCheckout() {
-    if (!ensureSiteActive()) return;
-    if (state.cart.length === 0) { showToast('กรุณาเพิ่มสินค้าในตะกร้าก่อนสั่งซื้อ', 'error'); return; }
+function resetCheckoutFlow({ closePanel = false } = {}) {
     checkoutState.step = 1;
     checkoutState.discount = null;
     checkoutState.paymentMethod = '';
@@ -1943,12 +1973,49 @@ function openCheckout() {
     checkoutState.orderSaved = false;
     checkoutState.lineMessage = '';
     if (discountCodeInput) discountCodeInput.value = '';
-    if (discountFeedback) { discountFeedback.classList.add('hidden'); discountFeedback.innerHTML = ''; }
+    if (discountFeedback) {
+        discountFeedback.classList.add('hidden');
+        discountFeedback.classList.remove('is-success', 'is-error');
+        discountFeedback.innerHTML = '';
+    }
     document.querySelectorAll('[data-payment-method]').forEach(el => el.classList.remove('is-selected'));
+    if (checkoutOrderReceipt) checkoutOrderReceipt.classList.add('hidden');
+    if (checkoutOrderNumber) checkoutOrderNumber.textContent = '-';
+    if (checkoutBackPayment) checkoutBackPayment.classList.remove('hidden');
+    if (checkoutToConfirm) {
+        checkoutToConfirm.disabled = false;
+        checkoutToConfirm.innerHTML = 'โอนเสร็จแล้ว <i class="fas fa-arrow-right"></i>';
+    }
+    if (confirmPaymentBtn) {
+        confirmPaymentBtn.disabled = false;
+        confirmPaymentBtn.innerHTML = '<i class="fas fa-copy"></i> คัดลอกเลขออเดอร์';
+    }
     renderPaymentDetail();
-    if (cartPanel) cartPanel.classList.add('hidden');
-    if (checkoutPanel) checkoutPanel.classList.remove('hidden');
     setCheckoutStep(1);
+    if (closePanel) closeCheckoutPanel();
+}
+
+function openCheckout() {
+    if (!ensureSiteActive()) return;
+    if (state.cart.length === 0) { showToast('กรุณาเพิ่มสินค้าในตะกร้าก่อนสั่งซื้อ', 'error'); return; }
+    // Pause decorative/realtime work while the checkout is opening.
+    document.body.classList.add('checkout-active');
+    resetCheckoutFlow();
+    if (cartPanel) cartPanel.classList.add('hidden');
+    if (checkoutPanel) {
+        checkoutPanel.classList.remove('hidden');
+        // Promote the modal on the next frame instead of forcing a large synchronous repaint.
+        requestAnimationFrame(() => checkoutPanel.classList.add('checkout-ready'));
+    }
+}
+
+function closeCheckoutPanel() {
+    if (checkoutPanel) {
+        checkoutPanel.classList.add('hidden');
+        checkoutPanel.classList.remove('checkout-ready');
+    }
+    document.body.classList.remove('checkout-active');
+    requestRealtimeRefresh(120);
 }
 
 function applyDiscountFromInput() {
@@ -2168,12 +2235,15 @@ async function copyOrderNumberAndOpenLine() {
         if (!copied) copied = fallbackCopyText(checkoutState.orderNo);
         if (!copied) throw new Error('คัดลอกเลขออเดอร์ไม่สำเร็จ');
 
-        showToast(`คัดลอก ${checkoutState.orderNo} แล้ว กำลังเปิด LINE`, 'success');
+        const completedOrderNo = checkoutState.orderNo;
         const message = checkoutState.lineMessage || buildLineOrderMessage();
         const lineUrl = buildLineRedirectUrl(message);
+        showToast(`คัดลอก ${completedOrderNo} แล้ว กำลังเปิด LINE`, 'success');
+        try { sessionStorage.setItem(CHECKOUT_RETURN_STORAGE_KEY, '1'); } catch (_) {}
         state.cart = [];
         renderCart();
-        setTimeout(() => { window.location.href = lineUrl; }, 450);
+        resetCheckoutFlow({ closePanel: true });
+        setTimeout(() => { window.location.href = lineUrl; }, 350);
     } catch (error) {
         showToast(error.message || 'คัดลอกเลขออเดอร์ไม่สำเร็จ', 'error');
         checkoutState.confirming = false;
@@ -2182,6 +2252,19 @@ async function copyOrderNumberAndOpenLine() {
             confirmPaymentBtn.innerHTML = originalHtml;
         }
     }
+}
+
+function recoverCheckoutAfterExternalReturn(event) {
+    let shouldReset = !!event?.persisted;
+    try {
+        if (sessionStorage.getItem(CHECKOUT_RETURN_STORAGE_KEY) === '1') {
+            shouldReset = true;
+            sessionStorage.removeItem(CHECKOUT_RETURN_STORAGE_KEY);
+        }
+    } catch (_) {}
+    if (!shouldReset) return;
+    resetCheckoutFlow({ closePanel: true });
+    if (cartPanel) cartPanel.classList.add('hidden');
 }
 
 function showPageLoader(show = true) {
@@ -2291,13 +2374,6 @@ function showAppPage(page, category = 'all', options = {}) {
     document.querySelectorAll('.side-subnav-item[data-page]').forEach((button) => {
         if (!button.dataset.category) button.classList.toggle('is-active', button.dataset.page === page);
     });
-    const movieGroupEl = document.getElementById('movieNavGroup');
-    const movieParentEl = movieGroupEl ? movieGroupEl.querySelector('.side-nav-parent') : null;
-    if (movieGroupEl && (page === 'movies-top' || page === 'movies-upcoming')) {
-        movieGroupEl.classList.add('is-open');
-        if (movieParentEl) movieParentEl.setAttribute('aria-expanded', 'true');
-    }
-
     const isEnglish = window.JMI18n && window.JMI18n.lang === 'en';
     const pageTitle = isEnglish ? appPageTitlesEn[page] : appPageTitles[page];
     const title = document.getElementById('currentPageTitle');
@@ -2351,6 +2427,14 @@ function initAppNavigation() {
     const contactGroup = document.getElementById('contactNavGroup');
     const contactParent = contactGroup ? contactGroup.querySelector('.side-nav-parent') : null;
 
+    // Submenus always start collapsed. They only open after the user clicks the parent.
+    [productGroup, movieGroup, contactGroup].forEach((group) => {
+        if (!group) return;
+        group.classList.remove('is-open');
+        const parent = group.querySelector('.side-nav-parent');
+        if (parent) parent.setAttribute('aria-expanded', 'false');
+    });
+
     document.querySelectorAll('[data-page]').forEach((button) => {
         button.addEventListener('click', (event) => {
             const page = button.dataset.page;
@@ -2400,7 +2484,7 @@ function initAppNavigation() {
         if (!link) return;
         if (link.dataset.configured === 'false' || link.classList.contains('is-unconfigured')) {
             event.preventDefault();
-            showToast((window.JMI18n && window.JMI18n.lang === 'en') ? 'This contact link has not been configured yet' : 'ช่องทางนี้ยังไม่ได้ตั้งค่าลิงก์ในหลังบ้าน', 'info');
+            showToast((window.JMI18n && window.JMI18n.lang === 'en') ? 'This contact link has not been configured yet' : 'ช่องทางนี้ยังไม่พร้อมใช้งาน', 'info');
         }
     });
     document.getElementById('refreshMyOrdersBtn')?.addEventListener('click', refreshMyOrderHistory);
@@ -2494,9 +2578,11 @@ async function init() {
     }
 
     if (window && window.addEventListener) {
-        window.addEventListener('online', syncPendingReviews);
+        window.addEventListener('online', () => { syncPendingReviews(); requestRealtimeRefresh(20); });
         window.addEventListener('storage', handleAdminReloadEvent);
+        window.addEventListener('pageshow', recoverCheckoutAfterExternalReturn);
     }
+    initRealtimeSync();
 
     if (window) {
         window.adminre = adminReviewConsoleCommand;
@@ -2522,10 +2608,10 @@ async function init() {
     if (cartItems) cartItems.addEventListener('click', handleCartItemsClick);
     if (closeCart) closeCart.addEventListener("click", () => cartPanel.classList.add("hidden"));
     if (checkoutBtn) checkoutBtn.addEventListener("click", openCheckout);
-    if (closeCheckout) closeCheckout.addEventListener('click', () => checkoutPanel.classList.add('hidden'));
+    if (closeCheckout) closeCheckout.addEventListener('click', closeCheckoutPanel);
     if (applyDiscountBtn) applyDiscountBtn.addEventListener('click', applyDiscountFromInput);
     if (discountCodeInput) discountCodeInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); applyDiscountFromInput(); } });
-    if (checkoutBackToCart) checkoutBackToCart.addEventListener('click', () => { checkoutPanel.classList.add('hidden'); openCart(); });
+    if (checkoutBackToCart) checkoutBackToCart.addEventListener('click', () => { closeCheckoutPanel(); openCart(); });
     if (checkoutToPayment) checkoutToPayment.addEventListener('click', () => setCheckoutStep(2));
     if (checkoutBackDiscount) checkoutBackDiscount.addEventListener('click', () => setCheckoutStep(1));
     if (checkoutToConfirm) checkoutToConfirm.addEventListener('click', finalizeOrderAfterTransfer);
@@ -2595,7 +2681,7 @@ async function init() {
         });
     }
     if (checkoutPanel) {
-        checkoutPanel.addEventListener('click', (event) => { if (event.target === checkoutPanel) checkoutPanel.classList.add('hidden'); });
+        checkoutPanel.addEventListener('click', (event) => { if (event.target === checkoutPanel) closeCheckoutPanel(); });
     }
 }
 

@@ -3529,3 +3529,39 @@ main {
 @media (max-width:640px){
   .save-qr-image{min-height:36px!important;padding:7px 12px!important;font-size:.72rem!important}
 }
+
+/* V24 — collapsed sidebar by default + low-latency checkout opening */
+.checkout-overlay{
+  -webkit-backdrop-filter:none !important;
+  backdrop-filter:none !important;
+  background:rgba(7,27,57,.48) !important;
+}
+body.checkout-active .app-shell-body::before,
+body.checkout-active .app-shell-body::after,
+body.checkout-active .app-hero::after{
+  animation-play-state:paused !important;
+  will-change:auto !important;
+}
+body.checkout-active .content-topbar,
+body.checkout-active .home-status-card{
+  -webkit-backdrop-filter:none !important;
+  backdrop-filter:none !important;
+}
+body.checkout-active .product-card,
+body.checkout-active .review-card,
+body.checkout-active .promotion-card,
+body.checkout-active .movie-card,
+body.checkout-active .faq-item{
+  transition:none !important;
+}
+.checkout-modal{
+  contain:layout paint style !important;
+  transform:translate3d(0,6px,0) scale(.994);
+  opacity:.985;
+  transition:transform .16s cubic-bezier(.2,.8,.2,1),opacity .16s ease !important;
+  animation:none !important;
+}
+.checkout-overlay.checkout-ready .checkout-modal{
+  transform:translate3d(0,0,0) scale(1);
+  opacity:1;
+}
