@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d67e8">
+    <title>JokeMoo Store Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="code-manager/scoped.css">
+    <link rel="stylesheet" href="admin.css">
+    <link rel="icon" type="image" href="../logo.png">
+</head>
+<body class="admin-shell-body admin-auth-locked">
+    <div id="adminAuthGate" class="admin-auth-gate">
+        <div class="admin-auth-bg admin-auth-bg-one"></div>
+        <div class="admin-auth-bg admin-auth-bg-two"></div>
+        <section class="admin-auth-card" aria-labelledby="adminLoginTitle">
+            <div class="admin-auth-brand">
+                <img src="../assets/optimized/logo.webp" onerror="this.src='../logo.png'" alt="JokeMoo Store">
+                <div><span>JOKEMOO CONTROL CENTER</span><h1 id="adminLoginTitle">เข้าสู่ระบบหลังร้าน</h1><p>กรอกบัญชีผู้ดูแลเพื่อจัดการร้านค้า</p></div>
+            </div>
+            <form id="adminLoginForm" class="admin-auth-form" autocomplete="on">
+                <label><span><i class="fas fa-user"></i> Username</span><input id="adminLoginUsername" name="username" type="text" autocomplete="username" placeholder="ชื่อผู้ใช้" required></label>
+                <label><span><i class="fas fa-lock"></i> Password</span><div class="admin-password-wrap"><input id="adminLoginPassword" name="password" type="password" autocomplete="current-password" placeholder="รหัสผ่าน" required><button id="adminLoginPasswordToggle" type="button" aria-label="แสดงรหัสผ่าน"><i class="fas fa-eye"></i></button></div></label>
+                <label class="admin-remember-row"><input id="adminRememberLogin" type="checkbox"><span><b>จดจำการเข้าสู่ระบบ</b><small>จำบัญชีนี้ไว้ 30 วันบนอุปกรณ์นี้</small></span></label>
+                <div id="adminLoginError" class="admin-auth-error hidden" role="alert"></div>
+                <button id="adminLoginBtn" class="admin-auth-submit" type="submit"><i class="fas fa-right-to-bracket"></i><span>เข้าสู่ระบบ</span></button>
+            </form>
+            <div class="admin-auth-foot"><i class="fas fa-shield-halved"></i><span>เฉพาะผู้ดูแลระบบเท่านั้น</span></div>
+        </section>
+    </div>
+    <div class="admin-app-layout">
+        <aside id="adminSidebar" class="admin-sidebar">
+            <div class="admin-sidebar-brand">
+                <img src="../assets/optimized/logo.webp" onerror="this.src='../logo.png'" alt="JokeMoo Store">
+                <div><strong>JokeMoo Admin</strong><span>Store Control Center</span></div>
+                <button id="adminSidebarClose" type="button" aria-label="ปิดเมนู"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="language-box admin-language-box">
+                <span class="language-label">ภาษา / Language</span>
+                <div class="jm-language-picker">
+                    <button class="language-select jm-language-toggle" type="button" aria-label="เปลี่ยนภาษา" aria-haspopup="true">
+                        <span class="jm-language-flag flag-th" aria-hidden="true"></span>
+                        <strong class="jm-language-current">TH</strong>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="jm-language-menu" role="menu">
+                        <button type="button" data-jm-language="th"><span class="jm-language-flag flag-th" aria-hidden="true"></span><b>TH</b><small>ภาษาไทย</small></button>
+                        <button type="button" data-jm-language="en"><span class="jm-language-flag flag-en" aria-hidden="true"></span><b>EN</b><small>English</small></button>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="admin-sidebar-nav" aria-label="เมนูแอดมิน">
+                <div class="admin-nav-caption">จัดการร้าน</div>
+                <button type="button" class="admin-tab-button" data-target="webSettingsSection" data-admin-title="จัดการเว็บ">
+                    <span class="admin-nav-icon"><i class="fas fa-sliders"></i></span><span>จัดการเว็บ</span><i class="fas fa-chevron-right admin-nav-arrow"></i>
+                </button>
+                <button type="button" class="admin-tab-button active" data-target="productSection" data-admin-title="จัดการสินค้า">
+                    <span class="admin-nav-icon"><i class="fas fa-boxes-stacked"></i></span><span>จัดการสินค้า</span><i class="fas fa-chevron-right admin-nav-arrow"></i>
+                </button>
+                <button type="button" class="admin-tab-button" data-target="reviewSection" data-admin-title="จัดการรีวิว">
+                    <span class="admin-nav-icon"><i class="fas fa-star"></i></span><span>จัดการรีวิว</span><i class="fas fa-chevron-right admin-nav-arrow"></i>
+                </button>
+                <button type="button" class="admin-tab-button" data-target="promoSection" data-admin-title="จัดการโปรโมชั่น">
+                    <span class="admin-nav-icon"><i class="fas fa-percent"></i></span><span>จัดการโปรโมชั่น</span><i class="fas fa-chevron-right admin-nav-arrow"></i>
+                </button>
+                <button type="button" class="admin-tab-button" data-target="movieSection" data-admin-title="จัดการหนังแนะนำ">
+                    <span class="admin-nav-icon"><i class="fas fa-clapperboard"></i></span><span>จัดการหนังแนะนำ</span><i class="fas fa-chevron-right admin-nav-arrow"></i>
+                </button>
+                <button type="button" class="admin-tab-button" data-target="codeSection" data-admin-title="สร้างโค้ดสุ่ม">
+                    <span class="admin-nav-icon"><i class="fas fa-ticket"></i></span><span>สร้างโค้ดสุ่ม</span><i class="fas fa-chevron-right admin-nav-arrow"></i>
+                </button>
+                <button type="button" class="admin-tab-button" data-target="discountSection" data-admin-title="โค้ดส่วนลด">
+                    <span class="admin-nav-icon"><i class="fas fa-tags"></i></span><span>สร้างโค้ดส่วนลด</span><i class="fas fa-chevron-right admin-nav-arrow"></i>
+                </button>
+                <button type="button" class="admin-tab-button" data-target="ordersSection" data-admin-title="ประวัติการซื้อและสรุปยอด">
+                    <span class="admin-nav-icon"><i class="fas fa-receipt"></i></span><span>ประวัติการซื้อ</span><i class="fas fa-chevron-right admin-nav-arrow"></i>
+                </button>
+                <button type="button" class="admin-tab-button" data-target="adminUsersSection" data-admin-title="จัดการผู้ดูแล">
+                    <span class="admin-nav-icon"><i class="fas fa-user-shield"></i></span><span>จัดการผู้ดูแล</span><i class="fas fa-chevron-right admin-nav-arrow"></i>
+                </button>
+
+                <div class="admin-nav-caption admin-nav-caption-secondary">สถานะระบบ</div>
+                <div class="admin-sidebar-status">
+                    <span id="apiStatus" class="status-badge status-loading">กำลังตรวจสอบการเชื่อมต่อ...</span>
+                    <div class="admin-maintenance-compact">
+                        <div><strong>โหมดอัพเดทเว็บ</strong><span id="maintenanceStatus" class="status-badge status-error">ปิดปรับปรุง</span></div>
+                        <button id="maintenanceToggleBtn" class="button button-secondary" type="button">เปิดระบบ</button>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="admin-sidebar-footer">
+                <div class="admin-sidebar-user"><i class="fas fa-user-shield"></i><span><small>ผู้ดูแลที่ใช้งาน</small><strong id="adminSidebarUserName">-</strong></span></div>
+                <button id="adminSidebarLogoutBtn" type="button" class="admin-sidebar-logout"><i class="fas fa-arrow-right-from-bracket"></i> ออกจากระบบ</button>
+                <a href="../index.html"><i class="fas fa-store"></i> กลับหน้าหลัก</a>
+                <small>© 2026 JokeMoo Store</small>
+            </div>
+        </aside>
+        <div id="adminSidebarBackdrop" class="admin-sidebar-backdrop"></div>
+
+        <div class="admin-main-column">
+            <header class="admin-content-topbar">
+                <div class="admin-content-title">
+                    <button id="adminSidebarToggle" class="admin-mobile-menu" type="button" aria-label="เปิดเมนู"><i class="fas fa-bars"></i></button>
+                    <div><span>JOKEMOO CONTROL CENTER</span><h1 id="adminCurrentTitle">จัดการสินค้า</h1></div>
+                </div>
+                <div class="admin-topbar-actions">
+                    <span class="admin-online-pill"><i class="fas fa-circle"></i> Online</span>
+                    <div class="admin-current-user"><span class="admin-current-user-avatar"><i class="fas fa-user-shield"></i></span><span><small>เข้าสู่ระบบเป็น</small><strong id="adminCurrentUserName">-</strong></span></div>
+                    <button id="adminLogoutBtn" type="button" class="button button-outline admin-logout-btn"><i class="fas fa-arrow-right-from-bracket"></i> ออกจากระบบ</button>
+                    <a href="../index.html" class="button button-outline"><i class="fas fa-store"></i> กลับหน้าหลัก</a>
+                </div>
+            </header>
+
+            <main class="admin-main-content">
+                <section class="admin-welcome-card">
+                    <div>
+                        <span class="admin-welcome-kicker">STORE ADMIN</span>
+                        <h2>ภาพรวมระบบ</h2>
+                        <p>สินค้า รีวิว โปรโมชั่น หนังแนะนำ โค้ดสุ่ม โค้ดส่วนลด ประวัติยอดขาย ผู้ดูแล และตั้งค่าเว็บในระบบเดียว</p>
+                    </div>
+                    <div class="admin-welcome-meta">
+                        <div><i class="fas fa-bolt"></i><span><strong>พร้อมใช้งานทันที</strong><small>เชื่อมต่อค่าจาก config.js</small></span></div>
+                        <div><i class="fas fa-layer-group"></i><span><strong>จัดการข้อมูลร้านได้จากเมนูซ้าย</strong><small>เปลี่ยนหมวดได้โดยไม่โหลดหน้าใหม่</small></span></div>
+                    </div>
+                </section>
+
+                <div id="adminToast" class="toast"></div>
+
+                <div class="admin-grid">
+                    <section id="webSettingsSection" class="admin-section hidden">
+                        <div class="admin-section-dashboard">
+                            <div class="admin-section-heading"><span class="admin-section-icon"><i class="fas fa-sliders"></i></span><div><small>WEBSITE CONTROL</small><h2>จัดการเว็บ</h2><p>ตั้งค่าระบบหน้าร้านและกำหนดน้ำหนัก/อัตราออกรางวัลของวงล้อจากหลังบ้าน</p></div></div>
+                            <div class="admin-mini-stats"><div><span>รางวัล</span><b id="wheelPrizeCount">0</b></div><div><span>รวมน้ำหนัก</span><b id="wheelRateTotal">0</b></div><div><span>สถานะ</span><b id="wheelRateStatus">-</b></div></div>
+                        </div>
+
+                        <div class="admin-card admin-data-card admin-management-card website-contact-card">
+                            <div class="admin-card-header admin-toolbar-header">
+                                <div class="admin-card-title-block"><span class="admin-section-kicker">STORE & PAYMENT</span><h3>ข้อมูลร้านและช่องทางชำระเงิน</h3><p>แก้ LINE, เพจร้าน, เจ้าของร้าน และข้อมูลธนาคารจากจุดเดียว แล้วหน้าร้านทุกหน้าจะใช้ค่าชุดนี้อัตโนมัติ</p></div>
+                            </div>
+                            <div class="website-settings-grid">
+                                <label class="admin-field field-span-2"><span>ลิงก์ LINE ร้าน</span><input id="webLineUrl" type="url" placeholder="https://lin.ee/... หรือ https://line.me/..." autocomplete="off"><small>ใช้กับปุ่มติดต่อ LINE ทุกหน้า รวมถึงปุ่มหลังคัดลอกเลขออเดอร์</small></label>
+                                <label class="admin-field"><span>ลิงก์เพจร้าน</span><input id="webPageUrl" type="url" placeholder="https://facebook.com/..." autocomplete="off"><small>แสดงใต้เมนู “ติดต่อแอดมิน”</small></label>
+                                <label class="admin-field"><span>ลิงก์เจ้าของร้าน</span><input id="webOwnerUrl" type="url" placeholder="https://facebook.com/... หรือ https://line.me/..." autocomplete="off"><small>ใช้สำหรับช่องทางติดต่อเจ้าของร้านโดยตรง</small></label>
+                                <label class="admin-field"><span>ชื่อธนาคาร</span><input id="webBankName" type="text" placeholder="เช่น กสิกรไทย"></label>
+                                <label class="admin-field"><span>ชื่อบัญชี</span><input id="webAccountName" type="text" placeholder="ชื่อเจ้าของบัญชี"></label>
+                                <label class="admin-field"><span>เลขบัญชี</span><input id="webAccountNumber" type="text" inputmode="numeric" placeholder="xxx-x-xxxxx-x"></label>
+                                <label class="admin-field field-span-2"><span>URL รูป QR</span><input id="webQrImageUrl" type="text" placeholder="https://.../qr.png หรืออัปโหลดรูปด้านล่าง"><small>ถ้าอัปโหลดรูป ระบบจะใช้รูปที่อัปโหลดแทน URL</small></label>
+                                <div class="website-qr-upload field-span-2">
+                                    <div id="webQrPreview" class="website-qr-preview"><i class="fas fa-qrcode"></i><span>ยังไม่มีรูป QR</span></div>
+                                    <div class="website-qr-actions">
+                                        <label class="button button-outline website-qr-file-button"><i class="fas fa-image"></i> อัปโหลดรูป QR<input id="webQrImageFile" type="file" accept="image/png,image/jpeg,image/webp" hidden></label>
+                                        <button id="removeWebQrBtn" class="button button-danger" type="button"><i class="fas fa-trash"></i> ลบรูป QR</button>
+                                        <small>แนะนำรูปสี่เหลี่ยม 800×800 px หรือน้อยกว่า</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="admin-card admin-data-card admin-management-card">
+                            <div class="admin-card-header admin-toolbar-header">
+                                <div class="admin-card-title-block"><span class="admin-section-kicker">LUCKY WHEEL WEIGHT</span><h3>น้ำหนักการออกรางวัลวงล้อ</h3><p>ใส่ตัวเลขได้อิสระ ไม่ต้องรวม 100 ระบบจะคำนวณสัดส่วนให้อัตโนมัติ</p></div>
+                                <div class="admin-header-actions"><button id="saveWebSettingsBtn" class="button button-primary" type="button"><i class="fas fa-floppy-disk"></i> บันทึกค่า</button><button id="resetWheelRatesBtn" class="button button-outline" type="button"><i class="fas fa-rotate-left"></i> ค่าเริ่มต้น</button></div>
+                            </div>
+                            <div class="admin-info-strip"><i class="fas fa-circle-info"></i><span>ตัวอย่าง: MISS = 100 และ Netflix 1 Day = 100 หมายถึงสองรางวัลมีโอกาสออกเท่ากัน 50% / 50% ส่วนรางวัลที่ใส่ 0 จะไม่ถูกสุ่มออก</span></div>
+                            <div id="wheelRatesEditor" class="wheel-rates-editor"></div>
+                        </div>
+                    </section>
+
+                    <section id="productSection" class="admin-section">
+                        <div class="admin-section-dashboard">
+                            <div class="admin-section-heading"><span class="admin-section-icon"><i class="fas fa-boxes-stacked"></i></span><div><small>PRODUCT MANAGEMENT</small><h2>สินค้าและแพ็กเกจ</h2><p>จัดหมวด ราคา รูป และสถานะสินค้าในพื้นที่เดียว</p></div></div>
+                            <div class="admin-mini-stats"><div><span>ทั้งหมด</span><b id="productStatTotal">0</b></div><div><span>พร้อมขาย</span><b id="productStatActive">0</b></div><div><span>ปิดขาย</span><b id="productStatInactive">0</b></div></div>
+                        </div>
+                        <div class="admin-card admin-data-card">
+                            <div class="admin-card-header">
+                                <div><span class="admin-section-kicker">PRODUCTS</span><h3>จัดการสินค้า</h3></div>
+                                <div class="admin-header-actions">
+                                    <button id="addProductBtn" class="button button-primary"><i class="fas fa-plus"></i> เพิ่มสินค้าใหม่</button>
+                                    <button id="refreshProductsBtn" class="button button-outline"><i class="fas fa-rotate"></i> รีเฟรช</button>
+                                </div>
+                            </div>
+                            <div id="productTable" class="admin-table"></div>
+                        </div>
+                    </section>
+
+                    <section id="reviewSection" class="admin-section hidden">
+                        <div class="admin-section-dashboard">
+                            <div class="admin-section-heading"><span class="admin-section-icon"><i class="fas fa-star"></i></span><div><small>REVIEW MANAGEMENT</small><h2>รีวิวลูกค้า</h2><p>ค้นหา ตรวจสอบ เพิ่ม แก้ไข และลบรีวิวอย่างเป็นระเบียบ</p></div></div>
+                            <div class="admin-mini-stats"><div><span>รีวิวทั้งหมด</span><b id="reviewStatTotal">0</b></div><div><span>5 ดาว</span><b id="reviewStatFive">0</b></div><div><span>รูปรีวิว</span><b id="reviewStatImages">0</b></div></div>
+                        </div>
+                        <div class="admin-card admin-data-card">
+                            <div class="admin-card-header admin-review-header">
+                                <div><span class="admin-section-kicker">REVIEWS</span><h3>จัดการรีวิว</h3></div>
+                                <div class="review-search-group"><input id="reviewSearchInput" type="search" placeholder="ค้นหาด้วยวันที่ ชื่อ หรือข้อความ" /></div>
+                                <div class="admin-header-actions">
+                                    <button id="addReviewBtn" class="button button-primary"><i class="fas fa-plus"></i> เพิ่มรีวิวใหม่</button>
+                                    <button id="refreshReviewsBtn" class="button button-outline"><i class="fas fa-rotate"></i> รีเฟรช</button>
+                                </div>
+                            </div>
+                            <div id="reviewTable" class="admin-table"></div>
+                        </div>
+                    </section>
+
+                    <section id="promoSection" class="admin-section hidden">
+                        <div class="admin-section-dashboard">
+                            <div class="admin-section-heading"><span class="admin-section-icon"><i class="fas fa-percent"></i></span><div><small>PROMOTION MANAGEMENT</small><h2>โปรโมชั่นร้าน</h2><p>จัดโปรที่กำลังใช้งานและโปรที่เตรียมเปิดในอนาคต</p></div></div>
+                            <div class="admin-mini-stats"><div><span>ทั้งหมด</span><b id="promoStatTotal">0</b></div><div><span>เปิดใช้งาน</span><b id="promoStatActive">0</b></div><div><span>ปิดใช้งาน</span><b id="promoStatInactive">0</b></div></div>
+                        </div>
+                        <div class="admin-card admin-data-card">
+                            <div class="admin-card-header">
+                                <div><span class="admin-section-kicker">PROMOTIONS</span><h3>จัดการโปรโมชั่น</h3><p>เพิ่ม แก้ไข หรือปิดใช้งานโปรโมชั่นที่จะโชว์บนหน้าร้าน</p></div>
+                                <div class="admin-header-actions">
+                                    <button id="addPromotionBtn" class="button button-primary"><i class="fas fa-plus"></i> เพิ่มโปรโมชั่น</button>
+                                    <button id="refreshPromotionsBtn" class="button button-outline"><i class="fas fa-rotate"></i> รีเฟรช</button>
+                                </div>
+                            </div>
+                            <div id="promotionTable" class="admin-table"></div>
+                        </div>
+                    </section>
+
+                    <section id="movieSection" class="admin-section hidden">
+                        <div class="admin-section-dashboard">
+                            <div class="admin-section-heading"><span class="admin-section-icon"><i class="fas fa-clapperboard"></i></span><div><small>MOVIE PICKS</small><h2>หนังแนะนำหน้าเว็บ</h2><p>จัดหนังติด TOP และหนังที่ใกล้จะเข้า พร้อมอันดับ วันเข้า และโปสเตอร์</p></div></div>
+                            <div class="admin-mini-stats"><div><span>หนังทั้งหมด</span><b id="movieStatTotal">0</b></div><div><span>หนัง TOP</span><b id="movieStatTop">0</b></div><div><span>หนังใกล้เข้า</span><b id="movieStatUpcoming">0</b></div></div>
+                        </div>
+                        <div class="admin-card admin-data-card">
+                            <div class="admin-card-header">
+                                <div><span class="admin-section-kicker">MOVIES</span><h3>จัดการหนังแนะนำ</h3><p>ข้อมูลในเมนูนี้จะไปแสดงที่หน้า “หนังแนะนำ” ของหน้าร้านโดยอัตโนมัติ</p></div>
+                                <div class="admin-header-actions">
+                                    <button id="addMovieBtn" class="button button-primary"><i class="fas fa-plus"></i> เพิ่มหนังใหม่</button>
+                                    <button id="refreshMoviesBtn" class="button button-outline"><i class="fas fa-rotate"></i> รีเฟรช</button>
+                                </div>
+                            </div>
+                            <div class="movie-admin-guide"><span><i class="fas fa-trophy"></i><b>TOP</b> ใส่อันดับ 1, 2, 3…</span><span><i class="fas fa-calendar"></i><b>ใกล้จะเข้า</b> ใส่วันที่กำหนดเข้า</span><span><i class="fas fa-image"></i>ใช้ URL รูปหรืออัปโหลดโปสเตอร์ได้</span></div>
+                            <div id="movieTable" class="admin-table movie-admin-table"></div>
+                        </div>
+                    </section>
+
+                    <section id="discountSection" class="admin-section hidden">
+                        <div class="admin-section-dashboard">
+                            <div class="admin-section-heading"><span class="admin-section-icon"><i class="fas fa-tags"></i></span><div><small>DISCOUNT CODES</small><h2>โค้ดส่วนลด</h2><p>สร้างโค้ดลดราคาแบบเปอร์เซ็นต์หรือจำนวนเงินบาท เพิ่มได้เรื่อย ๆ พร้อมจำกัดจำนวนลูกค้าและจำนวนครั้งต่อคน</p></div></div>
+                            <div class="admin-mini-stats"><div><span>ทั้งหมด</span><b id="discountStatTotal">0</b></div><div><span>ใช้งานได้</span><b id="discountStatActive">0</b></div><div><span>ปิด/หมดอายุ</span><b id="discountStatInactive">0</b></div></div>
+                        </div>
+                        <div class="admin-card admin-data-card admin-management-card">
+                            <div class="admin-card-header admin-toolbar-header">
+                                <div class="admin-card-title-block"><span class="admin-section-kicker">COUPONS</span><h3>จัดการโค้ดส่วนลด</h3><p>โค้ดที่เปิดใช้งานจะใช้ได้ในขั้นตอนชำระเงินหน้าร้านทันที และจะนับการใช้เมื่อกดยืนยันชำระเงิน</p></div>
+                                <div class="admin-header-actions">
+                                    <button id="addDiscountBtn" class="button button-primary" type="button"><i class="fas fa-plus"></i> สร้างโค้ด</button>
+                                    <button id="refreshDiscountsBtn" class="button button-outline" type="button"><i class="fas fa-rotate"></i> รีเฟรช</button>
+                                </div>
+                            </div>
+                            <div class="admin-info-strip"><i class="fas fa-circle-info"></i><span>แบบ % คิดจากยอดรวม • แบบจำนวนเงินหักเป็นบาท • จำกัดจำนวนลูกค้า/ครั้งต่อคนได้ • กดยืนยันชำระเงิน = ใช้ 1 ครั้ง</span></div>
+                            <div id="discountTable" class="admin-table admin-discount-table"></div>
+                        </div>
+                    </section>
+
+                    <section id="ordersSection" class="admin-section hidden">
+                        <div class="admin-section-dashboard orders-dashboard">
+                            <div class="admin-section-heading"><span class="admin-section-icon"><i class="fas fa-chart-line"></i></span><div><small>SALES & ORDERS</small><h2>ประวัติการซื้อและสรุปยอด</h2><p>ออเดอร์จะถูกบันทึกเมื่อผู้ซื้อกด “ยืนยันและแจ้งสลิปใน LINE” พร้อมรายละเอียดโค้ดส่วนลดและยอดสุทธิ</p></div></div>
+                            <div class="admin-mini-stats"><div><span>วันนี้</span><b id="orderTodayRevenue">฿0</b><small id="orderTodayCount">0 ออเดอร์</small></div><div><span>เดือนนี้</span><b id="orderMonthRevenue">฿0</b><small id="orderMonthCount">0 ออเดอร์</small></div><div><span>ใช้ส่วนลด</span><b id="orderDiscountCount">0</b><small>ออเดอร์</small></div></div>
+                        </div>
+                        <div class="admin-card admin-data-card order-management-card">
+                            <div class="admin-card-header admin-toolbar-header">
+                                <div class="admin-card-title-block"><span class="admin-section-kicker">ORDER HISTORY</span><h3>รายการสั่งซื้อ</h3><p>ค้นหา กรองย้อนหลัง เปิดดูรายละเอียด และลบออเดอร์ได้</p></div>
+                                <div class="admin-header-actions"><button id="refreshOrdersBtn" class="button button-outline" type="button"><i class="fas fa-rotate"></i> รีเฟรช</button></div>
+                            </div>
+                            <div class="order-filter-bar">
+                                <div class="order-search-wrap"><i class="fas fa-magnifying-glass"></i><input id="orderSearchInput" type="search" placeholder="ค้นหาเลขออเดอร์ สินค้า หรือโค้ดส่วนลด"></div>
+                                <select id="orderPeriodFilter"><option value="all">ทั้งหมด</option><option value="today">วันนี้</option><option value="thisMonth">เดือนนี้</option><option value="lastMonth">เดือนก่อน</option><option value="customDate">เลือกวัน</option><option value="customMonth">เลือกเดือน</option></select>
+                                <input id="orderCustomDate" class="hidden" type="date">
+                                <input id="orderCustomMonth" class="hidden" type="month">
+                            </div>
+                            <div id="ordersTable" class="admin-table orders-table"></div>
+                        </div>
+                        <div class="order-summary-grid">
+                            <div class="admin-card order-summary-card"><div class="admin-card-header"><div><span class="admin-section-kicker">DAILY SUMMARY</span><h3>สรุปยอดรายวันย้อนหลัง</h3></div></div><div id="dailySalesSummary" class="sales-summary-list"></div></div>
+                            <div class="admin-card order-summary-card"><div class="admin-card-header"><div><span class="admin-section-kicker">MONTHLY SUMMARY</span><h3>สรุปยอดรายเดือนย้อนหลัง</h3></div></div><div id="monthlySalesSummary" class="sales-summary-list"></div></div>
+                        </div>
+                    </section>
+
+                    <section id="adminUsersSection" class="admin-section hidden">
+                        <div class="admin-section-dashboard">
+                            <div class="admin-section-heading"><span class="admin-section-icon"><i class="fas fa-user-shield"></i></span><div><small>ADMIN ACCESS</small><h2>จัดการผู้ดูแล</h2><p>เพิ่มบัญชีหลังร้าน เปลี่ยนรหัสผ่าน เปิด/ปิดสิทธิ์ และจัดการผู้ดูแลจากหน้าเดียว</p></div></div>
+                            <div class="admin-mini-stats"><div><span>ทั้งหมด</span><b id="adminUserStatTotal">0</b></div><div><span>เปิดใช้งาน</span><b id="adminUserStatActive">0</b></div><div><span>บัญชีปัจจุบัน</span><b id="adminUserStatCurrent">-</b></div></div>
+                        </div>
+                        <div class="admin-user-layout">
+                            <div class="admin-card admin-data-card admin-user-create-card">
+                                <div class="admin-card-header"><div class="admin-card-title-block"><span class="admin-section-kicker">NEW ADMIN</span><h3>เพิ่มผู้ดูแลใหม่</h3><p>สร้างบัญชีใหม่ได้เรื่อย ๆ และเข้าใช้งานได้ทันทีหลังบันทึก</p></div></div>
+                                <form id="adminUserCreateForm" class="admin-user-form" autocomplete="off">
+                                    <label class="admin-field"><span>Username</span><input id="newAdminUsername" type="text" minlength="3" maxlength="32" placeholder="เช่น staff01" autocomplete="off" required><small>ใช้ a-z, A-Z, 0-9, จุด, ขีดกลาง หรือ _</small></label>
+                                    <label class="admin-field"><span>ชื่อแสดง</span><input id="newAdminDisplayName" type="text" maxlength="60" placeholder="เช่น แอดมินกะเช้า"></label>
+                                    <label class="admin-field field-span-2"><span>รหัสผ่าน</span><input id="newAdminPassword" type="password" minlength="6" maxlength="100" placeholder="อย่างน้อย 6 ตัวอักษร" autocomplete="new-password" required></label>
+                                    <button id="createAdminUserBtn" class="button button-primary field-span-2" type="submit"><i class="fas fa-user-plus"></i> เพิ่มผู้ดูแล</button>
+                                </form>
+                            </div>
+                            <div class="admin-card admin-data-card admin-user-list-card">
+                                <div class="admin-card-header admin-toolbar-header"><div class="admin-card-title-block"><span class="admin-section-kicker">ADMIN USERS</span><h3>บัญชีผู้ดูแลทั้งหมด</h3><p>บัญชีหลักจะไม่สามารถลบหรือปิดใช้งานได้</p></div><button id="refreshAdminUsersBtn" class="button button-outline" type="button"><i class="fas fa-rotate"></i> รีเฟรช</button></div>
+                                <div id="adminUsersList" class="admin-users-list"></div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="codeSection" class="admin-section hidden">
+                        <div class="admin-section-dashboard">
+                            <div class="admin-section-heading"><span class="admin-section-icon"><i class="fas fa-ticket"></i></span><div><small>LUCKY WHEEL CODES</small><h2>โค้ดสำหรับวงล้อ</h2><p>สร้างสิทธิ์สุ่ม ติดตามโค้ด และตรวจสอบประวัติจากหน้าเดียว</p></div></div>
+                            <div class="admin-section-note"><i class="fas fa-circle-info"></i><span>ระบบโค้ดจะโหลดเมื่อเปิดเมนูนี้เท่านั้น เพื่อให้หลังบ้านส่วนอื่นทำงานลื่นขึ้น</span></div>
+                        </div>
+                        <div class="admin-card admin-data-card code-admin-card">
+                            <div class="admin-card-header code-admin-header">
+                                <div><span class="admin-section-kicker">LUCKY WHEEL</span><h3><i class="fas fa-ticket"></i> สร้างและจัดการโค้ดสุ่ม</h3><p>สร้างโค้ดสำหรับวงล้อ กำหนดจำนวนสิทธิ์และวันหมดอายุ พร้อมดูประวัติการใช้งานได้ในหน้าเดียว</p></div>
+                                <div class="admin-header-actions"><button id="reloadCodeManagerBtn" class="button button-outline" type="button"><i class="fas fa-rotate"></i> รีเฟรชระบบโค้ด</button></div>
+                            </div>
+                            <div class="code-manager-shell code-manager-unified">
+                                <div id="codeManagerLoader" class="code-manager-loader"><span class="code-manager-spinner"></span><span>กำลังเตรียมระบบสร้างโค้ด...</span></div>
+                                <div id="codeManagerRoot" class="jm-code-manager-root" aria-live="polite">
+<div class="container">
+
+<div class="stats-section">
+<div class="stats-grid">
+<div class="stat-card">
+<div class="number" id="totalCodes">0</div>
+<div class="label">โค้ดทั้งหมด</div>
+</div>
+<div class="stat-card">
+<div class="number" id="activeCodes">0</div>
+<div class="label">โค้ดที่ยังใช้ได้</div>
+</div>
+<div class="stat-card">
+<div class="number" id="totalSpins">0</div>
+<div class="label">สิทธิ์หมุนคงเหลือ</div>
+</div>
+<div class="stat-card">
+<div class="number" id="totalWins">0</div>
+<div class="label">รางวัลที่ได้</div>
+</div>
+</div>
+</div>
+<div class="card">
+<div class="card-header">
+<div class="icon"><i class="fas fa-wand-magic-sparkles"></i></div>
+<h2>สร้างโค้ดใหม่</h2>
+<button class="btn-sm btn-dashboard" onclick="openDashboard()" title="ดู Dashboard"><i class="fas fa-chart-column"></i> Dashboard</button>
+</div>
+<div class="form-grid">
+<div class="form-group">
+<label>ความยาวโค้ด</label>
+<select id="codeLength">
+<option value="4">4 ตัวอักษร</option>
+<option selected="" value="6">6 ตัวอักษร</option>
+<option value="8">8 ตัวอักษร</option>
+<option value="10">10 ตัวอักษร</option>
+<option value="12">12 ตัวอักษร</option>
+</select>
+</div>
+<div class="form-group">
+<label>จำนวนสิทธิ์การสุ่ม</label>
+<input id="spinCount" max="100" min="1" placeholder="1-100" type="number" value="1"/>
+</div>
+<div class="form-group">
+<label>จำนวนโค้ดที่สร้าง</label>
+<input id="codeCount" max="50" min="1" placeholder="1-50" type="number" value="1"/>
+</div>
+<div class="form-group">
+<label>อายุโค้ด (วัน)</label>
+<input id="expiryDays" max="365" min="1" placeholder="7" title="หมดอายุหลังกี่วัน" type="number" value="1"/>
+</div>
+</div>
+<button class="btn btn-primary" onclick="generateCodes()">
+<i class="fas fa-dice"></i> สร้างโค้ด
+            </button>
+</div>
+<div class="card">
+<div class="card-header">
+<div class="icon"><i class="fas fa-list-check"></i></div>
+<h2>รายการโค้ดทั้งหมด</h2>
+<div class="header-actions">
+<button class="btn-sm btn-delete-selected" id="btnDeleteSelected" onclick="deleteSelectedCodes()">
+                        <i class="fas fa-trash"></i> ลบที่เลือก (<span id="selectedCount">0</span>)
+                    </button>
+<button class="btn-sm btn-delete-all" onclick="deleteAllCodes()"><i class="fas fa-trash-can"></i> ลบทั้งหมด</button>
+<button class="btn-sm btn-refresh" onclick="refreshData()"><i class="fas fa-rotate"></i> รีเฟรช</button>
+</div>
+</div>
+<div class="search-box-wrapper">
+<input class="search-box" id="searchInput" placeholder="🔍 ค้นหาโค้ด..." type="text"/>
+<span class="search-count" id="searchCount"></span>
+</div>
+<div class="code-sort-bar" id="codeSortBar">
+  <span><i class="fas fa-arrow-down-wide-short"></i> เรียงโค้ด</span>
+  <button type="button" class="code-sort-btn active" data-code-sort="latest">ล่าสุด</button>
+  <button type="button" class="code-sort-btn" data-code-sort="ready">พร้อมใช้</button>
+  <button type="button" class="code-sort-btn" data-code-sort="used">ใช้งานแล้ว</button>
+  <button type="button" class="code-sort-btn" data-code-sort="empty">สิทธิ์หมด</button>
+</div>
+<div class="select-all-row" id="selectAllRow" style="display: none;">
+<input class="code-checkbox" id="selectAll" onchange="toggleSelectAll()" type="checkbox"/>
+<label for="selectAll">เลือกทั้งหมด</label>
+</div>
+<div class="code-grid" id="codeList"></div>
+</div>
+<div class="card trash-section" id="trashSection" style="display: none;">
+<div class="card-header">
+<div class="icon"><i class="fas fa-trash"></i></div>
+<div>
+<h2>ถังขยะ</h2>
+<p class="trash-desc">โค้ดหมดอายุหรือที่ลบจะมาอยู่ที่นี่ กู้คืนได้ 1 ครั้งต่อโค้ด · ครบ 1 วันจะถูกลบถาวร</p>
+</div>
+</div>
+<div class="trash-grid" id="trashList"></div>
+</div>
+</div>
+<div class="modal" id="historyModal">
+<div class="modal-content">
+<div class="modal-header">
+<h3>📊 รายละเอียดโค้ด</h3>
+<button class="modal-close" onclick="closeModal()">×</button>
+</div>
+<div class="modal-code">
+<div class="code" id="modalCode"></div>
+</div>
+<div class="modal-stats">
+<div class="modal-stat">
+<div class="value" id="modalSpinsUsed">0</div>
+<div class="label">ใช้ไปแล้ว</div>
+</div>
+<div class="modal-stat">
+<div class="value" id="modalSpinsLeft">0</div>
+<div class="label">คงเหลือ</div>
+</div>
+</div>
+<h4 style="margin-bottom: 12px; color: rgba(255,255,255,0.7); font-size: 15px;">🎁 ประวัติการสุ่ม</h4>
+<div class="modal-history" id="modalHistory"></div>
+<div class="modal-footer">
+<div>สร้าง: <span id="modalCreated">-</span></div>
+<div>หมดอายุ: <span id="modalExpires">-</span></div>
+<div>ใช้ล่าสุด: <span id="modalLastUsed">-</span></div>
+</div>
+</div>
+</div>
+<div class="modal" id="dashboardModal">
+<div class="modal-content">
+<div class="modal-header">
+<h3>📊 Dashboard</h3>
+<button class="modal-close" onclick="closeDashboard()">×</button>
+</div>
+<div class="dashboard-date-selector">
+<div class="date-range-buttons">
+<button class="date-btn active" data-date="today" onclick="selectDashboardDate('today')">วันนี้</button>
+<button class="date-btn" data-date="7days" onclick="selectDashboardDate('7days')">7 วัน</button>
+<button class="date-btn" data-date="30days" onclick="selectDashboardDate('30days')">30 วัน</button>
+</div>
+<input class="custom-date-input" id="customDate" onchange="selectDashboardDate('custom')" type="date"/>
+</div>
+<div class="dashboard-content horizontal-layout">
+<div class="dashboard-main-right">
+<div class="dashboard-summary">
+<div class="summary-card">
+<div class="summary-label">รางวัลทั้งหมด</div>
+<div class="summary-value" id="dashTotalWins">0</div>
+</div>
+<div class="summary-card">
+<div class="summary-label">จำนวนครั้งสุ่ม</div>
+<div class="summary-value" id="dashTotalSpins">0</div>
+</div>
+<div class="summary-card">
+<div class="summary-label">อัตราสำเร็จ</div>
+<div class="summary-value" id="dashSuccessRate">0%</div>
+</div>
+</div>
+<div class="dashboard-chart-container">
+<h4>📈 รางวัลที่ได้</h4>
+<div class="charts-grid">
+<div class="chart-box">
+<canvas id="dashboardChart" style="max-width: 100%;"></canvas>
+</div>
+<div class="chart-box">
+<canvas id="dashboardPieChart" style="max-width: 100%;"></canvas>
+</div>
+</div>
+</div>
+</div>
+<div class="dashboard-history-list">
+<h4>📋 รายละเอียดรางวัล</h4>
+<div class="history-items" id="dashboardHistoryItems"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+<div class="confirm-modal" id="confirmModal">
+<div class="confirm-content">
+<div class="confirm-icon" id="confirmIcon">⚠️</div>
+<div class="confirm-title" id="confirmTitle">ยืนยันการดำเนินการ</div>
+<div class="confirm-message" id="confirmMessage">คุณต้องการดำเนินการนี้หรือไม่?</div>
+<div class="confirm-buttons">
+<button class="confirm-btn confirm-btn-cancel" id="confirmCancel">ยกเลิก</button>
+<button class="confirm-btn confirm-btn-ok" id="confirmOk">ยืนยัน</button>
+</div>
+</div>
+</div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </main>
+        </div>
+    </div>
+    <div id="orderDetailModal" class="admin-order-modal hidden" aria-hidden="true">
+        <div class="admin-order-modal-backdrop" data-close-order-modal></div>
+        <section class="admin-order-modal-card" role="dialog" aria-modal="true" aria-labelledby="orderDetailTitle">
+            <div class="admin-order-modal-header"><div><span>ORDER DETAIL</span><h3 id="orderDetailTitle">รายละเอียดออเดอร์</h3></div><button type="button" class="admin-order-modal-close" data-close-order-modal><i class="fas fa-times"></i></button></div>
+            <div id="orderDetailBody" class="admin-order-modal-body"></div>
+        </section>
+    </div>
+
+    <div id="adminPasswordModal" class="admin-user-modal hidden" aria-hidden="true">
+        <div class="admin-user-modal-backdrop" data-close-admin-password></div>
+        <section class="admin-user-modal-card" role="dialog" aria-modal="true" aria-labelledby="adminPasswordModalTitle">
+            <div class="admin-user-modal-head"><div><span>PASSWORD</span><h3 id="adminPasswordModalTitle">เปลี่ยนรหัสผ่าน</h3><p id="adminPasswordModalUser">-</p></div><button type="button" data-close-admin-password><i class="fas fa-times"></i></button></div>
+            <form id="adminPasswordResetForm" class="admin-user-modal-body">
+                <input id="adminPasswordTarget" type="hidden">
+                <label class="admin-field"><span>รหัสผ่านใหม่</span><input id="adminPasswordNew" type="password" minlength="6" maxlength="100" autocomplete="new-password" required placeholder="อย่างน้อย 6 ตัวอักษร"></label>
+                <label class="admin-field"><span>ยืนยันรหัสผ่านใหม่</span><input id="adminPasswordConfirm" type="password" minlength="6" maxlength="100" autocomplete="new-password" required placeholder="กรอกรหัสผ่านอีกครั้ง"></label>
+                <div class="admin-user-modal-actions"><button type="button" class="button button-outline" data-close-admin-password>ยกเลิก</button><button id="saveAdminPasswordBtn" type="submit" class="button button-primary"><i class="fas fa-key"></i> บันทึกรหัสผ่าน</button></div>
+            </form>
+        </section>
+    </div>
+
+    <script src="../config.js"></script>
+    <script src="../i18n.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>
