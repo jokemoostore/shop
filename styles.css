@@ -3336,3 +3336,169 @@ main {
     grid-template-columns:1fr !important;
   }
 }
+
+/* ========================================================================== */
+/* V21 — true desktop checkout: compact horizontal QR + visible actions      */
+/* ========================================================================== */
+@media (min-width:768px){
+  .checkout-modal{
+    width:min(680px,94vw)!important;
+    height:auto!important;
+    max-height:calc(100dvh - 36px)!important;
+    overflow:hidden!important;
+    border-radius:26px!important;
+  }
+
+  .checkout-modal-header{
+    padding:17px 22px 12px!important;
+  }
+  .checkout-modal-header h3{
+    font-size:1.42rem!important;
+  }
+  .checkout-steps{
+    padding:11px 22px 10px!important;
+  }
+
+  /* Let each step size naturally. If the screen is short, only the step body scrolls. */
+  .checkout-step-view[data-checkout-step="1"].is-active,
+  .checkout-step-view[data-checkout-step="2"].is-active{
+    display:block!important;
+    flex:none!important;
+    min-height:0!important;
+    max-height:calc(100dvh - 190px)!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    padding:14px 22px 16px!important;
+    scrollbar-width:thin!important;
+  }
+
+  .checkout-step-view[data-checkout-step="1"].is-active > .checkout-card,
+  .checkout-step-view[data-checkout-step="2"].is-active > .checkout-card{
+    display:block!important;
+    min-height:0!important;
+    max-height:none!important;
+    overflow:visible!important;
+    padding:17px!important;
+  }
+
+  .checkout-card-heading{
+    margin-bottom:12px!important;
+  }
+
+  .payment-method-card{
+    min-height:68px!important;
+    padding:12px 14px!important;
+  }
+
+  .payment-detail-panel{
+    padding:14px!important;
+    margin-top:10px!important;
+  }
+
+  /* Desktop QR becomes horizontal so the modal is no longer excessively tall. */
+  .payment-qr-layout{
+    display:grid!important;
+    grid-template-columns:180px minmax(0,1fr)!important;
+    grid-template-rows:auto auto 1fr!important;
+    grid-template-areas:
+      "qr label"
+      "qr due"
+      "qr caption"!important;
+    column-gap:22px!important;
+    row-gap:8px!important;
+    align-items:center!important;
+    text-align:left!important;
+  }
+  .payment-label{
+    grid-area:label!important;
+    align-self:end!important;
+    justify-self:start!important;
+    margin:0!important;
+    font-size:.8rem!important;
+  }
+  .payment-due-chip{
+    grid-area:due!important;
+    justify-self:start!important;
+    margin:0!important;
+    padding:7px 12px!important;
+  }
+  .payment-qr-box{
+    grid-area:qr!important;
+    width:180px!important;
+    height:180px!important;
+    max-width:180px!important;
+    max-height:180px!important;
+    margin:0!important;
+    padding:8px!important;
+    border-radius:18px!important;
+  }
+  .payment-qr-caption{
+    grid-area:caption!important;
+    justify-items:start!important;
+    align-self:start!important;
+    text-align:left!important;
+    gap:4px!important;
+  }
+  .payment-qr-caption h5{
+    font-size:1.08rem!important;
+    margin:0!important;
+  }
+  .payment-qr-caption p{
+    display:block!important;
+    font-size:.78rem!important;
+    line-height:1.45!important;
+    max-width:280px!important;
+  }
+
+  .checkout-price-summary{
+    margin:11px 0 0!important;
+    padding:12px 15px!important;
+    border-radius:16px!important;
+  }
+
+  /* Sticky inside the step scroller: actions never disappear below the viewport. */
+  .checkout-footer-actions{
+    position:sticky!important;
+    bottom:-1px!important;
+    z-index:20!important;
+    margin:10px -3px -2px!important;
+    padding:12px 3px 3px!important;
+    grid-template-columns:1fr 1.18fr!important;
+    gap:10px!important;
+    background:linear-gradient(180deg,rgba(248,251,255,0),#f8fbff 34%,#f8fbff 100%)!important;
+    border-top:0!important;
+  }
+  .checkout-footer-actions .button{
+    min-height:46px!important;
+    border-radius:14px!important;
+    font-size:.92rem!important;
+  }
+
+  .checkout-step-view[data-checkout-step="3"].is-active{
+    max-height:calc(100dvh - 190px)!important;
+    overflow-y:auto!important;
+  }
+
+  /* Short laptop screens: make the QR slightly smaller, not the buttons. */
+  @media (max-height:720px){
+    .checkout-step-view[data-checkout-step="1"].is-active,
+    .checkout-step-view[data-checkout-step="2"].is-active,
+    .checkout-step-view[data-checkout-step="3"].is-active{
+      max-height:calc(100dvh - 168px)!important;
+      padding-top:10px!important;
+      padding-bottom:10px!important;
+    }
+    .payment-qr-layout{
+      grid-template-columns:150px minmax(0,1fr)!important;
+      column-gap:16px!important;
+    }
+    .payment-qr-box{
+      width:150px!important;
+      height:150px!important;
+      max-width:150px!important;
+      max-height:150px!important;
+    }
+    .checkout-modal-header{padding:12px 18px 8px!important}
+    .checkout-steps{padding:8px 18px!important}
+  }
+}
