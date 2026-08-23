@@ -1123,16 +1123,16 @@ function renderPromotionBanner() {
     const currentFilter = activePromotionFilter || 'all';
     let sections = [];
     if (currentFilter === 'active') {
-        sections = [{ className: 'promotion-list-section promotion-list-section-primary', kicker: 'STARTED', title: 'เริ่ม', desc: 'โปรโมชั่นที่เปิดใช้งานและเริ่มแล้ว', list: activePromotions }];
+        sections = [{ className: 'promotion-list-section promotion-list-section-primary', kicker: 'STARTED', title: 'โปรโมชั่นที่เปิดใช้งานและเริ่มแล้ว', desc: 'สิทธิพิเศษรอคุณอยู่', list: activePromotions }];
     } else if (currentFilter === 'upcoming') {
-        sections = [{ className: 'promotion-list-section promotion-upcoming-section', kicker: 'WAITING', title: 'รอเริ่ม', desc: 'โปรโมชั่นที่ตั้งวันเริ่มไว้ล่วงหน้า', list: upcomingPromotions }];
+        sections = [{ className: 'promotion-list-section promotion-upcoming-section', kicker: 'WAITING', title: 'โปรโมชั่นที่ตั้งวันเริ่มไว้ล่วงหน้า', desc: 'สิทธิพิเศษที่กำลังจะเริ่ม', list: upcomingPromotions }];
     } else if (currentFilter === 'disabled') {
         sections = [{ className: 'promotion-list-section promotion-inactive-section', kicker: 'DISABLED', title: 'ปิดการใช้งาน', desc: 'โปรโมชั่นที่ปิดเองหรือสิ้นสุดแล้ว ยังเปิดดูรายละเอียดได้', list: inactivePromotions }];
     } else {
         sections = [
-            { className: 'promotion-list-section promotion-list-section-primary', kicker: 'STARTED', title: 'เริ่ม', desc: 'โปรโมชั่นที่เปิดใช้งานและเริ่มแล้ว', list: activePromotions },
-            { className: 'promotion-list-section promotion-upcoming-section', kicker: 'WAITING', title: 'รอเริ่ม', desc: 'โปรโมชั่นที่ตั้งวันเริ่มไว้ล่วงหน้า', list: upcomingPromotions },
-            { className: 'promotion-list-section promotion-inactive-section', kicker: 'DISABLED', title: 'ปิดการใช้งาน', desc: 'โปรโมชั่นที่ปิดเองหรือสิ้นสุดแล้ว ยังเปิดดูรายละเอียดได้', list: inactivePromotions }
+            { className: 'promotion-list-section promotion-list-section-primary', kicker: 'STARTED', title: 'โปรโมชั่นที่เปิดใช้งานและเริ่มแล้ว', desc: 'สิทธิพิเศษรอคุณอยู่', list: activePromotions },
+            { className: 'promotion-list-section promotion-upcoming-section', kicker: 'WAITING', title: 'โปรโมชั่นที่ตั้งวันเริ่มไว้ล่วงหน้า', desc: 'สิทธิพิเศษที่กำลังจะเริ่ม', list: upcomingPromotions },
+            { className: 'promotion-list-section promotion-inactive-section', kicker: 'DISABLED', title: 'โปรโมชั่นปิดการใช้งาน', desc: 'โปรโมชั่นที่ปิดเองหรือสิ้นสุดแล้ว ยังเปิดดูรายละเอียดได้', list: inactivePromotions }
         ];
     }
 
