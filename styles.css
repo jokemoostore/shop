@@ -1664,7 +1664,7 @@ main {
 .content-eyebrow { display: block; margin-bottom: 1px; color: #3e7ccf; font-size: .65rem; font-weight: 800; letter-spacing: .16em; }
 .content-topbar h1 { margin: 0; font-size: clamp(1.05rem, 2vw, 1.28rem); color: #11325d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .content-topbar-actions { display: flex; align-items: center; gap: 9px; }
-.mobile-menu-button { display: none; width: 44px; min-height: 44px; border-radius: 13px; color: #0b57c7; background: #eaf4ff; border: 1px solid #d8e9fb; }
+.mobile-menu-button { display: none; flex: 0 0 44px; width: 44px; min-height: 44px; border-radius: 13px; color: #0b57c7; background: #eaf4ff; border: 1px solid #d8e9fb; }
 
 .topbar-wheel-button,
 .cart-top-button {

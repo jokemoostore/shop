@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JokeMoo Store Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="admin.css">
+    <link rel="icon" type="image" href="../logo.png">
+</head>
+<body>
+    <nav class="topbar">
+        <div class="brand">
+            <img src="../logo.png" alt="JokeMoo Store" class="logo-circle" />
+            <div>
+                <h1>JokeMoo Admin</h1>
+                <p>จัดการสินค้าและรีวิวผ่าน Google Apps Script API</p>
+            </div>
+        </div>
+        <div class="actions">
+            <a href="../index.html" class="button button-outline"><i class="fas fa-home"></i> กลับหน้าหลัก</a>
+        </div>
+    </nav>
+
+    <main>
+        <section class="admin-panel">
+            <div class="admin-header">
+                <h2>แดชบอร์ดจัดการ</h2>
+                <p>ระบบเชื่อมต่อ Google Apps Script อัตโนมัติ ทำให้จัดการสินค้าและรีวิวได้ทันที</p>
+            </div>
+
+            <div class="admin-config">
+                <div class="admin-card api-card">
+                    <div>
+                        <h3>พร้อมใช้งานทันที</h3>
+                        <p>ระบบเชื่อมต่อ Google Apps Script โดยตรงจากหน้าเว็บ ไม่ต้องกรอกค่า API ด้วยตัวเอง</p>
+                    </div>
+                    <div class="api-card-info">
+                        <div>
+                            <span class="label">API URL</span>
+                            <code>ใช้ค่าจากไฟล์ config.js</code>
+                        </div>
+                        <div>
+                            <span class="label">Admin Key</span>
+                            <code>ใช้ค่าจากไฟล์ config.js</code>
+                        </div>
+                        <div id="apiStatus" class="status-badge status-loading">กำลังตรวจสอบการเชื่อมต่อ...</div>
+                        <div class="maintenance-control">
+                            <span class="label">โหมดอัพเดทเว็บ</span>
+                            <div class="maintenance-actions">
+                                <button id="maintenanceToggleBtn" class="button button-secondary">เปิดระบบ</button>
+                                <span id="maintenanceStatus" class="status-badge status-error">ปิดปรับปรุง</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="adminToast" class="toast"></div>
+            </div>
+
+            <div class="admin-tab-bar">
+                <button type="button" class="admin-tab-button active" data-target="productSection">จัดการสินค้า</button>
+                <button type="button" class="admin-tab-button" data-target="reviewSection">จัดการรีวิว</button>
+                <button type="button" class="admin-tab-button" data-target="promoSection">จัดการโปรโมชั่น</button>
+            </div>
+
+            <div class="admin-grid">
+                <div id="productSection" class="admin-section">
+                    <div class="admin-card admin-data-card">
+                        <div class="admin-card-header">
+                            <h3>จัดการสินค้า</h3>
+                            <div class="admin-header-actions">
+                                <button id="addProductBtn" class="button button-primary">เพิ่มสินค้าใหม่</button>
+                                <button id="refreshProductsBtn" class="button button-outline">รีเฟรช</button>
+                            </div>
+                        </div>
+                        <div id="productTable" class="admin-table"></div>
+                    </div>
+                </div>
+
+                <div id="reviewSection" class="admin-section hidden">
+                    <div class="admin-card admin-data-card">
+                        <div class="admin-card-header">
+                            <div>
+                                <h3>จัดการรีวิว</h3>
+                            </div>
+                            <div class="review-search-group">
+                                <input id="reviewSearchInput" type="search" placeholder="ค้นหาด้วยวันที่ ชื่อ หรือข้อความ" />
+                            </div>
+                            <button id="addReviewBtn" class="button button-primary">เพิ่มรีวิวใหม่</button>
+                            <button id="refreshReviewsBtn" class="button button-outline">รีเฟรช</button>
+                        </div>
+                        <div id="reviewTable" class="admin-table"></div>
+                    </div>
+                </div>
+
+                <div id="promoSection" class="admin-section hidden">
+                    <div class="admin-card admin-data-card">
+                        <div class="admin-card-header">
+                            <div>
+                                <h3>จัดการโปรโมชั่น</h3>
+                                <p>เพิ่ม แก้ไข หรือปิดใช้งานโปรโมชั่นที่จะโชว์บนหน้าร้าน</p>
+                            </div>
+                            <div class="admin-header-actions">
+                                <button id="addPromotionBtn" class="button button-primary">เพิ่มโปรโมชั่น</button>
+                                <button id="refreshPromotionsBtn" class="button button-outline">รีเฟรช</button>
+                            </div>
+                        </div>
+                        <div id="promotionTable" class="admin-table"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 JokeMoo Store Admin</p>
+    </footer>
+    <script src="../config.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>

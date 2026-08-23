@@ -2696,6 +2696,15 @@ function getHashRoute() {
 
 function closeSidebar() {
     document.body.classList.remove('sidebar-open');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    if (sidebarToggle) sidebarToggle.setAttribute('aria-expanded', 'false');
+}
+
+function toggleSidebar() {
+    const isOpen = !document.body.classList.contains('sidebar-open');
+    document.body.classList.toggle('sidebar-open', isOpen);
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    if (sidebarToggle) sidebarToggle.setAttribute('aria-expanded', String(isOpen));
 }
 
 function initAppHeroImage() {
@@ -2869,7 +2878,10 @@ function initAppNavigation() {
         button.addEventListener('click', () => navigateToPage('products', button.dataset.productFilter || 'all'));
     });
 
-    if (sidebarToggle) sidebarToggle.addEventListener('click', () => document.body.classList.add('sidebar-open'));
+    if (sidebarToggle) {
+        sidebarToggle.setAttribute('aria-expanded', 'false');
+        sidebarToggle.addEventListener('click', toggleSidebar);
+    }
     if (sidebarClose) sidebarClose.addEventListener('click', closeSidebar);
     if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', closeSidebar);
 
