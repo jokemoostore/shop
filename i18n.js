@@ -12,6 +12,7 @@
     'แพ็คเกจทั้งหมด':'All Packages',
     'แพ็กเกจทั้งหมด':'All Packages',
     'หนังแนะนำ':'Movie Picks',
+    'หนังแนะนำจากทางร้าน':'Store Picks',
     'หนังติด TOP':'Top Movies',
     'หนังที่ใกล้จะเข้า':'Coming Soon',
     'ใกล้จะเข้า':'Coming Soon',
@@ -254,7 +255,7 @@
 
   const nodeOriginal = new WeakMap();
   const attrOriginal = new WeakMap();
-  let lang = (localStorage.getItem(STORAGE_KEY) || 'th').toLowerCase() === 'en' ? 'en' : 'th';
+  let lang = 'th'; // V30: storefront always starts in Thai until the user presses the language switcher
   let observer = null;
 
   function translateString(text) {

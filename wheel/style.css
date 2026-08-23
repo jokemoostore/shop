@@ -1228,3 +1228,16 @@ body { overflow-x: hidden; }
 #wheel { will-change:auto; }
 body.is-spinning #wheel, #wheel.spinning { will-change:transform; }
 button,input,.btn,.spin-btn { transition-property:transform,background-color,border-color,box-shadow,opacity!important; }
+
+/* V35 — wheel mobile/browser compatibility */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;max-width:100%;overflow-x:hidden}
+body{max-width:100%;overflow-x:hidden;-webkit-tap-highlight-color:transparent;padding-left:max(8px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px));padding-bottom:max(12px,env(safe-area-inset-bottom,0px))}
+button,input,select,textarea{font:inherit;max-width:100%}button,a,[role="button"]{touch-action:manipulation}
+@media(max-width:900px){
+  .page-container,.container,.main-content,.top-section{width:100%!important;max-width:100%!important;min-width:0!important}
+  .wheel-section{width:100%!important;max-width:100%!important;overflow:visible!important}
+  .wheel-container{width:min(82vw,390px)!important;height:min(82vw,390px)!important;max-width:390px!important;max-height:390px!important;margin-inline:auto!important}
+  .code-card,.result-content{width:100%!important;max-width:100%!important;min-width:0!important}
+  input,select,textarea{font-size:16px!important}
+}
+@media(max-width:390px){.wheel-container{width:min(78vw,310px)!important;height:min(78vw,310px)!important}.wheel-section{padding-left:8px!important;padding-right:8px!important}}

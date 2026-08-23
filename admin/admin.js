@@ -117,7 +117,9 @@ const adminState = {
   products: [],
   reviews: [],
   promotions: [],
+  promoFilter: 'all',
   movies: [],
+  movieFilter: 'all',
   discounts: [],
   orders: [],
   adminUsers: [],
@@ -332,6 +334,20 @@ async function createQrImageDataUrl(file) {
   throw new Error('รูป QR มีข้อมูลมากเกินไป กรุณาใช้รูป QR ที่เรียบง่ายหรือใส่ URL รูปแทน');
 }
 
+async function createBankImageDataUrl(file) {
+  const raw = await readFileAsDataUrl(file);
+  const attempts = [
+    [320, 320, 0.92],
+    [240, 240, 0.88],
+    [180, 180, 0.84],
+  ];
+  for (const [maxW,maxH,quality] of attempts) {
+    const data = await resizeImageDataUrl(raw, maxW, maxH, quality);
+    if (data.length < 90000) return data;
+  }
+  throw new Error('รูปธนาคารมีขนาดใหญ่เกินไป กรุณาใช้รูปที่เล็กลง');
+}
+
 function createNewReview() {
   const newReview = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -460,7 +476,7 @@ const ADMIN_SESSION_MS = ADMIN_SESSION_DAYS * 24 * 60 * 60 * 1000;
 const ROOT_ADMIN_USERNAME = 'adminbank';
 const ROOT_ADMIN_FALLBACK = Object.freeze({
   username: ROOT_ADMIN_USERNAME,
-  displayName: 'Dev Bank',
+  displayName: 'Bank Admin',
   role: 'owner',
   enabled: true,
   salt: '+bsvLvT4FNwB5KWQd7MweA==',
@@ -483,11 +499,12 @@ function parseMoviePromotionRecord(promo) {
     id: promo.id,
     title: meta.title || fallbackTitle || '',
     titleEn: meta.titleEn || '',
-    type: meta.type === 'upcoming' ? 'upcoming' : 'top',
+    type: (meta.type === 'recommended' || meta.recommended === true) ? 'recommended' : (meta.type === 'upcoming' ? 'upcoming' : 'top'),
     rank: Number(meta.rank) || 0,
     releaseDate: meta.releaseDate || formatDateForDateInput(promo.startAt),
     note: meta.note || '',
     noteEn: meta.noteEn || '',
+    watchUrl: String(meta.watchUrl || meta.watchLink || '').trim(),
     image: promo.image || promo.imageUrl || '',
     enabled: meta.enabled !== false,
     synced: true,
@@ -569,6 +586,7 @@ function parseAdminUserPromotionRecord(promo) {
     id: promo.id, username, displayName: String(meta.displayName || username), role: meta.role === 'owner' ? 'owner' : 'admin',
     enabled: meta.enabled !== false, salt: String(meta.salt || ''), hash: String(meta.hash || ''),
     iterations: Math.max(60000, Number(meta.iterations) || 120000), createdAt: meta.createdAt || '', updatedAt: meta.updatedAt || '',
+    lastLoginAt: meta.lastLoginAt || '', lastSeenAt: meta.lastSeenAt || '', lastActivityAt: meta.lastActivityAt || '', lastLogoutAt: meta.lastLogoutAt || '',
     isRoot: username === ROOT_ADMIN_USERNAME || meta.role === 'owner', synced: true
   };
 }
@@ -577,7 +595,7 @@ function adminUserToPromotionPayload(user) {
   const username = String(user.username || '').trim().toLowerCase();
   return {
     title: `${ADMIN_USER_PROMO_PREFIX}|${username}`,
-    description: JSON.stringify({ username, displayName: String(user.displayName || username), role: user.isRoot || user.role === 'owner' ? 'owner' : 'admin', enabled: user.enabled !== false, salt: user.salt, hash: user.hash, iterations: Number(user.iterations) || 120000, createdAt: user.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() }),
+    description: JSON.stringify({ username, displayName: String(user.displayName || username), role: user.isRoot || user.role === 'owner' ? 'owner' : 'admin', enabled: user.enabled !== false, salt: user.salt, hash: user.hash, iterations: Number(user.iterations) || 120000, createdAt: user.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString(), lastLoginAt: user.lastLoginAt || '', lastSeenAt: user.lastSeenAt || '', lastActivityAt: user.lastActivityAt || '', lastLogoutAt: user.lastLogoutAt || '' }),
     startAt: '', endAt: '', image: '', enabled: false
   };
 }
@@ -600,11 +618,12 @@ function movieToPromotionPayload(movie) {
     description: JSON.stringify({
       title: cleanTitle,
       titleEn: String(movie.titleEn || '').trim(),
-      type: movie.type === 'upcoming' ? 'upcoming' : 'top',
+      type: movie.type === 'recommended' ? 'recommended' : (movie.type === 'upcoming' ? 'upcoming' : 'top'),
       rank: Number(movie.rank) || 0,
       releaseDate: String(movie.releaseDate || '').trim(),
       note: String(movie.note || '').trim(),
       noteEn: String(movie.noteEn || '').trim(),
+      watchUrl: String(movie.watchUrl || '').trim(),
       enabled: movie.enabled !== false,
     }),
     startAt: String(movie.releaseDate || '').trim(),
@@ -617,8 +636,8 @@ function movieToPromotionPayload(movie) {
 function createNewMovie() {
   const movie = {
     id: `new-movie-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
-    title: '', titleEn: '', type: 'top', rank: (adminState.movies.filter(m => m.type === 'top').length + 1),
-    releaseDate: '', note: '', noteEn: '', image: '', enabled: true, synced: false,
+    title: '', titleEn: '', type: ['top','upcoming','recommended'].includes(adminState.movieFilter) ? adminState.movieFilter : 'top', rank: (adminState.movies.filter(m => m.type === 'top').length + 1),
+    releaseDate: '', note: '', noteEn: '', watchUrl: '', image: '', enabled: true, synced: false,
   };
   adminState.movies.unshift(movie);
   renderMovieTable(adminState.movies);
@@ -633,29 +652,37 @@ function renderMovieTable(movies) {
     movieTable.innerHTML = '<div class="empty-state movie-admin-empty"><i class="fas fa-clapperboard"></i><strong>ยังไม่มีหนังแนะนำ</strong><span>กด “เพิ่มหนังใหม่” เพื่อเริ่มจัดหน้าแนะนำหนัง</span></div>';
     return;
   }
-  list.sort((a,b) => a.type === b.type ? ((a.type === 'top' ? (Number(a.rank)||999)-(Number(b.rank)||999) : String(a.releaseDate||'9999').localeCompare(String(b.releaseDate||'9999')))) : (a.type === 'top' ? -1 : 1));
-  movieTable.innerHTML = `<div class="admin-movie-grid">${list.map((movie) => {
+  const typeOrder = { top: 0, upcoming: 1, recommended: 2 };
+  list.sort((a,b) => a.type === b.type ? (a.type === 'top' ? (Number(a.rank)||999)-(Number(b.rank)||999) : String(a.releaseDate||'9999').localeCompare(String(b.releaseDate||'9999'))) : ((typeOrder[a.type] ?? 9) - (typeOrder[b.type] ?? 9)));
+  const filteredList = adminState.movieFilter && adminState.movieFilter !== 'all' ? list.filter(m => m.type === adminState.movieFilter) : list;
+  if (!filteredList.length) {
+    const labels = { top: 'หนังติด TOP', upcoming: 'หนังใกล้เข้า', recommended: 'หนังแนะนำจากทางร้าน' };
+    movieTable.innerHTML = `<div class="empty-state movie-admin-empty"><i class="fas fa-clapperboard"></i><strong>ยังไม่มี${labels[adminState.movieFilter] || 'หนังแนะนำ'}</strong><span>กด “เพิ่มหนังใหม่” เพื่อเพิ่มรายการในหมวดนี้</span></div>`;
+    return;
+  }
+  movieTable.innerHTML = `<div class="admin-movie-grid">${filteredList.map((movie) => {
     const release = formatDateForDateInput(movie.releaseDate);
     return `
-      <article class="admin-movie-card" data-id="${movie.id}">
+      <article class="admin-movie-card" data-id="${movie.id}" data-movie-type="${movie.type}">
         <div class="admin-movie-poster">
           ${movie.image ? `<img src="${normalizeReviewImageUrl(movie.image)}" alt="${movie.title || 'Movie'}" loading="lazy">` : `<div class="admin-movie-placeholder"><i class="fas fa-film"></i><span>POSTER</span></div>`}
-          <span class="admin-movie-type ${movie.type === 'upcoming' ? 'upcoming' : 'top'}">${movie.type === 'upcoming' ? '<i class="fas fa-clock"></i> ใกล้จะเข้า' : `<i class="fas fa-trophy"></i> TOP ${movie.rank || '-'}`}</span>
+          <span class="admin-movie-type ${movie.type}">${movie.type === 'upcoming' ? '<i class="fas fa-clock"></i> ใกล้จะเข้า' : (movie.type === 'recommended' ? '<i class="fas fa-heart"></i> ร้านแนะนำ' : `<i class="fas fa-trophy"></i> TOP ${movie.rank || '-'}`)}</span>
         </div>
         <div class="admin-movie-content">
           <div class="admin-movie-card-header">
-            <div><strong>${movie.title || 'หนังใหม่'}</strong><small>${movie.titleEn || (movie.type === 'upcoming' ? 'Coming Soon' : 'Top Movie')}</small></div>
+            <div><strong>${movie.title || 'หนังใหม่'}</strong><small>${movie.titleEn || (movie.type === 'upcoming' ? 'Coming Soon' : (movie.type === 'recommended' ? 'Store Pick' : 'Top Movie'))}</small></div>
             <span class="admin-status-badge ${movie.enabled !== false ? 'status-success' : 'status-error'}">${movie.enabled !== false ? 'เปิดแสดง' : 'ปิดแสดง'}</span>
           </div>
           <div class="admin-movie-fields">
-            <div class="field-row"><label>ชื่อหนัง</label><input data-field="title" value="${movie.title || ''}" placeholder="ชื่อหนังภาษาไทย"></div>
-            <div class="field-row"><label>ชื่อภาษาอังกฤษ</label><input data-field="titleEn" value="${movie.titleEn || ''}" placeholder="English title"></div>
-            <div class="field-row"><label>ประเภทการแสดง</label><select data-field="type"><option value="top" ${movie.type === 'top' ? 'selected' : ''}>หนังติด TOP</option><option value="upcoming" ${movie.type === 'upcoming' ? 'selected' : ''}>หนังที่ใกล้จะเข้า</option></select></div>
+            <div class="field-row"><label>ชื่อหนังภาษาไทย</label><input data-field="title" value="${movie.title || ''}" placeholder="ชื่อหนังภาษาไทย"></div>
+            <div class="field-row"><label>ชื่อหนังภาษาอังกฤษ</label><input data-field="titleEn" value="${movie.titleEn || ''}" placeholder="English title"></div>
+            <div class="field-row"><label>หมวดหนัง</label><select data-field="type"><option value="top" ${movie.type === 'top' ? 'selected' : ''}>หนังติด TOP</option><option value="upcoming" ${movie.type === 'upcoming' ? 'selected' : ''}>หนังใกล้เข้า</option><option value="recommended" ${movie.type === 'recommended' ? 'selected' : ''}>หนังแนะนำจากทางร้าน</option></select></div>
             <div class="field-row movie-rank-field"><label>อันดับ TOP</label><input type="number" min="1" max="99" data-field="rank" value="${movie.rank || 1}"></div>
-            <div class="field-row"><label>วันที่กำหนดเข้า</label><input type="date" data-field="releaseDate" value="${release}"></div>
+            <div class="field-row movie-release-field"><label>วันที่หนังเข้า</label><input type="date" data-field="releaseDate" value="${release}"></div>
             <div class="field-row"><label>สถานะ</label><select data-field="enabled"><option value="true" ${movie.enabled !== false ? 'selected' : ''}>เปิดแสดง</option><option value="false" ${movie.enabled === false ? 'selected' : ''}>ปิดแสดง</option></select></div>
-            <div class="field-row field-span-2"><label>รายละเอียดหนัง</label><textarea data-field="note" placeholder="รายละเอียดสั้น ๆ ที่แสดงหน้าเว็บ">${movie.note || ''}</textarea></div>
+            <div class="field-row field-span-2"><label>รายละเอียดหนังภาษาไทย</label><textarea data-field="note" placeholder="รายละเอียดสั้น ๆ ที่แสดงหน้าเว็บ">${movie.note || ''}</textarea></div>
             <div class="field-row field-span-2"><label>รายละเอียดภาษาอังกฤษ</label><textarea data-field="noteEn" placeholder="Short English description">${movie.noteEn || ''}</textarea></div>
+            <div class="field-row field-span-2 movie-watch-url-field"><label><i class="fas fa-circle-play"></i> ลิงก์รับชมหนัง</label><input data-field="watchUrl" value="${movie.watchUrl || ''}" placeholder="เช่น https://www.netflix.com/title/..."><small>ปุ่ม “รับชมตอนนี้” ที่หน้าร้านจะพาลูกค้าไปยังลิงก์นี้</small></div>
             <div class="field-row field-span-2"><label>URL รูปโปสเตอร์</label><input data-field="imageUrl" value="${movie.image || ''}" placeholder="https://... หรือเลือกไฟล์ด้านล่าง"></div>
             <div class="field-row field-span-2 file-row"><label class="file-input-button"><input class="admin-movie-file" type="file" accept="image/*"><span><i class="fas fa-image"></i> เลือกโปสเตอร์</span></label><span class="file-note">ระบบจะย่อรูปก่อนบันทึก เพื่อลดขนาดและทำให้เว็บลื่น</span></div>
           </div>
@@ -674,11 +701,14 @@ function updateAdminStats() {
   set('reviewStatFive', adminState.reviews.filter(r => Number(r.rating) === 5).length);
   set('reviewStatImages', adminState.reviews.filter(r => r.imageUrl).length);
   set('promoStatTotal', adminState.promotions.length);
-  set('promoStatActive', adminState.promotions.filter(p => p.enabled).length);
-  set('promoStatInactive', adminState.promotions.filter(p => !p.enabled).length);
+  const promoStatuses = adminState.promotions.map(p => getPromotionGroupKey(p));
+  set('promoStatActive', promoStatuses.filter(v => v === 'started').length);
+  set('promoStatWaiting', promoStatuses.filter(v => v === 'waiting').length);
+  set('promoStatInactive', promoStatuses.filter(v => v === 'disabled').length);
   set('movieStatTotal', adminState.movies.length);
   set('movieStatTop', adminState.movies.filter(m => m.type === 'top' && m.enabled !== false).length);
   set('movieStatUpcoming', adminState.movies.filter(m => m.type === 'upcoming' && m.enabled !== false).length);
+  set('movieStatRecommended', adminState.movies.filter(m => m.type === 'recommended' && m.enabled !== false).length);
 
   const discounts = Array.isArray(adminState.discounts) ? adminState.discounts : [];
   const discountTotal = document.getElementById('discountStatTotal');
@@ -714,21 +744,49 @@ function getPromotionStatusClass(promo) {
   return 'status-error';
 }
 
+function getPromotionGroupKey(promo) {
+  if (!promo || !promo.enabled) return 'disabled';
+  const now = new Date();
+  const start = parsePromotionDate(promo.startAt);
+  const end = parsePromotionDate(promo.endAt);
+  if (start) start.setHours(0, 0, 0, 0);
+  if (end) end.setHours(23, 59, 59, 999);
+  if (start && start > now) return 'waiting';
+  if (end && end < now) return 'disabled';
+  return 'started';
+}
+
+function getPromotionGroupMeta(key) {
+  if (key === 'waiting') return { label: 'รอเริ่ม', kicker: 'WAITING', icon: 'fa-clock', cls: 'waiting', note: 'โปรโมชั่นที่เปิดไว้ แต่ยังไม่ถึงวันเริ่ม' };
+  if (key === 'disabled') return { label: 'ปิดการใช้งาน', kicker: 'DISABLED', icon: 'fa-circle-pause', cls: 'disabled', note: 'โปรโมชั่นที่ปิดเองหรือสิ้นสุดแล้ว' };
+  return { label: 'เริ่ม', kicker: 'STARTED', icon: 'fa-circle-check', cls: 'started', note: 'โปรโมชั่นที่กำลังเปิดให้ลูกค้าใช้งาน' };
+}
+
 function createNewPromotion() {
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const asDateInput = (date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+  const filter = adminState.promoFilter || 'all';
   const newPromotion = {
     id: `new-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     title: '',
     description: '',
     image: '',
-    enabled: false,
-    startAt: '',
+    enabled: filter !== 'disabled',
+    startAt: filter === 'waiting' ? asDateInput(tomorrow) : (filter === 'started' ? asDateInput(today) : ''),
     endAt: '',
     synced: false,
   };
   adminState.promotions.unshift(newPromotion);
   renderPromotionTable(adminState.promotions);
   updateAdminStats();
-  showAdminToast('เพิ่มโปรโมชั่นใหม่เรียบร้อยแล้ว กรุณากดบันทึกเพื่อเก็บข้อมูล', 'success');
+  showAdminToast('เพิ่มโปรโมชั่นใหม่แล้ว กรุณากรอกข้อมูลและกดบันทึก', 'success');
 }
 
 async function fetchAdminGet(action, params = {}) {
@@ -794,6 +852,16 @@ async function adminApiPost(action, payload = {}) {
   }
 
   notifyIndexReload();
+  return result.data || result;
+}
+
+async function adminApiPostSilent(action, payload = {}) {
+  if (!adminState.apiUrl) throw new Error('กรุณาใส่ Google Script API URL ก่อน');
+  const requestBody = new URLSearchParams({ action, apiKey: adminState.apiKey, ...payload }).toString();
+  const response = await fetch(adminState.apiUrl, { method:'POST', mode:'cors', headers:{'Accept':'application/json','Content-Type':'application/x-www-form-urlencoded'}, body:requestBody });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const result = await response.json();
+  if (!result || !result.success) throw new Error((result && result.message) || 'API error');
   return result.data || result;
 }
 
@@ -931,83 +999,61 @@ function renderProductTable(products) {
 
 function renderPromotionTable(promotions) {
   if (!promotionTable) return;
-  promotions = (Array.isArray(promotions) ? promotions : []).filter((promo) => !isMoviePromotionRecord(promo));
-  if (!promotions || !promotions.length) {
-    promotionTable.innerHTML = '<div class="empty-state">ยังไม่มีโปรโมชั่นให้จัดการ</div>';
+  const list = (Array.isArray(promotions) ? promotions : []).filter((promo) => !isMoviePromotionRecord(promo));
+  const filter = adminState.promoFilter || 'all';
+  const filtered = filter === 'all' ? list.slice() : list.filter((promo) => getPromotionGroupKey(promo) === filter);
+  const sortPromo = (a, b) => {
+    const av = parsePromotionDate(a.startAt); const bv = parsePromotionDate(b.startAt);
+    return (bv ? bv.getTime() : 0) - (av ? av.getTime() : 0);
+  };
+  filtered.sort(sortPromo);
+
+  if (!filtered.length) {
+    const meta = filter === 'all'
+      ? { label: 'โปรโมชั่นทั้งหมด', icon: 'fa-percent', note: 'ยังไม่มีโปรโมชั่นให้จัดการในตอนนี้' }
+      : getPromotionGroupMeta(filter);
+    promotionTable.innerHTML = `<div class="empty-state admin-promo-filter-empty"><i class="fas ${meta.icon}"></i><strong>ยังไม่มี${meta.label}</strong><span>${meta.note || 'กด “เพิ่มโปรโมชั่น” เพื่อสร้างรายการใหม่'}</span></div>`;
     return;
   }
 
-  promotionTable.innerHTML = `
-    <div class="admin-product-grid">
-      ${promotions.map((promo) => {
-        const startDateValue = formatDateForDateInput(promo.startAt);
-        const endDateValue = formatDateForDateInput(promo.endAt);
-        return `
-        <article class="admin-product-card" data-id="${promo.id}">
-          <div class="admin-product-card-header">
-            <div>
-              <strong>${promo.title || 'โปรโมชั่นใหม่'}</strong>
-              <div class="admin-card-meta">
-                <span>${promo.description || 'รายละเอียดโปรโมชั่น'}</span>
-                <span class="admin-status-badge ${getPromotionStatusClass(promo)}">${getPromotionStatus(promo)}</span>
-              </div>
-            </div>
-            <div class="admin-product-card-actions">
-              <button type="button" class="button button-outline admin-toggle-promotion-edit" data-id="${promo.id}">แก้ไข</button>
-              <button type="button" class="button button-secondary admin-delete-promotion" data-id="${promo.id}"><i class="fas fa-trash-alt"></i></button>
+  const renderCard = (promo) => {
+    const startDateValue = formatDateForDateInput(promo.startAt);
+    const endDateValue = formatDateForDateInput(promo.endAt);
+    return `
+      <article class="admin-product-card admin-promotion-card" data-id="${promo.id}">
+        <div class="admin-product-card-header">
+          <div>
+            <strong>${promo.title || 'โปรโมชั่นใหม่'}</strong>
+            <div class="admin-card-meta">
+              <span>${promo.description || 'รายละเอียดโปรโมชั่น'}</span>
+              <span class="admin-status-badge ${getPromotionStatusClass(promo)}">${getPromotionStatus(promo)}</span>
             </div>
           </div>
-          <div class="admin-product-preview">
-            ${promo.image ? `<img src="${normalizeReviewImageUrl(promo.image)}" alt="${promo.title || 'โปรโมชั่น'}">` : `<div class="empty-image">ยังไม่มีรูปโปรโมชั่น</div>`}
+          <div class="admin-product-card-actions">
+            <button type="button" class="button button-outline admin-toggle-promotion-edit" data-id="${promo.id}">แก้ไข</button>
+            <button type="button" class="button button-secondary admin-delete-promotion" data-id="${promo.id}"><i class="fas fa-trash-alt"></i></button>
           </div>
-          <div class="admin-edit-panel hidden">
-            <div class="admin-product-fields">
-              <div class="field-row">
-                <label>หัวข้อโปรโมชั่น</label>
-                <input type="text" data-id="${promo.id}" data-field="title" value="${promo.title || ''}" placeholder="เช่น ลด 10% ทุกสินค้า">
-              </div>
-              <div class="field-row">
-                <label>คำอธิบาย</label>
-                <textarea data-id="${promo.id}" data-field="description" placeholder="รายละเอียดโปรโมชั่น">${promo.description || ''}</textarea>
-              </div>
-              <div class="field-row">
-                <label>วันที่เริ่มโปรโมชั่น</label>
-                <input type="date" data-id="${promo.id}" data-field="startAt" value="${startDateValue}">
-              </div>
-              <div class="field-row">
-                <label>วันที่สิ้นสุดโปรโมชั่น</label>
-                <input type="date" data-id="${promo.id}" data-field="endAt" value="${endDateValue}">
-              </div>
-              <div class="field-row field-note-row">
-                <span class="field-note">เลือกวันที่เริ่มและวันที่สิ้นสุด เพื่อให้ระบบเก็บโปรโมชั่นได้ตรง</span>
-              </div>
-              <div class="field-row">
-                <label>รูปประกอบ</label>
-                <input type="text" data-id="${promo.id}" data-field="imageUrl" value="${promo.image || ''}" placeholder="ใส่ URL รูปหรือเลือกไฟล์">
-              </div>
-              <div class="field-row">
-                <label>สถานะ</label>
-                <select data-id="${promo.id}" data-field="enabled">
-                  <option value="true" ${promo.enabled ? 'selected' : ''}>เปิดใช้งาน</option>
-                  <option value="false" ${!promo.enabled ? 'selected' : ''}>ปิดใช้งาน</option>
-                </select>
-              </div>
-              <div class="field-row file-row">
-                <label class="file-input-button">
-                  <input class="admin-file-input" type="file" accept="image/*" data-id="${promo.id}" data-field="image">
-                  <span><i class="fas fa-image"></i> เลือกรูป</span>
-                </label>
-                <span class="file-note">รองรับ JPG/PNG/GIF/WEBP สูงสุด 5MB</span>
-              </div>
-            </div>
+        </div>
+        <div class="admin-product-preview">
+          ${promo.image ? `<img src="${normalizeReviewImageUrl(promo.image)}" alt="${promo.title || 'โปรโมชั่น'}">` : `<div class="empty-image">ยังไม่มีรูปโปรโมชั่น</div>`}
+        </div>
+        <div class="admin-edit-panel hidden">
+          <div class="admin-product-fields">
+            <div class="field-row"><label>หัวข้อโปรโมชั่น</label><input type="text" data-id="${promo.id}" data-field="title" value="${promo.title || ''}" placeholder="เช่น ลด 10% ทุกสินค้า"></div>
+            <div class="field-row"><label>คำอธิบาย</label><textarea data-id="${promo.id}" data-field="description" placeholder="รายละเอียดโปรโมชั่น">${promo.description || ''}</textarea></div>
+            <div class="field-row"><label>วันที่เริ่มโปรโมชั่น</label><input type="date" data-id="${promo.id}" data-field="startAt" value="${startDateValue}"></div>
+            <div class="field-row"><label>วันที่สิ้นสุดโปรโมชั่น</label><input type="date" data-id="${promo.id}" data-field="endAt" value="${endDateValue}"></div>
+            <div class="field-row field-note-row"><span class="field-note">สถานะเปลี่ยนอัตโนมัติจากวันเริ่ม/สิ้นสุด และการเปิด-ปิดโปรโมชั่น</span></div>
+            <div class="field-row"><label>รูปประกอบ</label><input type="text" data-id="${promo.id}" data-field="imageUrl" value="${promo.image || ''}" placeholder="ใส่ URL รูปหรือเลือกไฟล์"></div>
+            <div class="field-row"><label>สถานะ</label><select data-id="${promo.id}" data-field="enabled"><option value="true" ${promo.enabled ? 'selected' : ''}>เปิดใช้งานโปรโมชั่น</option><option value="false" ${!promo.enabled ? 'selected' : ''}>ปิดการใช้งาน (ยังแสดงหน้าเว็บ)</option></select></div>
+            <div class="field-row file-row"><label class="file-input-button"><input class="admin-file-input" type="file" accept="image/*" data-id="${promo.id}" data-field="image"><span><i class="fas fa-image"></i> เลือกรูป</span></label><span class="file-note">รองรับ JPG/PNG/GIF/WEBP สูงสุด 5MB</span></div>
           </div>
-          <div class="admin-product-card-footer">
-            <button type="button" class="button button-primary admin-save-promotion" data-id="${promo.id}">บันทึก</button>
-          </div>
-        </article>
-      `}).join('')}
-    </div>
-  `;
+        </div>
+        <div class="admin-product-card-footer"><button type="button" class="button button-primary admin-save-promotion" data-id="${promo.id}">บันทึก</button></div>
+      </article>`;
+  };
+
+  promotionTable.innerHTML = `<div class="admin-product-grid admin-promotion-filter-grid">${filtered.map(renderCard).join('')}</div>`;
 }
 
 function getDiscountLiveStatus(discount) {
@@ -1219,6 +1265,19 @@ function attachAdminEvents() {
   if (adminSidebarClose) adminSidebarClose.addEventListener('click', () => document.body.classList.remove('admin-sidebar-open'));
   if (adminSidebarBackdrop) adminSidebarBackdrop.addEventListener('click', () => document.body.classList.remove('admin-sidebar-open'));
 
+  document.querySelectorAll('.admin-nav-group-toggle').forEach((toggle) => {
+    toggle.addEventListener('click', () => {
+      const group = toggle.closest('.admin-nav-group');
+      if (!group) return;
+      const willOpen = !group.classList.contains('is-open');
+      document.querySelectorAll('.admin-nav-group').forEach((item) => {
+        item.classList.toggle('is-open', item === group && willOpen);
+        const btn = item.querySelector('.admin-nav-group-toggle');
+        if (btn) btn.setAttribute('aria-expanded', item.classList.contains('is-open') ? 'true' : 'false');
+      });
+    });
+  });
+
   const adminTabButtons = document.querySelectorAll('.admin-tab-button');
   adminTabButtons.forEach((button) => {
     button.addEventListener('click', () => {
@@ -1226,6 +1285,23 @@ function attachAdminEvents() {
       if (!targetId) return;
 
       adminTabButtons.forEach((btn) => btn.classList.toggle('active', btn === button));
+      const parentGroup = button.closest('.admin-nav-group');
+      if (parentGroup) {
+        document.querySelectorAll('.admin-nav-group').forEach((group) => {
+          const open = group === parentGroup;
+          group.classList.toggle('is-open', open);
+          const toggle = group.querySelector('.admin-nav-group-toggle');
+          if (toggle) toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+      }
+      if (targetId === 'movieSection') {
+        adminState.movieFilter = button.dataset.movieFilter || 'all';
+        renderMovieTable(adminState.movies);
+      }
+      if (targetId === 'promoSection') {
+        adminState.promoFilter = button.dataset.promoFilter || 'all';
+        renderPromotionTable(adminState.promotions);
+      }
       document.querySelectorAll('.admin-section').forEach((section) => {
         section.classList.toggle('hidden', section.id !== targetId);
       });
@@ -1242,6 +1318,11 @@ function attachAdminEvents() {
 
   if (movieTable) {
     movieTable.addEventListener('change', async (event) => {
+      const typeSelect = event.target.closest('[data-field="type"]');
+      if (typeSelect) {
+        const card = typeSelect.closest('.admin-movie-card');
+        if (card) card.dataset.movieType = typeSelect.value;
+      }
       const fileInput = event.target.closest('.admin-movie-file');
       if (!fileInput || !fileInput.files || !fileInput.files[0]) return;
       const card = fileInput.closest('.admin-movie-card');
@@ -1254,7 +1335,8 @@ function attachAdminEvents() {
         card.dataset.pendingImage = dataUrl;
         const preview = card.querySelector('.admin-movie-poster');
         const badge = preview ? preview.querySelector('.admin-movie-type')?.outerHTML || '' : '';
-        if (preview) preview.innerHTML = `<img src="${dataUrl}" alt="Preview poster">${badge}`;
+        const pickBadge = preview ? preview.querySelector('.admin-movie-pick-badge')?.outerHTML || '' : '';
+        if (preview) preview.innerHTML = `<img src="${dataUrl}" alt="Preview poster">${badge}${pickBadge}`;
         const urlInput = card.querySelector('[data-field="imageUrl"]');
         if (urlInput) urlInput.value = '';
         fileInput.value = '';
@@ -1280,15 +1362,18 @@ function attachAdminEvents() {
       const card = saveButton.closest('.admin-movie-card');
       if (!card) return;
       const get = (field) => card.querySelector(`[data-field="${field}"]`);
+      const rawMovieType = get('type')?.value;
+      const selectedMovieType = ['top','upcoming','recommended'].includes(rawMovieType) ? rawMovieType : 'top';
       const movie = {
         id: saveButton.dataset.id,
         title: get('title')?.value.trim() || '',
         titleEn: get('titleEn')?.value.trim() || '',
-        type: get('type')?.value === 'upcoming' ? 'upcoming' : 'top',
-        rank: Number(get('rank')?.value) || 0,
-        releaseDate: get('releaseDate')?.value || '',
+        type: selectedMovieType,
+        rank: selectedMovieType === 'top' ? (Number(get('rank')?.value) || 0) : 0,
+        releaseDate: selectedMovieType === 'upcoming' ? (get('releaseDate')?.value || '') : '',
         note: get('note')?.value.trim() || '',
         noteEn: get('noteEn')?.value.trim() || '',
+        watchUrl: get('watchUrl')?.value.trim() || '',
         image: card.dataset.pendingImage || get('imageUrl')?.value.trim() || '',
         enabled: get('enabled')?.value !== 'false',
       };
@@ -1856,16 +1941,42 @@ function attachAdminEvents() {
   }
 }
 
+function normalizePromotionForRealtimeSignature(promo) {
+  if (!promo || typeof promo !== 'object') return promo;
+  // Presence heartbeat lives inside admin-user promotion records. Ignore volatile
+  // timestamps so online status never causes the whole Admin UI to rerender.
+  if (String(promo.title || '').startsWith(ADMIN_USER_PROMO_PREFIX)) {
+    let meta = {};
+    try { meta = JSON.parse(String(promo.description || '{}')); } catch (_) { meta = {}; }
+    const stableMeta = { ...meta };
+    delete stableMeta.lastSeenAt;
+    delete stableMeta.lastActivityAt;
+    delete stableMeta.lastLoginAt;
+    delete stableMeta.lastLogoutAt;
+    return { ...promo, description: JSON.stringify(stableMeta) };
+  }
+  return promo;
+}
+
 function makeAdminDataSignature(result) {
   return JSON.stringify({
     maintenanceMode: !!result?.maintenanceMode,
     products: Array.isArray(result?.products) ? result.products : [],
     reviews: Array.isArray(result?.reviews) ? result.reviews : [],
-    promotions: Array.isArray(result?.promotions) ? result.promotions : [],
+    promotions: Array.isArray(result?.promotions) ? result.promotions.map(normalizePromotionForRealtimeSignature) : [],
   });
 }
 
+function adminHasUnsavedDrafts() {
+  const hasTempRecord = [adminState.products, adminState.reviews, adminState.promotions, adminState.movies, adminState.discounts]
+    .some((list) => Array.isArray(list) && list.some((item) => String(item?.id || '').startsWith('new-') || item?.synced === false));
+  if (hasTempRecord) return true;
+  if (document.querySelector('.is-editing, [data-pending-image]:not([data-pending-image=""])')) return true;
+  return false;
+}
+
 function adminHasUnsavedEditorFocus() {
+  if (adminHasUnsavedDrafts()) return true;
   const active = document.activeElement;
   if (!active || !active.matches?.('input, textarea, select')) return false;
   const safeIds = new Set(['orderSearchInput','orderPeriodFilter','orderCustomDate','orderCustomMonth','reviewSearchInput','searchInput']);
@@ -1890,9 +2001,25 @@ function applyRealtimeAdminData(result) {
   updateMaintenanceStatus();
 }
 
+async function refreshAdminPresenceOnly() {
+  if (document.hidden || !adminState.currentAdminUser || adminPresenceWriteBusy) return;
+  try {
+    const result = await adminApiFetch('adminData');
+    const promotions = Array.isArray(result?.promotions) ? result.promotions : [];
+    const freshUsers = promotions.map(parseAdminUserPromotionRecord).filter(Boolean);
+    if (!freshUsers.length) return;
+    adminState.adminUsers = freshUsers;
+    const currentFresh = freshUsers.find((u) => u.username === adminState.currentAdminUser?.username);
+    if (currentFresh) adminState.currentAdminUser = { ...adminState.currentAdminUser, ...currentFresh };
+    renderAdminUsers();
+  } catch (error) {
+    console.warn('presence-only refresh failed:', error);
+  }
+}
+
 async function refreshAdminDataRealtime(force = false) {
   if (adminRealtimeInFlight || document.hidden || !adminState.currentAdminUser) return;
-  if (!force && adminHasUnsavedEditorFocus()) return;
+  if (adminHasUnsavedEditorFocus()) return;
   adminRealtimeInFlight = true;
   try {
     const result = await adminApiFetch('adminData');
@@ -1928,6 +2055,10 @@ function initAdminRealtimeSync() {
   setInterval(() => {
     if (!document.hidden && adminState.currentAdminUser) refreshAdminDataRealtime(false);
   }, ADMIN_REALTIME_POLL_MS);
+  // Online/presence updates are intentionally isolated from content rendering.
+  setInterval(() => {
+    if (!document.hidden && adminState.currentAdminUser) refreshAdminPresenceOnly();
+  }, 15000);
 }
 
 async function loadAdminData() {
@@ -2046,6 +2177,7 @@ function normalizeAdminWebSettings(settings) {
       bankName: String(payment.bankName || fallbackPayment.bankName || '').trim(),
       accountName: String(payment.accountName || fallbackPayment.accountName || '').trim(),
       accountNumber: String(payment.accountNumber || fallbackPayment.accountNumber || '').trim(),
+      bankImage: String(payment.bankImage || fallbackPayment.bankImage || '').trim(),
       qrImage: String(payment.qrImage || fallbackPayment.qrImage || '').trim(),
     },
     wheelRates: rates.map((item,index)=>({
@@ -2089,6 +2221,8 @@ function renderWebSettingsEditor() {
   setValue('webBankName', settings.payment.bankName);
   setValue('webAccountName', settings.payment.accountName);
   setValue('webAccountNumber', settings.payment.accountNumber);
+  setValue('webBankImageUrl', /^data:/i.test(settings.payment.bankImage) ? '' : settings.payment.bankImage);
+  renderWebBankPreview(settings.payment.bankImage);
   setValue('webQrImageUrl', /^data:/i.test(settings.payment.qrImage) ? '' : settings.payment.qrImage);
   renderWebQrPreview(settings.payment.qrImage);
   wrap.innerHTML = `<div class="wheel-rate-list">${settings.wheelRates.map((item,index)=>`
@@ -2129,6 +2263,7 @@ function updateWheelRateSummary() {
 function collectStoreSettingsFromEditor() {
   const current = normalizeAdminWebSettings(adminState.webSettings);
   const lineUrl = String(document.getElementById('webLineUrl')?.value || current.lineUrl || '').trim();
+  const typedBank = String(document.getElementById('webBankImageUrl')?.value || '').trim();
   const typedQr = String(document.getElementById('webQrImageUrl')?.value || '').trim();
   return {
     lineUrl,
@@ -2140,9 +2275,17 @@ function collectStoreSettingsFromEditor() {
       bankName: String(document.getElementById('webBankName')?.value || '').trim(),
       accountName: String(document.getElementById('webAccountName')?.value || '').trim(),
       accountNumber: String(document.getElementById('webAccountNumber')?.value || '').trim(),
+      bankImage: typedBank || String(current.payment?.bankImage || '').trim(),
       qrImage: typedQr || String(current.payment?.qrImage || '').trim(),
     }
   };
+}
+
+function renderWebBankPreview(src) {
+  const preview = document.getElementById('webBankPreview');
+  if (!preview) return;
+  const image = String(src || '').trim();
+  preview.innerHTML = image ? `<img src="${escapeAdminHtml(image)}" alt="รูปธนาคาร"><span>รูปธนาคารปัจจุบัน</span>` : '<i class="fas fa-building-columns"></i><span>ยังไม่มีรูปธนาคาร</span>';
 }
 function renderWebQrPreview(src) {
   const preview = document.getElementById('webQrPreview');
@@ -2224,6 +2367,29 @@ async function deleteOrderRecord(recordId,orderNo){
 function attachV9AdminEvents(){
   const editor=document.getElementById('wheelRatesEditor');
   editor?.addEventListener('input',updateWheelRateSummary);
+  document.getElementById('webBankImageUrl')?.addEventListener('input', (event) => {
+    const value=String(event.target.value||'').trim();
+    if(value){ adminState.webSettings=normalizeAdminWebSettings({...adminState.webSettings,payment:{...(adminState.webSettings?.payment||{}),bankImage:value}}); renderWebBankPreview(value); }
+  });
+  document.getElementById('webBankImageFile')?.addEventListener('change', async (event) => {
+    const file=event.target.files?.[0]; if(!file) return;
+    if(!isSupportedReviewImage(file)){ showAdminToast('รองรับเฉพาะ JPG, PNG หรือ WEBP','error'); event.target.value=''; return; }
+    if(file.size>4*1024*1024){ showAdminToast('รูปธนาคารต้องไม่เกิน 4MB','error'); event.target.value=''; return; }
+    try {
+      const dataUrl=await createBankImageDataUrl(file);
+      const current=normalizeAdminWebSettings(adminState.webSettings);
+      adminState.webSettings={...current,payment:{...current.payment,bankImage:dataUrl}};
+      const urlInput=document.getElementById('webBankImageUrl'); if(urlInput) urlInput.value='';
+      renderWebBankPreview(dataUrl); showAdminToast('เลือกรูปธนาคารแล้ว กดบันทึกค่าเพื่อใช้งาน','success');
+    } catch(error){ showAdminToast(error.message || 'อ่านรูปธนาคารไม่สำเร็จ','error'); }
+    event.target.value='';
+  });
+  document.getElementById('removeWebBankBtn')?.addEventListener('click',()=>{
+    const current=normalizeAdminWebSettings(adminState.webSettings);
+    adminState.webSettings={...current,payment:{...current.payment,bankImage:''}};
+    const urlInput=document.getElementById('webBankImageUrl'); if(urlInput) urlInput.value='';
+    renderWebBankPreview(''); showAdminToast('ลบรูปธนาคารแล้ว กดบันทึกค่าเพื่อยืนยัน','success');
+  });
   document.getElementById('webQrImageUrl')?.addEventListener('input', (event) => {
     const value=String(event.target.value||'').trim();
     if(value){ adminState.webSettings=normalizeAdminWebSettings({...adminState.webSettings,payment:{...(adminState.webSettings?.payment||{}),qrImage:value}}); renderWebQrPreview(value); }
@@ -2316,6 +2482,7 @@ async function persistRootAdminIfNeeded(user){
 async function completeAdminLogin(user,remember){
   adminState.currentAdminUser=user; writeAdminSession(user,remember); updateCurrentAdminUi(); setAdminAuthLocked(false); setAdminLoginError('');
   await persistRootAdminIfNeeded(user); await loadAdminData();
+  adminState.currentAdminUser=findAdminUser(user.username)||user; noteAdminInteraction(); await markCurrentAdminPresence({login:true}); startAdminPresence();
 }
 async function handleAdminLogin(event){
   event?.preventDefault(); const username=String(document.getElementById('adminLoginUsername')?.value||'').trim().toLowerCase(); const password=String(document.getElementById('adminLoginPassword')?.value||''); const remember=!!document.getElementById('adminRememberLogin')?.checked; const btn=document.getElementById('adminLoginBtn');
@@ -2330,22 +2497,82 @@ async function handleAdminLogin(event){
 }
 async function initializeAdminAuth(){
   setAdminAuthLocked(true); await fetchAuthUsersOnly(); const session=readAdminSession();
-  if(session){const user=findAdminUser(session.username);if(user&&user.enabled!==false){adminState.currentAdminUser=user;updateCurrentAdminUi();setAdminAuthLocked(false);await loadAdminData();return;}clearAdminSessions();}
+  if(session){const user=findAdminUser(session.username);if(user&&user.enabled!==false){adminState.currentAdminUser=user;updateCurrentAdminUi();setAdminAuthLocked(false);await loadAdminData();adminState.currentAdminUser=findAdminUser(session.username)||user;noteAdminInteraction();await markCurrentAdminPresence();startAdminPresence();return;}clearAdminSessions();}
   const username=document.getElementById('adminLoginUsername'); if(username) setTimeout(()=>username.focus(),80);
 }
-function logoutAdmin(){ clearAdminSessions(); adminState.currentAdminUser=null; updateCurrentAdminUi(); setAdminAuthLocked(true); const p=document.getElementById('adminLoginPassword');if(p)p.value=''; setAdminLoginError(''); setTimeout(()=>document.getElementById('adminLoginUsername')?.focus(),80); }
+async function logoutAdmin(){ try{await markCurrentAdminPresence({logout:true});}catch(_){} stopAdminPresence(); clearAdminSessions(); adminState.currentAdminUser=null; updateCurrentAdminUi(); setAdminAuthLocked(true); const p=document.getElementById('adminLoginPassword');if(p)p.value=''; setAdminLoginError(''); setTimeout(()=>document.getElementById('adminLoginUsername')?.focus(),80); }
 function formatAdminUserDate(value){ if(!value)return '-';const d=new Date(value);return Number.isNaN(d.getTime())?'-':d.toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'}); }
+function formatAdminPresenceAgo(value){
+  if(!value)return 'ยังไม่เคยออนไลน์'; const t=new Date(value).getTime(); if(!Number.isFinite(t))return '-';
+  const sec=Math.max(0,Math.floor((Date.now()-t)/1000)); if(sec<15)return 'เมื่อสักครู่'; if(sec<60)return `${sec} วินาทีที่แล้ว`;
+  const min=Math.floor(sec/60); if(min<60)return `${min} นาทีที่แล้ว`; const hr=Math.floor(min/60); if(hr<24)return `${hr} ชม.ที่แล้ว`;
+  return formatAdminUserDate(value);
+}
+const ADMIN_PRESENCE_INTERVAL_MS=30000;
+const ADMIN_PRESENCE_ONLINE_MS=75000;
+const ADMIN_PRESENCE_ACTIVE_MS=90000;
+let adminPresenceTimer=0;
+let adminPresenceEventsBound=false;
+let adminLastInteractionAt=Date.now();
+let adminPresenceWriteBusy=false;
+function adminPresenceInfo(user){
+  const now=Date.now(); const seen=new Date(user?.lastSeenAt||0).getTime(); const activeAt=new Date(user?.lastActivityAt||0).getTime();
+  const isCurrent=user?.username===adminState.currentAdminUser?.username;
+  const online=isCurrent || (Number.isFinite(seen) && seen>0 && now-seen<=ADMIN_PRESENCE_ONLINE_MS);
+  const active=online && (isCurrent || (Number.isFinite(activeAt) && activeAt>0 && now-activeAt<=ADMIN_PRESENCE_ACTIVE_MS));
+  return {online,active};
+}
+function noteAdminInteraction(){ adminLastInteractionAt=Date.now(); }
+function bindAdminPresenceEvents(){
+  if(adminPresenceEventsBound)return; adminPresenceEventsBound=true;
+  ['pointerdown','keydown','touchstart','scroll'].forEach(type=>window.addEventListener(type,noteAdminInteraction,{passive:true}));
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden && adminState.currentAdminUser){ noteAdminInteraction(); markCurrentAdminPresence().catch(()=>{}); } });
+}
+async function markCurrentAdminPresence({login=false,logout=false}={}){
+  if(adminPresenceWriteBusy)return; const username=adminState.currentAdminUser?.username; if(!username)return;
+  const user=findAdminUser(username)||adminState.currentAdminUser; if(!user?.synced || !Number.isFinite(Number(user.id)))return;
+  adminPresenceWriteBusy=true;
+  try{
+    const nowIso=new Date().toISOString();
+    const activityIso=new Date(adminLastInteractionAt||Date.now()).toISOString();
+    const updated={...user,
+      lastLoginAt:login?nowIso:(user.lastLoginAt||''),
+      lastSeenAt:logout?'':nowIso,
+      lastActivityAt:logout?(user.lastActivityAt||''):activityIso,
+      lastLogoutAt:logout?nowIso:(user.lastLogoutAt||'')
+    };
+    const payload=adminUserToPromotionPayload(updated); payload.id=Number(user.id);
+    await adminApiPostSilent('adminUpdatePromotion',payload);
+    Object.assign(user,updated); Object.assign(adminState.currentAdminUser,updated);
+    renderAdminUsers();
+  }catch(error){ console.warn('admin presence update skipped',error); }
+  finally{ adminPresenceWriteBusy=false; }
+}
+function startAdminPresence(){
+  bindAdminPresenceEvents(); clearInterval(adminPresenceTimer);
+  adminPresenceTimer=setInterval(()=>{ if(!document.hidden && adminState.currentAdminUser) markCurrentAdminPresence().catch(()=>{}); },ADMIN_PRESENCE_INTERVAL_MS);
+}
+function stopAdminPresence(){ clearInterval(adminPresenceTimer); adminPresenceTimer=0; }
 function renderAdminUsers(){
   const listEl=document.getElementById('adminUsersList');if(!listEl)return; const users=getEffectiveAdminUsers(); const current=adminState.currentAdminUser?.username||'';
+  const onlineCount=users.filter(u=>adminPresenceInfo(u).online && u.enabled!==false).length;
   document.getElementById('adminUserStatTotal') && (document.getElementById('adminUserStatTotal').textContent=users.length);
   document.getElementById('adminUserStatActive') && (document.getElementById('adminUserStatActive').textContent=users.filter(u=>u.enabled!==false).length);
+  document.getElementById('adminUserStatOnline') && (document.getElementById('adminUserStatOnline').textContent=onlineCount);
   document.getElementById('adminUserStatCurrent') && (document.getElementById('adminUserStatCurrent').textContent=current||'-');
-  listEl.innerHTML=users.map(u=>{const root=u.username===ROOT_ADMIN_USERNAME||u.isRoot;const isCurrent=u.username===current;return `<article class="admin-user-row ${u.enabled===false?'is-disabled':''}">
-    <div class="admin-user-avatar"><i class="fas ${root?'fa-crown':'fa-user-shield'}"></i></div>
-    <div class="admin-user-info"><div><strong>${escapeAdminHtml(u.displayName||u.username)}</strong>${root?'<span class="admin-user-badge owner">บัญชีหลัก</span>':''}${isCurrent?'<span class="admin-user-badge current">กำลังใช้งาน</span>':''}</div><code>${escapeAdminHtml(u.username)}</code><small>${u.synced?`สร้างเมื่อ ${formatAdminUserDate(u.createdAt)}`:'บัญชีเริ่มต้นของระบบ'}</small></div>
-    <div class="admin-user-status"><span class="admin-status-badge ${u.enabled===false?'status-error':'status-success'}">${u.enabled===false?'ปิดใช้งาน':'ใช้งานได้'}</span></div>
-    <div class="admin-user-actions"><button type="button" class="button button-outline admin-user-password" data-user="${escapeAdminHtml(u.username)}"><i class="fas fa-key"></i> เปลี่ยนรหัส</button>${root?'':`<button type="button" class="button button-outline admin-user-toggle" data-user="${escapeAdminHtml(u.username)}"><i class="fas ${u.enabled===false?'fa-toggle-off':'fa-toggle-on'}"></i> ${u.enabled===false?'เปิด':'ปิด'}</button><button type="button" class="button button-danger admin-user-delete" data-user="${escapeAdminHtml(u.username)}"><i class="fas fa-trash"></i></button>`}</div>
-  </article>`}).join('');
+  listEl.innerHTML=users.map(u=>{
+    const root=u.username===ROOT_ADMIN_USERNAME||u.isRoot; const isCurrent=u.username===current; const presence=adminPresenceInfo(u);
+    const presenceClass=presence.active?'is-active-now':presence.online?'is-online':'is-offline';
+    const presenceText=presence.active?'กำลังใช้งานอยู่':presence.online?'ออนไลน์':'ออฟไลน์';
+    const lastSeenText=isCurrent?'กำลังใช้งานหน้านี้':`ออนไลน์ล่าสุด ${formatAdminPresenceAgo(u.lastSeenAt||u.lastLogoutAt)}`;
+    const loginText=u.lastLoginAt?`เข้าสู่ระบบล่าสุด ${formatAdminPresenceAgo(u.lastLoginAt)}`:'ยังไม่มีประวัติเข้าสู่ระบบ';
+    return `<article class="admin-user-row admin-user-card ${u.enabled===false?'is-disabled':''} ${presenceClass}">
+      <div class="admin-user-avatar-wrap"><div class="admin-user-avatar"><i class="fas ${root?'fa-crown':'fa-user-shield'}"></i></div><span class="admin-presence-dot" title="${presenceText}"></span></div>
+      <div class="admin-user-info"><div class="admin-user-name-line"><strong>${escapeAdminHtml(u.displayName||u.username)}</strong>${root?'<span class="admin-user-badge owner"><i class="fas fa-crown"></i> บัญชีหลัก</span>':''}${isCurrent?'<span class="admin-user-badge current">บัญชีนี้</span>':''}</div><code>@${escapeAdminHtml(u.username)}</code><div class="admin-user-activity-meta"><span class="admin-presence-label ${presenceClass}"><i class="fas fa-circle"></i> ${presenceText}</span><small><i class="far fa-clock"></i> ${lastSeenText}</small><small><i class="fas fa-right-to-bracket"></i> ${loginText}</small></div></div>
+      <div class="admin-user-status"><span class="admin-status-badge ${u.enabled===false?'status-error':'status-success'}"><i class="fas ${u.enabled===false?'fa-ban':'fa-circle-check'}"></i> ${u.enabled===false?'ปิดใช้งาน':'เปิดใช้งาน'}</span>${u.synced?`<small>สร้าง ${formatAdminUserDate(u.createdAt)}</small>`:'<small>บัญชีเริ่มต้นของระบบ</small>'}</div>
+      <div class="admin-user-actions"><button type="button" class="button button-outline admin-user-password" data-user="${escapeAdminHtml(u.username)}"><i class="fas fa-key"></i><span>รหัสผ่าน</span></button>${root?'':`<button type="button" class="button button-outline admin-user-toggle" data-user="${escapeAdminHtml(u.username)}"><i class="fas ${u.enabled===false?'fa-toggle-off':'fa-toggle-on'}"></i><span>${u.enabled===false?'เปิด':'ปิด'}</span></button><button type="button" class="button button-danger admin-user-delete" data-user="${escapeAdminHtml(u.username)}" title="ลบบัญชี"><i class="fas fa-trash"></i></button>`}</div>
+    </article>`;
+  }).join('');
 }
 async function createAdminUser(event){
   event.preventDefault(); const username=String(document.getElementById('newAdminUsername')?.value||'').trim().toLowerCase(); const displayName=String(document.getElementById('newAdminDisplayName')?.value||'').trim(); const password=String(document.getElementById('newAdminPassword')?.value||''); const btn=document.getElementById('createAdminUserBtn');

@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#0d67e8">
     <title>JokeMoo Store | บริการขาย NETFLIX PREMIUM</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -73,6 +73,7 @@
                     <div class="side-subnav" id="movieSubnav">
                         <button class="side-subnav-item" type="button" data-page="movies-top"><i class="fas fa-fire"></i> หนังติด TOP</button>
                         <button class="side-subnav-item" type="button" data-page="movies-upcoming"><i class="fas fa-calendar-check"></i> หนังใกล้เข้า</button>
+                        <button class="side-subnav-item" type="button" data-page="movies-recommended"><i class="fas fa-heart"></i> หนังแนะนำจากทางร้าน</button>
                     </div>
                 </div>
 
@@ -86,10 +87,18 @@
                     <span>รีวิวลูกค้า</span>
                 </button>
 
-                <button class="side-nav-item" type="button" data-page="promotions">
-                    <i class="fas fa-percent"></i>
-                    <span>โปรโมชั่น</span>
-                </button>
+                <div class="side-nav-group" id="promotionNavGroup">
+                    <button class="side-nav-item side-nav-parent" type="button" aria-expanded="false" aria-controls="promotionSubnav">
+                        <i class="fas fa-percent"></i>
+                        <span>โปรโมชั่น</span>
+                        <i class="fas fa-chevron-down side-nav-chevron"></i>
+                    </button>
+                    <div class="side-subnav" id="promotionSubnav">
+                        <button class="side-subnav-item" type="button" data-page="promotions-active"><i class="fas fa-bolt"></i> เริ่ม</button>
+                        <button class="side-subnav-item" type="button" data-page="promotions-upcoming"><i class="fas fa-clock"></i> รอเริ่ม</button>
+                        <button class="side-subnav-item" type="button" data-page="promotions-disabled"><i class="fas fa-ban"></i> ปิดการใช้งาน</button>
+                    </div>
+                </div>
 
                 <button class="side-nav-item" type="button" data-page="my-orders">
                     <i class="fas fa-receipt"></i>
@@ -193,9 +202,9 @@
 
 
                     <section class="home-shortcuts">
-                        <button class="home-shortcut-card" type="button" data-page="movies-top">
+                        <button class="home-shortcut-card" type="button" data-page="movies-recommended">
                             <span class="home-shortcut-icon"><i class="fas fa-clapperboard"></i></span>
-                            <div><strong>แนะนำหนัง</strong><small>ดูหนังยอดนิยมที่กำลังติด TOP</small></div>
+                            <div><strong>แนะนำหนัง</strong><small>หนังแนะนำจากทางร้าน</small></div>
                             <i class="fas fa-chevron-right"></i>
                         </button>
                         <button class="home-shortcut-card" type="button" data-page="wheel">
@@ -217,7 +226,7 @@
                         <div>
                             <span class="page-kicker">SHOP</span>
                             <h2 id="productsPageHeading">แพ็คเกจทั้งหมด</h2>
-                            <p>เลือกหมวดสินค้าจากเมนู เพิ่มแพ็กเกจที่ต้องการลงตะกร้า</p>
+                            <p>เลือกหมวดสินค้าจากเมนูด้านซ้าย แล้วเพิ่มแพ็กเกจที่ต้องการลงตะกร้า</p>
                         </div>
                         <div class="product-filter-pills" aria-label="ตัวกรองสินค้า">
                             <button class="product-filter-pill is-active" type="button" data-product-filter="all">ทั้งหมด</button>
@@ -272,6 +281,27 @@
                     </section>
                 </section>
 
+                <!-- MOVIES: STORE PICKS -->
+                <section class="app-page movies-page" data-page-view="movies-recommended">
+                    <div class="page-section-header movies-page-header">
+                        <div>
+                            <span class="page-kicker">STORE PICKS</span>
+                            <h2>หนังแนะนำจากทางร้าน</h2>
+                            <p>รวมหนังที่ทางร้านคัดมาแนะนำให้ลูกค้า ทั้งเรื่องติด TOP และหนังที่กำลังจะเข้า</p>
+                        </div>
+                        <div class="movie-page-counts" aria-label="สรุปหนังแนะนำจากทางร้าน">
+                            <span><i class="fas fa-heart"></i><b id="recommendedMovieCount">0</b> เรื่อง</span>
+                        </div>
+                    </div>
+                    <section class="movie-shelf movie-single-page-shelf">
+                        <div class="movie-shelf-heading">
+                            <div><span class="movie-shelf-icon"><i class="fas fa-heart"></i></span><div><span>JOKEMOO PICKS</span><h3>หนังแนะนำจากทางร้าน</h3></div></div>
+                            <small>รวมรายการแนะนำที่กำลังน่าสนใจในตอนนี้</small>
+                        </div>
+                        <div id="recommendedMoviesGrid" class="movie-grid"></div>
+                    </section>
+                </section>
+
                 <!-- WHEEL -->
                 <section class="app-page" data-page-view="wheel">
                     <div class="page-section-header wheel-page-heading">
@@ -309,6 +339,26 @@
                         </div>
                     </div>
                     <section id="reviews" class="review-section reviews-page-section">
+                        <div class="review-overview-card" aria-label="สรุปรีวิวจากลูกค้า">
+                            <div class="review-overview-main">
+                                <span class="review-overview-icon"><i class="fas fa-star"></i></span>
+                                <div>
+                                    <span class="review-overview-kicker">รีวิวจากลูกค้าจริง</span>
+                                    <div class="review-overview-score-row">
+                                        <strong id="reviewAverageScore">5.0</strong>
+                                        <div>
+                                            <div id="reviewAverageStars" class="review-overview-stars" aria-label="คะแนนเฉลี่ย 5 ดาว"></div>
+                                            <small><b id="reviewTotalCount">0</b> รีวิวทั้งหมด</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="review-overview-points">
+                                <span><i class="fas fa-shield-heart"></i> รีวิวจากผู้ใช้งาน</span>
+                                <span><i class="fas fa-image"></i> แนบรูปได้</span>
+                                <span><i class="fas fa-bolt"></i> ส่งรีวิวได้ง่าย</span>
+                            </div>
+                        </div>
                         <div class="review-grid">
                             <div class="review-card review-list-card">
                                 <div class="review-list-header">
@@ -329,7 +379,14 @@
                             </div>
 
                             <div class="review-card review-form-card">
-                                <h4>ส่งรีวิวของคุณ</h4>
+                                <div class="review-form-heading">
+                                    <span class="review-form-heading-icon"><i class="fas fa-pen-nib"></i></span>
+                                    <div>
+                                        <small>SHARE YOUR EXPERIENCE</small>
+                                        <h4>ส่งรีวิวของคุณ</h4>
+                                        <p>แชร์ประสบการณ์ใช้งานเพื่อช่วยลูกค้าคนอื่นตัดสินใจ</p>
+                                    </div>
+                                </div>
                                 <form id="reviewForm" class="review-form">
                                     <div class="review-form-group">
                                         <label for="reviewName">ชื่อ</label>

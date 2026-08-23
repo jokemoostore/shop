@@ -75,14 +75,22 @@ let pendingReviewImageDataUrl = null;
 // App page navigation
 let activePage = 'home';
 let activeProductCategory = 'all';
+let activePromotionFilter = 'all';
 const appPageTitles = {
     home: 'หน้าแรก',
     products: 'แพ็คเกจสินค้า',
     wheel: 'วงล้อสุ่มโชค',
     reviews: 'รีวิวลูกค้า',
     promotions: 'โปรโมชั่น',
+    'promotions-active': 'โปรโมชั่น • เริ่ม',
+    'promotions-upcoming': 'โปรโมชั่น • รอเริ่ม',
+    'promotions-disabled': 'โปรโมชั่น • ปิดการใช้งาน',
     'movies-top': 'หนังติด TOP',
     'movies-upcoming': 'หนังที่ใกล้จะเข้า',
+    'movies-recommended': 'หนังแนะนำจากทางร้าน',
+    'promotions-active': 'โปรโมชั่น • เริ่ม',
+    'promotions-upcoming': 'โปรโมชั่น • รอเริ่ม',
+    'promotions-disabled': 'โปรโมชั่น • ปิดการใช้งาน',
     'my-orders': 'ประวัติการซื้อของฉัน',
     faq: 'คำถามที่พบบ่อย',
 };
@@ -92,8 +100,15 @@ const appPageTitlesEn = {
     wheel: 'Lucky Wheel',
     reviews: 'Customer Reviews',
     promotions: 'Promotions',
+    'promotions-active': 'Promotions • Started',
+    'promotions-upcoming': 'Promotions • Waiting',
+    'promotions-disabled': 'Promotions • Disabled',
     'movies-top': 'Top Movies',
     'movies-upcoming': 'Coming Soon',
+    'movies-recommended': 'Store Picks',
+    'promotions-active': 'Promotions • Started',
+    'promotions-upcoming': 'Promotions • Waiting',
+    'promotions-disabled': 'Promotions • Disabled',
     'my-orders': 'My Orders',
     faq: 'FAQ',
 };
@@ -284,7 +299,9 @@ function ensureSiteActive() {
 const productsContainer = document.getElementById("products");
 const topMoviesGrid = document.getElementById("topMoviesGrid");
 const upcomingMoviesGrid = document.getElementById("upcomingMoviesGrid");
+const recommendedMoviesGrid = document.getElementById("recommendedMoviesGrid");
 const topMovieCount = document.getElementById("topMovieCount");
+const recommendedMovieCount = document.getElementById("recommendedMovieCount");
 const upcomingMovieCount = document.getElementById("upcomingMovieCount");
 const cartBtn = document.getElementById("cartBtn");
 const cartCount = document.getElementById("cartCount");
@@ -494,11 +511,12 @@ function parseMoviePromotionRecord(promo) {
         id: promo.id,
         title: meta.title || fallbackTitle || 'Movie',
         titleEn: meta.titleEn || '',
-        type: meta.type === 'upcoming' ? 'upcoming' : 'top',
+        type: (meta.type === 'recommended' || meta.recommended === true) ? 'recommended' : (meta.type === 'upcoming' ? 'upcoming' : 'top'),
         rank: Number(meta.rank) || 0,
         releaseDate: meta.releaseDate || promo.startAt || '',
         note: meta.note || '',
         noteEn: meta.noteEn || '',
+        watchUrl: String(meta.watchUrl || meta.watchLink || '').trim(),
         image: promo.image || promo.imageUrl || '',
         enabled: meta.enabled !== false,
     };
@@ -589,6 +607,7 @@ function normalizeWebSettings(settings) {
             bankName: String(payment.bankName || fallbackPayment.bankName || '').trim(),
             accountName: String(payment.accountName || fallbackPayment.accountName || 'JokeMoo Store').trim(),
             accountNumber: String(payment.accountNumber || fallbackPayment.accountNumber || '').trim(),
+            bankImage: String(payment.bankImage || fallbackPayment.bankImage || '').trim(),
             qrImage: String(payment.qrImage || fallbackPayment.qrImage || '').trim(),
         },
         wheelRates: rates.map((item, index) => ({
@@ -664,38 +683,273 @@ function formatMovieReleaseDate(value) {
     return new Intl.DateTimeFormat(isEnglish ? 'en-GB' : 'th-TH', { day: 'numeric', month: 'short', year: 'numeric' }).format(parsed);
 }
 
+function normalizeMovieWatchUrl(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    if (/^(?:javascript|data|vbscript):/i.test(raw)) return '';
+    if (/^https?:\/\//i.test(raw) || raw.startsWith('/') || raw.startsWith('./') || raw.startsWith('../') || raw.startsWith('#')) return raw;
+    if (/^[a-z0-9.-]+\.[a-z]{2,}(?:[\/:?#]|$)/i.test(raw)) return `https://${raw}`;
+    return '';
+}
+
+function getMovieWatchUrl(movie) {
+    return normalizeMovieWatchUrl(movie && movie.watchUrl);
+}
+
+function renderMovieWatchButton(movie, compact = false) {
+    const isEnglish = window.JMI18n && window.JMI18n.lang === 'en';
+    const url = getMovieWatchUrl(movie);
+    const label = isEnglish ? 'Watch now' : 'รับชมตอนนี้';
+    if (!url) {
+        return `<button class="movie-watch-button is-disabled${compact ? ' is-compact' : ''}" type="button" disabled aria-disabled="true"><i class="fas fa-circle-play"></i><span>${isEnglish ? 'Watch link unavailable' : 'ยังไม่กำหนดลิงก์รับชม'}</span></button>`;
+    }
+    return `<a class="movie-watch-button${compact ? ' is-compact' : ''}" href="${escapeMovieText(url)}" target="_blank" rel="noopener noreferrer"><i class="fas fa-circle-play"></i><span>${label}</span><i class="fas fa-arrow-up-right-from-square movie-watch-external"></i></a>`;
+}
+
 function renderMovieCard(movie, index) {
     const isEnglish = window.JMI18n && window.JMI18n.lang === 'en';
     const title = escapeMovieText(isEnglish && movie.titleEn ? movie.titleEn : movie.title);
     const note = escapeMovieText(isEnglish && movie.noteEn ? movie.noteEn : movie.note);
     const imageUrl = normalizeReviewImageUrl(getOptimizedLocalImageUrl(movie.image || ''));
     const isTop = movie.type === 'top';
+    const isUpcoming = movie.type === 'upcoming';
+    const isRecommended = movie.type === 'recommended';
     const rank = Number(movie.rank) > 0 ? Number(movie.rank) : index + 1;
-    const dateText = formatMovieReleaseDate(movie.releaseDate);
+    const dateText = isUpcoming ? formatMovieReleaseDate(movie.releaseDate) : '';
     return `
-        <article class="movie-card ${isTop ? 'is-top' : 'is-upcoming'}">
-            <div class="movie-poster-wrap">
+        <article class="movie-card ${isTop ? 'is-top' : (isUpcoming ? 'is-upcoming' : 'is-recommended')}" data-movie-id="${escapeMovieText(movie.id)}">
+            <button class="movie-poster-wrap movie-poster-button" type="button" data-movie-detail="${escapeMovieText(movie.id)}" aria-label="${isEnglish ? 'View movie details' : 'ดูรายละเอียดหนัง'} ${title}">
                 ${imageUrl ? `<img class="movie-poster" src="${escapeMovieText(imageUrl)}" alt="${title}" loading="lazy" decoding="async">` : `<div class="movie-poster movie-poster-placeholder"><i class="fas fa-film"></i><span>JOKEMOO</span></div>`}
-                ${isTop ? `<span class="movie-rank-badge"><small>TOP</small><b>${rank}</b></span>` : `<span class="movie-coming-badge"><i class="fas fa-clock"></i>${isEnglish ? 'SOON' : 'เร็ว ๆ นี้'}</span>`}
+                ${isTop ? `<span class="movie-rank-badge"><small>TOP</small><b>${rank}</b></span>` : (isUpcoming ? `<span class="movie-coming-badge"><i class="fas fa-clock"></i>${isEnglish ? 'SOON' : 'เร็ว ๆ นี้'}</span>` : `<span class="movie-store-pick-tag"><i class="fas fa-heart"></i>${isEnglish ? 'STORE PICK' : 'ร้านแนะนำ'}</span>`)}
                 <div class="movie-poster-shade"></div>
-            </div>
+                <span class="movie-view-detail"><i class="fas fa-expand-alt"></i>${isEnglish ? 'Details' : 'ดูรายละเอียด'}</span>
+            </button>
             <div class="movie-card-body">
-                <div class="movie-card-title-row"><h4>${title}</h4>${!isTop && dateText ? `<span><i class="far fa-calendar"></i>${escapeMovieText(dateText)}</span>` : ''}</div>
+                <div class="movie-card-title-row"><h4>${title}</h4>${dateText ? `<span><i class="far fa-calendar"></i>${escapeMovieText(dateText)}</span>` : ''}</div>
                 ${note ? `<p>${note}</p>` : `<p class="movie-muted">${isEnglish ? 'Details will be updated soon.' : 'รายละเอียดจะอัปเดตเร็ว ๆ นี้'}</p>`}
-                ${!isTop && dateText ? `<div class="movie-release-line"><i class="fas fa-ticket"></i><span>${isEnglish ? 'Release' : 'กำหนดเข้า'} <b>${escapeMovieText(dateText)}</b></span></div>` : ''}
+                ${dateText ? `<div class="movie-release-line"><i class="fas fa-ticket"></i><span>${isEnglish ? 'Release' : 'วันที่เข้า'} <b>${escapeMovieText(dateText)}</b></span></div>` : ''}
+                <div class="movie-card-actions">
+                    <button class="movie-detail-button" type="button" data-movie-detail="${escapeMovieText(movie.id)}"><i class="far fa-eye"></i>${isEnglish ? 'View more details' : 'ดูรายละเอียดเพิ่มเติม'}</button>
+                </div>
             </div>
         </article>`;
+}
+
+function getMovieById(id) {
+    return (Array.isArray(state.movies) ? state.movies : []).find((movie) => String(movie.id) === String(id));
+}
+
+function formatMovieModalDate(value) {
+    if (!value) return '-';
+    const d = parsePromotionDate(value);
+    if (!d || Number.isNaN(d.getTime())) return String(value);
+    const isEnglish = window.JMI18n && window.JMI18n.lang === 'en';
+    return d.toLocaleDateString(isEnglish ? 'en-GB' : 'th-TH', {
+        day:'2-digit', month:'long', year:'numeric'
+    });
+}
+
+function renderMovieDetailLanguage(modal, movie) {
+    if (!modal || !movie) return;
+    const isEnglish = window.JMI18n && window.JMI18n.lang === 'en';
+    const titlePrimary = modal.querySelector('#movieDetailTitlePrimary');
+    const titleSecondary = modal.querySelector('#movieDetailTitleSecondary');
+    const note = modal.querySelector('#movieDetailNotePrimary');
+    const kickerText = modal.querySelector('#movieDetailKickerText');
+    const detailLabel = modal.querySelector('#movieDetailLabel');
+    const posterAction = modal.querySelector('#movieDetailPosterActionText');
+    const closeButton = modal.querySelector('.movie-detail-close');
+
+    if (titlePrimary) titlePrimary.textContent = (isEnglish ? (movie.titleEn || movie.title) : (movie.title || movie.titleEn)) || '-';
+    if (titleSecondary) {
+        const secondary = isEnglish ? movie.title : movie.titleEn;
+        titleSecondary.textContent = secondary || '';
+        titleSecondary.classList.toggle('hidden', !secondary);
+    }
+    if (note) note.textContent = (isEnglish ? movie.noteEn : movie.note) || (isEnglish ? 'No English description yet.' : 'ยังไม่มีรายละเอียดภาษาไทย');
+    if (kickerText) kickerText.textContent = isEnglish ? 'MOVIE DETAILS' : 'รายละเอียดหนัง';
+    if (detailLabel) detailLabel.textContent = isEnglish ? 'DETAILS' : 'รายละเอียดภาษาไทย';
+    if (posterAction) posterAction.textContent = isEnglish ? 'View full poster' : 'ดูโปสเตอร์เต็ม';
+    if (closeButton) closeButton.setAttribute('aria-label', isEnglish ? 'Close' : 'ปิด');
+
+    const watchAction = modal.querySelector('#movieDetailWatchAction');
+    if (watchAction) {
+        // Upcoming movies are not watchable yet: keep the detail page clean and hide the watch action entirely.
+        watchAction.innerHTML = movie.type === 'upcoming' ? '' : renderMovieWatchButton(movie);
+        watchAction.classList.toggle('hidden', movie.type === 'upcoming');
+    }
+
+    const releaseMeta = modal.querySelector('#movieDetailReleaseMeta');
+    const releaseLabel = modal.querySelector('#movieDetailReleaseLabel');
+    const releaseEl = modal.querySelector('#movieDetailRelease');
+    if (movie.type === 'upcoming') {
+        if (releaseLabel) releaseLabel.textContent = isEnglish ? 'Release date' : 'วันที่หนังเข้า';
+        if (releaseEl) releaseEl.textContent = formatMovieModalDate(movie.releaseDate);
+        if (releaseMeta) releaseMeta.classList.remove('hidden');
+    } else if (releaseMeta) {
+        releaseMeta.classList.add('hidden');
+    }
+
+    const type = modal.querySelector('#movieDetailType');
+    if (type) {
+        if (movie.type === 'upcoming') {
+            type.innerHTML = `<i class="fas fa-clock"></i> ${isEnglish ? 'COMING SOON' : 'ใกล้เข้า'}`;
+        } else if (movie.type === 'recommended') {
+            type.innerHTML = `<i class="fas fa-heart"></i> ${isEnglish ? 'STORE PICK' : 'หนังแนะนำจากทางร้าน'}`;
+        } else {
+            type.innerHTML = `<i class="fas fa-trophy"></i> TOP ${Number(movie.rank) || '-'}`;
+        }
+    }
+}
+
+function ensureMoviePosterViewer() {
+    let viewer = document.getElementById('moviePosterViewer');
+    if (viewer) return viewer;
+    viewer = document.createElement('div');
+    viewer.id = 'moviePosterViewer';
+    viewer.className = 'movie-poster-viewer hidden';
+    viewer.innerHTML = `
+      <section class="movie-poster-viewer-shell" role="dialog" aria-modal="true" aria-label="โปสเตอร์เต็ม">
+        <button class="movie-poster-viewer-close" type="button" aria-label="กลับไปดูรายละเอียด"><i class="fas fa-arrow-left"></i></button>
+        <img id="moviePosterViewerImage" src="" alt="Movie poster full view">
+      </section>`;
+    document.body.appendChild(viewer);
+    const close = () => closeMoviePosterViewer(true);
+    viewer.querySelector('.movie-poster-viewer-close').addEventListener('click', close);
+    viewer.addEventListener('click', (event) => { if (event.target === viewer) close(); });
+    return viewer;
+}
+
+function openMoviePosterViewer(imageUrl) {
+    if (!imageUrl) return;
+    const detailModal = document.getElementById('movieDetailModal');
+    const viewer = ensureMoviePosterViewer();
+    const img = viewer.querySelector('#moviePosterViewerImage');
+    const isEnglish = window.JMI18n && window.JMI18n.lang === 'en';
+    if (img) img.src = imageUrl;
+    const close = viewer.querySelector('.movie-poster-viewer-close');
+    if (close) close.setAttribute('aria-label', isEnglish ? 'Back to movie details' : 'กลับไปดูรายละเอียด');
+    viewer.querySelector('.movie-poster-viewer-shell')?.setAttribute('aria-label', isEnglish ? 'Full movie poster' : 'โปสเตอร์หนังเต็ม');
+    if (detailModal && !detailModal.classList.contains('hidden')) {
+        detailModal.classList.add('movie-detail-temporarily-hidden');
+    }
+    viewer.classList.remove('hidden');
+    document.body.classList.add('modal-open');
+}
+
+function closeMoviePosterViewer(restoreDetail = true) {
+    const viewer = document.getElementById('moviePosterViewer');
+    if (viewer) viewer.classList.add('hidden');
+    const detailModal = document.getElementById('movieDetailModal');
+    if (detailModal) detailModal.classList.remove('movie-detail-temporarily-hidden');
+    if (!restoreDetail || !detailModal || detailModal.classList.contains('hidden')) {
+        document.body.classList.remove('modal-open');
+    }
+}
+
+function ensureMovieDetailModal() {
+    let modal = document.getElementById('movieDetailModal');
+    if (modal) return modal;
+    modal = document.createElement('div');
+    modal.id = 'movieDetailModal';
+    modal.className = 'movie-detail-overlay hidden';
+    modal.innerHTML = `
+      <section class="movie-detail-modal" role="dialog" aria-modal="true" aria-label="รายละเอียดหนัง">
+        <button class="movie-detail-close" type="button" aria-label="ปิด"><i class="fas fa-times"></i></button>
+        <div class="movie-detail-poster-column">
+          <button class="movie-detail-poster-full" type="button" aria-label="ดูโปสเตอร์เต็ม">
+            <img id="movieDetailPoster" src="" alt="Movie poster">
+            <span><i class="fas fa-expand-alt"></i><b id="movieDetailPosterActionText">ดูโปสเตอร์เต็ม</b></span>
+          </button>
+          <div id="movieDetailPosterEmpty" class="movie-detail-poster-empty hidden"><i class="fas fa-film"></i><span>JOKEMOO MOVIE</span></div>
+        </div>
+        <div class="movie-detail-content">
+          <div class="movie-detail-kicker"><i class="fas fa-clapperboard"></i><span id="movieDetailKickerText">รายละเอียดหนัง</span></div>
+          <h2 id="movieDetailTitlePrimary">-</h2>
+          <h3 id="movieDetailTitleSecondary">-</h3>
+          <div class="movie-detail-meta">
+            <span id="movieDetailType"><i class="fas fa-fire"></i> TOP</span>
+            <span id="movieDetailReleaseMeta"><i class="far fa-calendar-alt"></i><b id="movieDetailReleaseLabel">วันที่หนังเข้า</b><strong id="movieDetailRelease">-</strong></span>
+          </div>
+          <article class="movie-detail-primary-card">
+            <span id="movieDetailLabel">รายละเอียดภาษาไทย</span>
+            <p id="movieDetailNotePrimary">-</p>
+          </article>
+          <div id="movieDetailWatchAction" class="movie-detail-watch-action"></div>
+        </div>
+      </section>`;
+    document.body.appendChild(modal);
+    modal.querySelector('.movie-detail-close').addEventListener('click', closeMovieDetailModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeMovieDetailModal(); });
+    modal.querySelector('.movie-detail-poster-full').addEventListener('click', () => {
+        const img = modal.querySelector('#movieDetailPoster');
+        if (img && img.src && !img.classList.contains('hidden')) openMoviePosterViewer(img.src);
+    });
+    return modal;
+}
+
+function openMovieDetailModal(id) {
+    const movie = getMovieById(id);
+    if (!movie) return;
+    const modal = ensureMovieDetailModal();
+    modal.dataset.movieId = String(id);
+    const poster = modal.querySelector('#movieDetailPoster');
+    const empty = modal.querySelector('#movieDetailPosterEmpty');
+    const imageUrl = normalizeReviewImageUrl(getOptimizedLocalImageUrl(movie.image || ''));
+    if (imageUrl) {
+        poster.src = imageUrl;
+        poster.alt = movie.title || movie.titleEn || 'Movie poster';
+        poster.classList.remove('hidden');
+        empty.classList.add('hidden');
+    } else {
+        poster.removeAttribute('src');
+        poster.classList.add('hidden');
+        empty.classList.remove('hidden');
+    }
+    renderMovieDetailLanguage(modal, movie);
+    modal.classList.remove('hidden', 'movie-detail-temporarily-hidden');
+    document.body.classList.add('modal-open');
+}
+
+function closeMovieDetailModal() {
+    const modal = document.getElementById('movieDetailModal');
+    if (modal) modal.classList.add('hidden');
+    const viewer = document.getElementById('moviePosterViewer');
+    if (viewer) viewer.classList.add('hidden');
+    document.body.classList.remove('modal-open');
+}
+
+document.addEventListener('jokemoo:languagechange', () => {
+    const modal = document.getElementById('movieDetailModal');
+    if (!modal || modal.classList.contains('hidden')) return;
+    const movie = getMovieById(modal.dataset.movieId);
+    if (movie) renderMovieDetailLanguage(modal, movie);
+});
+
+function attachMovieDetailEvents() {
+    [topMoviesGrid, upcomingMoviesGrid, recommendedMoviesGrid].filter(Boolean).forEach((grid) => {
+        if (grid.dataset.movieDetailBound === '1') return;
+        grid.dataset.movieDetailBound = '1';
+        grid.addEventListener('click', (event) => {
+            const trigger = event.target.closest('[data-movie-detail]');
+            if (trigger) openMovieDetailModal(trigger.dataset.movieDetail);
+        });
+    });
 }
 
 function renderMovies() {
     const visible = Array.isArray(state.movies) ? state.movies.filter((movie) => movie && movie.enabled !== false) : [];
     const top = visible.filter((movie) => movie.type === 'top').sort((a,b) => (Number(a.rank)||999) - (Number(b.rank)||999));
     const upcoming = visible.filter((movie) => movie.type === 'upcoming').sort((a,b) => String(a.releaseDate||'9999').localeCompare(String(b.releaseDate||'9999')));
+    const recommended = visible.filter((movie) => movie.type === 'recommended');
     if (topMovieCount) topMovieCount.textContent = String(top.length);
     if (upcomingMovieCount) upcomingMovieCount.textContent = String(upcoming.length);
+    if (recommendedMovieCount) recommendedMovieCount.textContent = String(recommended.length);
     const isEnglish = window.JMI18n && window.JMI18n.lang === 'en';
-    if (topMoviesGrid) topMoviesGrid.innerHTML = top.length ? top.map(renderMovieCard).join('') : `<div class="movie-empty"><i class="fas fa-trophy"></i><strong>${isEnglish ? 'No top movies yet' : 'ยังไม่มีหนังติด TOP'}</strong><small>${isEnglish ? 'Add movies in Admin and they will appear here automatically.' : 'ขณะนี้ยังไม่มีหนังติด TOP แสดงผล'}</small></div>`;
-    if (upcomingMoviesGrid) upcomingMoviesGrid.innerHTML = upcoming.length ? upcoming.map(renderMovieCard).join('') : `<div class="movie-empty"><i class="fas fa-calendar-plus"></i><strong>${isEnglish ? 'No upcoming movies yet' : 'ยังไม่มีหนังที่ใกล้จะเข้า'}</strong><small>${isEnglish ? 'Add movies in Admin and they will appear here automatically.' : 'ขณะนี้ยังไม่มีหนังที่ใกล้จะเข้า แสดงผล'}</small></div>`;
+    if (topMoviesGrid) topMoviesGrid.innerHTML = top.length ? top.map(renderMovieCard).join('') : `<div class="movie-empty"><i class="fas fa-trophy"></i><strong>${isEnglish ? 'No top movies yet' : 'ยังไม่มีหนังติด TOP'}</strong><small>${isEnglish ? 'Add movies in Admin and they will appear here automatically.' : 'เพิ่มหนังจากหลังบ้าน แล้วรายการจะมาแสดงตรงนี้อัตโนมัติ'}</small></div>`;
+    if (upcomingMoviesGrid) upcomingMoviesGrid.innerHTML = upcoming.length ? upcoming.map(renderMovieCard).join('') : `<div class="movie-empty"><i class="fas fa-calendar-plus"></i><strong>${isEnglish ? 'No upcoming movies yet' : 'ยังไม่มีหนังที่ใกล้จะเข้า'}</strong><small>${isEnglish ? 'Add movies in Admin and they will appear here automatically.' : 'เพิ่มหนังจากหลังบ้าน แล้วรายการจะมาแสดงตรงนี้อัตโนมัติ'}</small></div>`;
+    if (recommendedMoviesGrid) recommendedMoviesGrid.innerHTML = recommended.length ? recommended.map(renderMovieCard).join('') : `<div class="movie-empty"><i class="fas fa-heart"></i><strong>${isEnglish ? 'No store picks yet' : 'ยังไม่มีหนังแนะนำจากทางร้าน'}</strong><small>${isEnglish ? 'Movies added in Admin will appear here automatically.' : 'เพิ่มหนังจากหลังบ้าน แล้วรายการแนะนำจะมาแสดงตรงนี้อัตโนมัติ'}</small></div>`;
+    attachMovieDetailEvents();
 }
 
 function getPromotionTimeState(promo) {
@@ -738,8 +992,10 @@ function getPromotionDateRange(promo) {
 
 function getPromotionStateLabel(stateName) {
     const en = window.JMI18n && window.JMI18n.lang === 'en';
-    if (stateName === 'upcoming') return en ? 'Coming Soon' : 'เร็ว ๆ นี้';
-    return en ? 'Active' : 'กำลังใช้งาน';
+    if (stateName === 'upcoming') return en ? 'Waiting to Start' : 'รอเริ่ม';
+    if (stateName === 'expired') return en ? 'Disabled' : 'ปิดการใช้งาน';
+    if (stateName === 'disabled') return en ? 'Disabled' : 'ปิดการใช้งาน';
+    return en ? 'Started' : 'เริ่ม';
 }
 
 function getPromotionSortValue(promo) {
@@ -780,6 +1036,16 @@ function renderPromotionFeaturedCard(promo) {
     `;
 }
 
+function getPromotionLookupKey(promo) {
+    if (!promo) return '';
+    return String(promo.id ?? promo.title ?? promo.name ?? '');
+}
+
+function findPromotionByLookupKey(key) {
+    const wanted = String(key ?? '');
+    return (Array.isArray(state.promotions) ? state.promotions : []).find((promo) => getPromotionLookupKey(promo) === wanted) || null;
+}
+
 function renderPromotionMiniCard(promo) {
     const promoState = getPromotionTimeState(promo);
     const imageUrl = normalizeReviewImageUrl(getOptimizedLocalImageUrl(promo.image || promo.imageUrl || ''));
@@ -787,24 +1053,40 @@ function renderPromotionMiniCard(promo) {
     const description = escapePromotionText(promo.description || promo.desc || 'โปรพิเศษสำหรับลูกค้า JokeMoo');
     const dateRange = escapePromotionText(getPromotionDateRange(promo));
     const stateLabel = getPromotionStateLabel(promoState);
+    const lookupKey = escapePromotionText(getPromotionLookupKey(promo));
 
     return `
-        <article class="promotion-card ${promoState === 'upcoming' ? 'is-upcoming' : ''}">
+        <article class="promotion-card ${promoState === 'upcoming' ? 'is-upcoming' : ''} ${promoState === 'disabled' || promoState === 'expired' ? 'is-inactive' : ''}">
             <div class="promotion-card-media ${imageUrl ? '' : 'no-image'}">
                 ${imageUrl ? `<button class="promotion-image-button" type="button" data-promo-image="${escapePromotionText(imageUrl)}" aria-label="ดูรูปโปรโมชั่น ${title}"><img src="${escapePromotionText(imageUrl)}" alt="${title}" loading="lazy" decoding="async"><span><i class="fas fa-expand-alt"></i></span></button>` : `<div class="promotion-placeholder-art"><i class="fas fa-tags"></i><strong>JOKEMOO</strong><small>PROMO</small></div>`}
-                <span class="promotion-status-badge ${promoState}"><i class="fas ${promoState === 'upcoming' ? 'fa-clock' : 'fa-check-circle'}"></i>${stateLabel}</span>
+                <span class="promotion-status-badge ${promoState}"><i class="fas ${promoState === 'upcoming' ? 'fa-clock' : (promoState === 'disabled' ? 'fa-pause-circle' : (promoState === 'expired' ? 'fa-calendar-xmark' : 'fa-check-circle'))}"></i>${stateLabel}</span>
             </div>
             <div class="promotion-card-body">
                 <div class="promotion-card-date"><i class="far fa-calendar-alt"></i>${dateRange}</div>
                 <h3>${title}</h3>
                 <p>${description}</p>
                 <div class="promotion-card-actions">
-                    <a href="${getLineContactUrl()}" target="_blank" rel="noopener noreferrer"><i class="fab fa-line"></i> รับโปรโมชั่น</a>
-                    ${imageUrl ? `<button type="button" data-promo-image="${escapePromotionText(imageUrl)}" aria-label="ดูรายละเอียดรูปโปรโมชั่น"><i class="far fa-eye"></i></button>` : ''}
+                    ${promoState === 'active' ? `<a href="${getLineContactUrl()}" target="_blank" rel="noopener noreferrer"><i class="fab fa-line"></i> รับโปรโมชั่น</a>` : `<span class="promotion-inactive-note"><i class="fas fa-circle-info"></i>${promoState === 'upcoming' ? 'โปรนี้กำลังจะมา' : 'โปรนี้ยังแสดงไว้เป็นข้อมูล'}</span>`}
+                    <button class="promotion-detail-button" type="button" data-promo-detail="${lookupKey}" aria-label="ดูรายละเอียดโปรโมชั่น ${title}"><i class="fas fa-circle-info"></i><span>ดูรายละเอียดโปรโมชั่น</span></button>
+                    ${imageUrl ? `<button class="promotion-quick-image-button" type="button" data-promo-image="${escapePromotionText(imageUrl)}" aria-label="ดูรูปโปรโมชั่นเต็ม"><i class="far fa-image"></i></button>` : ''}
                 </div>
             </div>
         </article>
     `;
+}
+
+function getNormalizedPromotionFilter(page) {
+    if (page === 'promotions-active') return 'active';
+    if (page === 'promotions-upcoming') return 'upcoming';
+    if (page === 'promotions-disabled') return 'disabled';
+    return 'all';
+}
+
+function updatePromotionFilterUI(filter) {
+    document.querySelectorAll('#promotionSubnav .side-subnav-item[data-page]').forEach((button) => {
+        const buttonFilter = getNormalizedPromotionFilter(button.dataset.page || '');
+        button.classList.toggle('is-active', buttonFilter === filter);
+    });
 }
 
 function updatePromotionSummary(activeCount, upcomingCount) {
@@ -815,20 +1097,47 @@ function updatePromotionSummary(activeCount, upcomingCount) {
 function renderPromotionBanner() {
     if (!promotionBanner) return;
 
-    const enabledPromotions = Array.isArray(state.promotions)
-        ? state.promotions.filter((promo) => promo && promo.enabled)
+    const allPromotions = Array.isArray(state.promotions)
+        ? state.promotions.filter((promo) => promo)
         : [];
 
-    const activePromotions = enabledPromotions
+    const activePromotions = allPromotions
         .filter((promo) => getPromotionTimeState(promo) === 'active')
         .sort((a, b) => getPromotionSortValue(b) - getPromotionSortValue(a));
-    const upcomingPromotions = enabledPromotions
+    const upcomingPromotions = allPromotions
         .filter((promo) => getPromotionTimeState(promo) === 'upcoming')
         .sort((a, b) => getPromotionSortValue(a) - getPromotionSortValue(b));
+    const inactivePromotions = allPromotions
+        .filter((promo) => ['disabled','expired'].includes(getPromotionTimeState(promo)))
+        .sort((a, b) => getPromotionSortValue(b) - getPromotionSortValue(a));
 
     updatePromotionSummary(activePromotions.length, upcomingPromotions.length);
 
-    if (!activePromotions.length && !upcomingPromotions.length) {
+    if (!allPromotions.length) {
+        promotionBanner.classList.add('hidden');
+        promotionBanner.innerHTML = '';
+        if (promotionEmptyState) promotionEmptyState.classList.remove('hidden');
+        return;
+    }
+
+    const currentFilter = activePromotionFilter || 'all';
+    let sections = [];
+    if (currentFilter === 'active') {
+        sections = [{ className: 'promotion-list-section promotion-list-section-primary', kicker: 'STARTED', title: 'เริ่ม', desc: 'โปรโมชั่นที่เปิดใช้งานและเริ่มแล้ว', list: activePromotions }];
+    } else if (currentFilter === 'upcoming') {
+        sections = [{ className: 'promotion-list-section promotion-upcoming-section', kicker: 'WAITING', title: 'รอเริ่ม', desc: 'โปรโมชั่นที่ตั้งวันเริ่มไว้ล่วงหน้า', list: upcomingPromotions }];
+    } else if (currentFilter === 'disabled') {
+        sections = [{ className: 'promotion-list-section promotion-inactive-section', kicker: 'DISABLED', title: 'ปิดการใช้งาน', desc: 'โปรโมชั่นที่ปิดเองหรือสิ้นสุดแล้ว ยังเปิดดูรายละเอียดได้', list: inactivePromotions }];
+    } else {
+        sections = [
+            { className: 'promotion-list-section promotion-list-section-primary', kicker: 'STARTED', title: 'เริ่ม', desc: 'โปรโมชั่นที่เปิดใช้งานและเริ่มแล้ว', list: activePromotions },
+            { className: 'promotion-list-section promotion-upcoming-section', kicker: 'WAITING', title: 'รอเริ่ม', desc: 'โปรโมชั่นที่ตั้งวันเริ่มไว้ล่วงหน้า', list: upcomingPromotions },
+            { className: 'promotion-list-section promotion-inactive-section', kicker: 'DISABLED', title: 'ปิดการใช้งาน', desc: 'โปรโมชั่นที่ปิดเองหรือสิ้นสุดแล้ว ยังเปิดดูรายละเอียดได้', list: inactivePromotions }
+        ];
+    }
+
+    const visibleSections = sections.filter((section) => Array.isArray(section.list) && section.list.length);
+    if (!visibleSections.length) {
         promotionBanner.classList.add('hidden');
         promotionBanner.innerHTML = '';
         if (promotionEmptyState) promotionEmptyState.classList.remove('hidden');
@@ -840,32 +1149,22 @@ function renderPromotionBanner() {
     const isEnglish = window.JMI18n && window.JMI18n.lang === 'en';
     const dealSuffix = (count) => isEnglish ? `${count} deals` : `${count} โปร`;
 
-    promotionBanner.innerHTML = `
-        ${activePromotions.length ? `
-            <div class="promotion-list-section promotion-list-section-primary">
-                <div class="promotion-list-heading">
-                    <div><span>ACTIVE DEALS</span><h3>โปรที่กำลังใช้งาน</h3></div>
-                    <b>${dealSuffix(activePromotions.length)}</b>
-                </div>
-                <div class="promotion-grid">${activePromotions.map(renderPromotionMiniCard).join('')}</div>
-            </div>
-        ` : ''}
-        ${upcomingPromotions.length ? `
-            <div class="promotion-list-section promotion-upcoming-section">
-                <div class="promotion-list-heading">
-                    <div><span>COMING SOON</span><h3>โปรโมชั่นที่กำลังจะมา</h3></div>
-                    <b>${dealSuffix(upcomingPromotions.length)}</b>
-                </div>
-                <div class="promotion-grid">${upcomingPromotions.map(renderPromotionMiniCard).join('')}</div>
-            </div>
-        ` : ''}
-    `;
+    promotionBanner.innerHTML = visibleSections.map((section) => `
+        <div class="${section.className}">
+            <div class="promotion-list-heading"><div><span>${section.kicker}</span><h3>${section.title}</h3><small>${section.desc}</small></div><b>${dealSuffix(section.list.length)}</b></div>
+            <div class="promotion-grid">${section.list.map(renderPromotionMiniCard).join('')}</div>
+        </div>`).join('');
 }
 
 function attachPromotionBannerEvents() {
     if (!promotionBanner || promotionBanner.dataset.promoEventsBound === '1') return;
     promotionBanner.dataset.promoEventsBound = '1';
     promotionBanner.addEventListener('click', (event) => {
+        const detailTrigger = event.target.closest('[data-promo-detail]');
+        if (detailTrigger && promotionBanner.contains(detailTrigger)) {
+            openPromotionDetailModal(detailTrigger.dataset.promoDetail);
+            return;
+        }
         const trigger = event.target.closest('[data-promo-image]');
         if (!trigger || !promotionBanner.contains(trigger)) return;
         const imageUrl = trigger.dataset.promoImage;
@@ -873,7 +1172,87 @@ function attachPromotionBannerEvents() {
     });
 }
 
-function openPromotionImageModal(imageUrl) {
+function openPromotionDetailModal(lookupKey) {
+    const promo = findPromotionByLookupKey(lookupKey);
+    if (!promo) return;
+    const promoState = getPromotionTimeState(promo);
+    const imageUrl = normalizeReviewImageUrl(getOptimizedLocalImageUrl(promo.image || promo.imageUrl || ''));
+    const en = window.JMI18n && window.JMI18n.lang === 'en';
+    const title = promo.title || promo.name || (en ? 'Special promotion' : 'โปรโมชั่นพิเศษ');
+    const description = promo.description || promo.desc || (en ? 'Special offer for JokeMoo customers.' : 'โปรโมชั่นพิเศษสำหรับลูกค้า JokeMoo');
+    const dateRange = getPromotionDateRange(promo);
+    const stateLabel = getPromotionStateLabel(promoState);
+
+    let modal = document.getElementById('promotionDetailModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'promotionDetailModal';
+        modal.className = 'modal-overlay promotion-detail-overlay hidden';
+        modal.innerHTML = `
+            <section class="promotion-detail-modal" role="dialog" aria-modal="true" aria-label="รายละเอียดโปรโมชั่น">
+                <button class="promotion-detail-close" type="button" aria-label="ปิด"><i class="fas fa-times"></i></button>
+                <div class="promotion-detail-media"></div>
+                <div class="promotion-detail-content">
+                    <span class="promotion-detail-kicker"><i class="fas fa-tags"></i> PROMOTION DETAILS</span>
+                    <div class="promotion-detail-title-row">
+                        <div>
+                            <h2 class="promotion-detail-title"></h2>
+                            <p class="promotion-detail-date"></p>
+                        </div>
+                        <span class="promotion-detail-status"></span>
+                    </div>
+                    <div class="promotion-detail-description-wrap">
+                        <small>${en ? 'DETAILS' : 'รายละเอียดโปรโมชั่น'}</small>
+                        <p class="promotion-detail-description"></p>
+                    </div>
+                    <div class="promotion-detail-actions">
+                        <a class="promotion-detail-line" target="_blank" rel="noopener noreferrer"><i class="fab fa-line"></i><span>${en ? 'Contact to get offer' : 'ติดต่อรับโปรโมชั่น'}</span></a>
+                        <button class="promotion-detail-full-image" type="button"><i class="far fa-image"></i><span>${en ? 'View full image' : 'ดูรูปโปรโมชั่นเต็ม'}</span></button>
+                    </div>
+                </div>
+            </section>
+        `;
+        document.body.appendChild(modal);
+        modal.querySelector('.promotion-detail-close').addEventListener('click', closePromotionDetailModal);
+        modal.addEventListener('click', (event) => { if (event.target === modal) closePromotionDetailModal(); });
+        modal.querySelector('.promotion-detail-full-image').addEventListener('click', () => {
+            const url = modal.dataset.imageUrl || '';
+            if (!url) return;
+            modal.classList.add('hidden');
+            modal.dataset.restoreAfterImage = '1';
+            openPromotionImageModal(url, true);
+        });
+    }
+
+    modal.dataset.promoKey = String(lookupKey || '');
+    modal.dataset.imageUrl = imageUrl || '';
+    modal.querySelector('.promotion-detail-title').textContent = title;
+    modal.querySelector('.promotion-detail-date').innerHTML = `<i class="far fa-calendar-alt"></i> ${escapePromotionText(dateRange)}`;
+    const status = modal.querySelector('.promotion-detail-status');
+    status.className = `promotion-detail-status ${promoState}`;
+    status.innerHTML = `<i class="fas ${promoState === 'upcoming' ? 'fa-clock' : (promoState === 'disabled' ? 'fa-pause-circle' : (promoState === 'expired' ? 'fa-calendar-xmark' : 'fa-bolt'))}"></i>${escapePromotionText(stateLabel)}`;
+    modal.querySelector('.promotion-detail-description').textContent = description;
+    const media = modal.querySelector('.promotion-detail-media');
+    media.innerHTML = imageUrl ? `<img src="${escapePromotionText(imageUrl)}" alt="${escapePromotionText(title)}">` : `<div class="promotion-detail-placeholder"><i class="fas fa-gift"></i><strong>JOKEMOO</strong><small>PROMOTION</small></div>`;
+    const lineButton = modal.querySelector('.promotion-detail-line');
+    lineButton.href = getLineContactUrl();
+    lineButton.classList.toggle('hidden', promoState !== 'active');
+    const fullImageButton = modal.querySelector('.promotion-detail-full-image');
+    fullImageButton.classList.toggle('hidden', !imageUrl);
+    modal.classList.remove('hidden');
+    document.body.classList.add('modal-open');
+}
+
+function closePromotionDetailModal() {
+    const modal = document.getElementById('promotionDetailModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.dataset.restoreAfterImage = '0';
+    }
+    document.body.classList.remove('modal-open');
+}
+
+function openPromotionImageModal(imageUrl, returnToDetail = false) {
     let modal = document.getElementById('promotionImageModal');
     if (!modal) {
         modal = document.createElement('div');
@@ -893,12 +1272,24 @@ function openPromotionImageModal(imageUrl) {
     }
     const modalImg = modal.querySelector('#promotionModalImage');
     modalImg.src = imageUrl;
+    modal.dataset.returnToPromoDetail = returnToDetail ? '1' : '0';
     modal.classList.remove('hidden');
+    document.body.classList.add('modal-open');
 }
 
 function closePromotionImageModal() {
     const modal = document.getElementById('promotionImageModal');
-    if (modal) modal.classList.add('hidden');
+    if (!modal) return;
+    const shouldRestore = modal.dataset.returnToPromoDetail === '1';
+    modal.classList.add('hidden');
+    modal.dataset.returnToPromoDetail = '0';
+    const detailModal = document.getElementById('promotionDetailModal');
+    if (shouldRestore && detailModal) {
+        detailModal.classList.remove('hidden');
+        document.body.classList.add('modal-open');
+    } else {
+        document.body.classList.remove('modal-open');
+    }
 }
 
 function getActivePromotion() {
@@ -1245,8 +1636,29 @@ function normalizeReviewImageUrl(url) {
     return url;
 }
 
+function updateReviewOverview() {
+    const scoreEl = document.getElementById('reviewAverageScore');
+    const starsEl = document.getElementById('reviewAverageStars');
+    const countEl = document.getElementById('reviewTotalCount');
+    const reviews = Array.isArray(state.reviews) ? state.reviews : [];
+    const count = reviews.length;
+    const average = count
+        ? reviews.reduce((sum, review) => sum + Math.max(0, Math.min(5, Number(review.rating) || 0)), 0) / count
+        : 5;
+    if (scoreEl) scoreEl.textContent = average.toFixed(1);
+    if (countEl) countEl.textContent = String(count);
+    if (starsEl) {
+        const rounded = Math.round(average);
+        starsEl.innerHTML = Array.from({ length: 5 }, (_, index) =>
+            `<i class="${index < rounded ? 'fas' : 'far'} fa-star"></i>`
+        ).join('');
+        starsEl.setAttribute('aria-label', `คะแนนเฉลี่ย ${average.toFixed(1)} จาก 5 ดาว`);
+    }
+}
+
 function renderReviews() {
     renderPromotionBanner();
+    updateReviewOverview();
     if (!reviewList || !reviewNoData) return;
 
     reviewList.innerHTML = "";
@@ -2056,8 +2468,9 @@ function renderPaymentDetail() {
         </div>`;
     } else {
         const number = String(cfg.accountNumber || '').trim();
+        const bankImage = String(cfg.bankImage || '').trim();
         paymentDetail.innerHTML = `<div class="payment-bank-layout">
-            <span class="payment-bank-icon"><i class="fas fa-building-columns"></i></span>
+            <span class="payment-bank-icon ${bankImage ? 'has-bank-image' : ''}">${bankImage ? `<img src="${escapeMovieText(bankImage)}" alt="${escapeMovieText(cfg.bankName || 'ธนาคาร')}">` : '<i class="fas fa-building-columns"></i>'}</span>
             <div><span class="payment-label">${escapeMovieText(cfg.bankName || 'ธนาคาร')}</span><h5>${escapeMovieText(number || 'ยังไม่ได้ตั้งค่าเลขบัญชี')}</h5><p>${escapeMovieText(cfg.accountName || 'JokeMoo Store')}</p></div>
             ${number ? `<button class="button button-outline copy-bank-number" type="button" data-bank-number="${escapeMovieText(number)}"><i class="fas fa-copy"></i> คัดลอก</button>` : ''}
         </div>`;
@@ -2358,22 +2771,27 @@ function showAppPage(page, category = 'all', options = {}) {
     if (!['all', 'netflix', 'other'].includes(category)) category = 'all';
 
     activePage = page;
+    activePromotionFilter = getNormalizedPromotionFilter(page);
     if (page === 'products') {
         activeProductCategory = category;
         updateProductFilterUI(category);
         renderProducts();
     }
     if (page === 'my-orders') renderMyOrders();
+    if (page === 'promotions' || page === 'promotions-active' || page === 'promotions-upcoming' || page === 'promotions-disabled') renderPromotionBanner();
 
     document.querySelectorAll('[data-page-view]').forEach((section) => {
-        section.classList.toggle('is-active', section.dataset.pageView === page);
+        const isPromotionView = ['promotions','promotions-active','promotions-upcoming','promotions-disabled'].includes(page) && section.dataset.pageView === 'promotions';
+        section.classList.toggle('is-active', section.dataset.pageView === page || isPromotionView);
     });
     document.querySelectorAll('.side-nav-item[data-page]').forEach((button) => {
         button.classList.toggle('is-active', button.dataset.page === page);
     });
     document.querySelectorAll('.side-subnav-item[data-page]').forEach((button) => {
+        if (button.closest('#promotionSubnav')) return;
         if (!button.dataset.category) button.classList.toggle('is-active', button.dataset.page === page);
     });
+    updatePromotionFilterUI(activePromotionFilter);
     const isEnglish = window.JMI18n && window.JMI18n.lang === 'en';
     const pageTitle = isEnglish ? appPageTitlesEn[page] : appPageTitles[page];
     const title = document.getElementById('currentPageTitle');
@@ -2424,11 +2842,13 @@ function initAppNavigation() {
     const productParent = productGroup ? productGroup.querySelector('.side-nav-parent') : null;
     const movieGroup = document.getElementById('movieNavGroup');
     const movieParent = movieGroup ? movieGroup.querySelector('.side-nav-parent') : null;
+    const promotionGroup = document.getElementById('promotionNavGroup');
+    const promotionParent = promotionGroup ? promotionGroup.querySelector('.side-nav-parent') : null;
     const contactGroup = document.getElementById('contactNavGroup');
     const contactParent = contactGroup ? contactGroup.querySelector('.side-nav-parent') : null;
 
     // Submenus always start collapsed. They only open after the user clicks the parent.
-    [productGroup, movieGroup, contactGroup].forEach((group) => {
+    [productGroup, movieGroup, promotionGroup, contactGroup].forEach((group) => {
         if (!group) return;
         group.classList.remove('is-open');
         const parent = group.querySelector('.side-nav-parent');
@@ -2471,6 +2891,15 @@ function initAppNavigation() {
         });
     }
 
+    if (promotionParent && promotionGroup) {
+        promotionParent.addEventListener('click', (event) => {
+            event.preventDefault();
+            const willOpen = !promotionGroup.classList.contains('is-open');
+            promotionGroup.classList.toggle('is-open', willOpen);
+            promotionParent.setAttribute('aria-expanded', String(willOpen));
+        });
+    }
+
     if (contactParent && contactGroup) {
         contactParent.addEventListener('click', (event) => {
             event.preventDefault();
@@ -2484,7 +2913,7 @@ function initAppNavigation() {
         if (!link) return;
         if (link.dataset.configured === 'false' || link.classList.contains('is-unconfigured')) {
             event.preventDefault();
-            showToast((window.JMI18n && window.JMI18n.lang === 'en') ? 'This contact link has not been configured yet' : 'ช่องทางนี้ยังไม่พร้อมใช้งาน', 'info');
+            showToast((window.JMI18n && window.JMI18n.lang === 'en') ? 'This contact link has not been configured yet' : 'ช่องทางนี้ยังไม่ได้ตั้งค่าลิงก์ในหลังบ้าน', 'info');
         }
     });
     document.getElementById('refreshMyOrdersBtn')?.addEventListener('click', refreshMyOrderHistory);
