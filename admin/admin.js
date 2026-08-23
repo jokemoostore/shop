@@ -460,7 +460,7 @@ const ADMIN_SESSION_MS = ADMIN_SESSION_DAYS * 24 * 60 * 60 * 1000;
 const ROOT_ADMIN_USERNAME = 'adminbank';
 const ROOT_ADMIN_FALLBACK = Object.freeze({
   username: ROOT_ADMIN_USERNAME,
-  displayName: 'Bank Admin',
+  displayName: 'Dev Bank',
   role: 'owner',
   enabled: true,
   salt: '+bsvLvT4FNwB5KWQd7MweA==',
