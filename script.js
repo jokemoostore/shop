@@ -85,6 +85,7 @@ const appPageTitles = {
     'promotions-active': 'โปรโมชั่น • เริ่ม',
     'promotions-upcoming': 'โปรโมชั่น • รอเริ่ม',
     'promotions-disabled': 'โปรโมชั่น • ปิดการใช้งาน',
+    movies: 'แนะนำหนัง',
     'movies-top': 'หนังติด TOP',
     'movies-upcoming': 'หนังที่ใกล้จะเข้า',
     'movies-recommended': 'หนังแนะนำจากทางร้าน',
@@ -103,6 +104,7 @@ const appPageTitlesEn = {
     'promotions-active': 'Promotions • Started',
     'promotions-upcoming': 'Promotions • Waiting',
     'promotions-disabled': 'Promotions • Disabled',
+    movies: 'Movie Picks',
     'movies-top': 'Top Movies',
     'movies-upcoming': 'Coming Soon',
     'movies-recommended': 'Store Picks',
@@ -300,6 +302,9 @@ const productsContainer = document.getElementById("products");
 const topMoviesGrid = document.getElementById("topMoviesGrid");
 const upcomingMoviesGrid = document.getElementById("upcomingMoviesGrid");
 const recommendedMoviesGrid = document.getElementById("recommendedMoviesGrid");
+const allTopMoviesGrid = document.getElementById("allTopMoviesGrid");
+const allUpcomingMoviesGrid = document.getElementById("allUpcomingMoviesGrid");
+const allRecommendedMoviesGrid = document.getElementById("allRecommendedMoviesGrid");
 const topMovieCount = document.getElementById("topMovieCount");
 const recommendedMovieCount = document.getElementById("recommendedMovieCount");
 const upcomingMovieCount = document.getElementById("upcomingMovieCount");
@@ -927,7 +932,7 @@ document.addEventListener('jokemoo:languagechange', () => {
 });
 
 function attachMovieDetailEvents() {
-    [topMoviesGrid, upcomingMoviesGrid, recommendedMoviesGrid].filter(Boolean).forEach((grid) => {
+    [topMoviesGrid, upcomingMoviesGrid, recommendedMoviesGrid, allTopMoviesGrid, allUpcomingMoviesGrid, allRecommendedMoviesGrid].filter(Boolean).forEach((grid) => {
         if (grid.dataset.movieDetailBound === '1') return;
         grid.dataset.movieDetailBound = '1';
         grid.addEventListener('click', (event) => {
@@ -945,10 +950,18 @@ function renderMovies() {
     if (topMovieCount) topMovieCount.textContent = String(top.length);
     if (upcomingMovieCount) upcomingMovieCount.textContent = String(upcoming.length);
     if (recommendedMovieCount) recommendedMovieCount.textContent = String(recommended.length);
+    const allMovieCount = document.getElementById('allMovieCount');
+    if (allMovieCount) allMovieCount.textContent = String(top.length + upcoming.length + recommended.length);
     const isEnglish = window.JMI18n && window.JMI18n.lang === 'en';
-    if (topMoviesGrid) topMoviesGrid.innerHTML = top.length ? top.map(renderMovieCard).join('') : `<div class="movie-empty"><i class="fas fa-trophy"></i><strong>${isEnglish ? 'No top movies yet' : 'ยังไม่มีหนังติด TOP'}</strong><small>${isEnglish ? 'Add movies in Admin and they will appear here automatically.' : 'เพิ่มหนังจากหลังบ้าน แล้วรายการจะมาแสดงตรงนี้อัตโนมัติ'}</small></div>`;
-    if (upcomingMoviesGrid) upcomingMoviesGrid.innerHTML = upcoming.length ? upcoming.map(renderMovieCard).join('') : `<div class="movie-empty"><i class="fas fa-calendar-plus"></i><strong>${isEnglish ? 'No upcoming movies yet' : 'ยังไม่มีหนังที่ใกล้จะเข้า'}</strong><small>${isEnglish ? 'Add movies in Admin and they will appear here automatically.' : 'เพิ่มหนังจากหลังบ้าน แล้วรายการจะมาแสดงตรงนี้อัตโนมัติ'}</small></div>`;
-    if (recommendedMoviesGrid) recommendedMoviesGrid.innerHTML = recommended.length ? recommended.map(renderMovieCard).join('') : `<div class="movie-empty"><i class="fas fa-heart"></i><strong>${isEnglish ? 'No store picks yet' : 'ยังไม่มีหนังแนะนำจากทางร้าน'}</strong><small>${isEnglish ? 'Movies added in Admin will appear here automatically.' : 'เพิ่มหนังจากหลังบ้าน แล้วรายการแนะนำจะมาแสดงตรงนี้อัตโนมัติ'}</small></div>`;
+    const topMarkup = top.length ? top.map(renderMovieCard).join('') : `<div class="movie-empty"><i class="fas fa-trophy"></i><strong>${isEnglish ? 'No top movies yet' : 'ยังไม่มีหนังติด TOP'}</strong><small>${isEnglish ? 'Add movies in Admin and they will appear here automatically.' : 'เพิ่มหนังจากหลังบ้าน แล้วรายการจะมาแสดงตรงนี้อัตโนมัติ'}</small></div>`;
+    const upcomingMarkup = upcoming.length ? upcoming.map(renderMovieCard).join('') : `<div class="movie-empty"><i class="fas fa-calendar-plus"></i><strong>${isEnglish ? 'No upcoming movies yet' : 'ยังไม่มีหนังที่ใกล้จะเข้า'}</strong><small>${isEnglish ? 'Add movies in Admin and they will appear here automatically.' : 'เพิ่มหนังจากหลังบ้าน แล้วรายการจะมาแสดงตรงนี้อัตโนมัติ'}</small></div>`;
+    const recommendedMarkup = recommended.length ? recommended.map(renderMovieCard).join('') : `<div class="movie-empty"><i class="fas fa-heart"></i><strong>${isEnglish ? 'No store picks yet' : 'ยังไม่มีหนังแนะนำจากทางร้าน'}</strong><small>${isEnglish ? 'Movies added in Admin will appear here automatically.' : 'เพิ่มหนังจากหลังบ้าน แล้วรายการแนะนำจะมาแสดงตรงนี้อัตโนมัติ'}</small></div>`;
+    if (topMoviesGrid) topMoviesGrid.innerHTML = topMarkup;
+    if (upcomingMoviesGrid) upcomingMoviesGrid.innerHTML = upcomingMarkup;
+    if (recommendedMoviesGrid) recommendedMoviesGrid.innerHTML = recommendedMarkup;
+    if (allTopMoviesGrid) allTopMoviesGrid.innerHTML = topMarkup;
+    if (allUpcomingMoviesGrid) allUpcomingMoviesGrid.innerHTML = upcomingMarkup;
+    if (allRecommendedMoviesGrid) allRecommendedMoviesGrid.innerHTML = recommendedMarkup;
     attachMovieDetailEvents();
 }
 

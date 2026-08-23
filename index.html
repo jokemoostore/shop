@@ -202,9 +202,9 @@
 
 
                     <section class="home-shortcuts">
-                        <button class="home-shortcut-card" type="button" data-page="movies-recommended">
+                        <button class="home-shortcut-card" type="button" data-page="movies">
                             <span class="home-shortcut-icon"><i class="fas fa-clapperboard"></i></span>
-                            <div><strong>แนะนำหนัง</strong><small>หนังแนะนำจากทางร้าน</small></div>
+                            <div><strong>แนะนำหนัง</strong><small>รวมหนังติด TOP หนังใกล้เข้า และหนังแนะนำ</small></div>
                             <i class="fas fa-chevron-right"></i>
                         </button>
                         <button class="home-shortcut-card" type="button" data-page="wheel">
@@ -236,6 +236,41 @@
                     </div>
                     <section class="products products-page-section">
                         <div id="products" class="product-grid"></div>
+                    </section>
+                </section>
+
+                <!-- MOVIES: ALL -->
+                <section class="app-page movies-page" data-page-view="movies">
+                    <div class="page-section-header movies-page-header">
+                        <div>
+                            <span class="page-kicker">MOVIE PICKS</span>
+                            <h2>แนะนำหนัง</h2>
+                            <p>รวมหนังติด TOP หนังใกล้เข้า และหนังแนะนำจากทางร้านไว้ในหน้าเดียว</p>
+                        </div>
+                        <div class="movie-page-counts" aria-label="สรุปหนังแนะนำทั้งหมด">
+                            <span><i class="fas fa-clapperboard"></i><b id="allMovieCount">0</b> เรื่อง</span>
+                        </div>
+                    </div>
+                    <section class="movie-shelf movie-shelf-top">
+                        <div class="movie-shelf-heading">
+                            <div><span class="movie-shelf-icon"><i class="fas fa-fire"></i></span><div><span>RANKING NOW</span><h3>หนังติด TOP</h3></div></div>
+                            <small>หนังยอดนิยมที่กำลังติดอันดับ</small>
+                        </div>
+                        <div id="allTopMoviesGrid" class="movie-grid"></div>
+                    </section>
+                    <section class="movie-shelf movie-shelf-upcoming">
+                        <div class="movie-shelf-heading">
+                            <div><span class="movie-shelf-icon"><i class="fas fa-calendar-check"></i></span><div><span>COMING SOON</span><h3>หนังใกล้เข้า</h3></div></div>
+                            <small>หนังที่กำลังจะเข้ารับชม</small>
+                        </div>
+                        <div id="allUpcomingMoviesGrid" class="movie-grid"></div>
+                    </section>
+                    <section class="movie-shelf">
+                        <div class="movie-shelf-heading">
+                            <div><span class="movie-shelf-icon"><i class="fas fa-heart"></i></span><div><span>JOKEMOO PICKS</span><h3>หนังแนะนำจากทางร้าน</h3></div></div>
+                            <small>รายการที่ทางร้านคัดมาแนะนำ</small>
+                        </div>
+                        <div id="allRecommendedMoviesGrid" class="movie-grid"></div>
                     </section>
                 </section>
 
