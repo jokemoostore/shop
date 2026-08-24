@@ -4932,3 +4932,474 @@ button,a,[role="button"]{touch-action:manipulation;}
 .promotion-inactive-section .promotion-list-heading span{color:#7b8796}
 .promotion-inactive-section .promotion-list-heading b{color:#667586;background:#eef2f6;border-color:#e0e6ec}
 @media(max-width:560px){.promotion-list-section{padding:12px;border-radius:18px}.promotion-list-heading{align-items:flex-start}.promotion-list-heading h3{font-size:1.08rem}.promotion-list-heading small{font-size:.68rem}}
+
+/* ========================================================================== */
+/* V48 — unified responsive pass + iPad checkout safe spacing                */
+/* ========================================================================== */
+:root{--jm-safe-bottom:env(safe-area-inset-bottom,0px);--jm-safe-top:env(safe-area-inset-top,0px)}
+.app-page-content{width:100%;max-width:1600px;margin:0 auto;min-width:0}
+[data-page-view],.page-view,.category-wrapper,.category-block,.review-grid,.product-grid,.promotion-list-page,.movie-showcase{min-width:0;max-width:100%}
+.product-grid,.review-grid,.movie-grid,.promotions-grid{align-items:stretch}
+.product-card,.review-card,.movie-card,.promotion-card{min-width:0;max-width:100%}
+.product-card img,.review-card img,.movie-card img,.promotion-card img{max-width:100%;height:auto}
+
+@media (min-width:821px) and (max-width:1180px){
+  :root{--sidebar-width:230px}
+  .site-app-layout{grid-template-columns:var(--sidebar-width) minmax(0,1fr)!important}
+  .sidebar-brand{padding-inline:12px}.sidebar-brand-copy strong{font-size:.92rem}.side-nav-item,.side-nav-link{font-size:.8rem;padding-inline:10px}
+  .app-page-content{padding:18px 18px 34px!important}
+  .content-topbar{padding-inline:18px!important}
+  .app-hero{padding:26px!important;gap:18px!important;grid-template-columns:1fr!important}
+  .app-hero-media{order:2}.app-hero .home-status-card{grid-column:auto!important}
+  .home-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .product-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .review-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .movie-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+}
+
+/* iPad / tablet checkout: keep the bottom actions away from the screen edge. */
+@media (min-width:768px) and (max-width:1180px){
+  .checkout-overlay{
+    align-items:center!important;
+    justify-content:center!important;
+    padding:max(20px,var(--jm-safe-top)) 18px calc(30px + var(--jm-safe-bottom))!important;
+    overflow:auto!important;
+  }
+  .checkout-modal{
+    width:min(720px,calc(100vw - 36px))!important;
+    max-width:720px!important;
+    height:auto!important;
+    max-height:calc(100vh - 54px)!important;
+    margin:auto!important;
+    border-radius:24px!important;
+    overflow:hidden!important;
+  }
+  @supports (height:100dvh){.checkout-modal{max-height:calc(100dvh - 54px)!important}}
+  .checkout-step-view[data-checkout-step="1"].is-active,
+  .checkout-step-view[data-checkout-step="2"].is-active,
+  .checkout-step-view[data-checkout-step="3"].is-active{
+    overflow-y:auto!important;
+    overscroll-behavior:contain!important;
+    -webkit-overflow-scrolling:touch!important;
+    padding-bottom:calc(26px + var(--jm-safe-bottom))!important;
+  }
+  .payment-qr-layout{grid-template-columns:160px minmax(0,1fr)!important;column-gap:18px!important}
+  .payment-qr-box{width:160px!important;height:160px!important;max-width:160px!important;max-height:160px!important}
+  .checkout-footer-actions{
+    bottom:0!important;
+    margin:14px 0 0!important;
+    padding:15px 0 calc(10px + var(--jm-safe-bottom))!important;
+    background:linear-gradient(180deg,rgba(248,251,255,0),#f8fbff 30%,#f8fbff 100%)!important;
+  }
+  .checkout-footer-actions .button{min-height:48px!important}
+}
+
+@media (max-width:820px){
+  .app-page-content{padding:14px 12px calc(30px + var(--jm-safe-bottom))!important}
+  .content-topbar{padding-left:max(12px,env(safe-area-inset-left,0px))!important;padding-right:max(12px,env(safe-area-inset-right,0px))!important}
+  .content-topbar-left{min-width:0}.content-topbar-actions{flex:0 0 auto}
+  .content-topbar h1{max-width:min(42vw,240px)!important}
+  .home-shortcuts,.product-grid,.review-grid,.promotions-grid{grid-template-columns:1fr!important}
+  .movie-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .page-section-header{gap:10px!important;margin-bottom:16px!important}
+  .app-footer{padding-bottom:calc(78px + var(--jm-safe-bottom))!important}
+}
+
+@media (max-width:560px){
+  .app-page-content{padding-inline:10px!important}
+  .app-hero{padding:20px 15px!important;border-radius:18px!important}
+  .app-hero .hero-content h2{font-size:clamp(1.8rem,10vw,2.5rem)!important}
+  .movie-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+  .product-card,.review-card,.promotion-card{border-radius:18px!important}
+}
+
+@media (max-width:390px){
+  .movie-grid{grid-template-columns:1fr!important}
+  .content-topbar h1{max-width:34vw!important}
+}
+
+@media (orientation:landscape) and (max-height:600px) and (max-width:1180px){
+  .checkout-overlay{padding-top:8px!important;padding-bottom:12px!important}
+  .checkout-modal{max-height:calc(100dvh - 20px)!important}
+  .checkout-step-view[data-checkout-step="1"].is-active,
+  .checkout-step-view[data-checkout-step="2"].is-active,
+  .checkout-step-view[data-checkout-step="3"].is-active{padding-bottom:18px!important}
+  .payment-qr-box{width:130px!important;height:130px!important;max-width:130px!important;max-height:130px!important}
+}
+
+
+/* V49 — iPad QR checkout: lift the two step-2 action buttons by 3rem. */
+@media (min-width:768px) and (max-width:1180px){
+  #checkoutPanel.is-qr-payment .checkout-step-view[data-checkout-step="2"].is-active .checkout-footer-actions{
+    bottom:calc(3rem + var(--jm-safe-bottom))!important;
+  }
+  #checkoutPanel.is-qr-payment #checkoutBackDiscount,
+  #checkoutPanel.is-qr-payment #checkoutToConfirm{
+    position:relative!important;
+    z-index:21!important;
+  }
+}
+
+
+/* V51 — remove homepage promotional hero artwork */
+@media (min-width:1181px){
+  .app-hero{grid-template-columns:minmax(0,1.45fr) minmax(280px,.55fr)!important;}
+  .app-hero .home-status-card{grid-column:auto!important;}
+}
+
+
+/* ==========================================================================
+   V58 — iPad checkout actions in normal flow (no overlap)
+   ========================================================================== */
+@media (min-width:768px) and (max-width:1180px){
+  #checkoutPanel.is-qr-payment .checkout-step-view[data-checkout-step="2"].is-active{
+    padding-bottom:calc(24px + var(--jm-safe-bottom))!important;
+  }
+  #checkoutPanel.is-qr-payment .checkout-step-view[data-checkout-step="2"].is-active .checkout-price-summary{
+    position:relative!important;
+    z-index:1!important;
+    margin-bottom:0!important;
+  }
+  #checkoutPanel.is-qr-payment .checkout-step-view[data-checkout-step="2"].is-active .checkout-footer-actions{
+    position:static!important;
+    inset:auto!important;
+    bottom:auto!important;
+    transform:none!important;
+    z-index:2!important;
+    margin:16px 0 0!important;
+    padding:0 0 calc(14px + var(--jm-safe-bottom))!important;
+    background:transparent!important;
+    grid-template-columns:minmax(0,.9fr) minmax(0,1.2fr)!important;
+    gap:12px!important;
+  }
+  #checkoutPanel.is-qr-payment #checkoutBackDiscount,
+  #checkoutPanel.is-qr-payment #checkoutToConfirm{
+    position:static!important;
+    inset:auto!important;
+    transform:none!important;
+    min-height:48px!important;
+    margin:0!important;
+  }
+}
+
+@media (min-width:768px) and (max-width:1180px) and (orientation:landscape){
+  #checkoutPanel.is-qr-payment .checkout-step-view[data-checkout-step="2"].is-active .checkout-footer-actions{
+    margin-top:12px!important;
+    padding-bottom:calc(10px + var(--jm-safe-bottom))!important;
+  }
+}
+
+
+/* ========================================================================== */
+/* V59 — stable iPad checkout + QR save button beside account name           */
+/* ========================================================================== */
+.payment-qr-caption{
+  min-width:0!important;
+  width:100%!important;
+}
+.payment-qr-caption-head{
+  width:100%!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:10px!important;
+  min-width:0!important;
+}
+.payment-qr-caption-head h5{
+  min-width:0!important;
+  flex:1 1 auto!important;
+  overflow-wrap:anywhere!important;
+}
+.payment-qr-caption-head .save-qr-image{
+  flex:0 0 auto!important;
+  margin:0!important;
+  white-space:nowrap!important;
+}
+
+@media (min-width:768px) and (max-width:1180px){
+  /* Step 2 has three permanent rows: scrollable payment card, summary, actions. */
+  #checkoutPanel .checkout-step-view[data-checkout-step="2"].is-active{
+    display:grid!important;
+    grid-template-rows:minmax(0,1fr) auto auto!important;
+    gap:10px!important;
+    height:min(610px,calc(100dvh - 185px))!important;
+    max-height:calc(100dvh - 185px)!important;
+    min-height:0!important;
+    overflow:hidden!important;
+    padding:14px 22px calc(16px + var(--jm-safe-bottom))!important;
+  }
+  #checkoutPanel .checkout-step-view[data-checkout-step="2"].is-active > .checkout-card{
+    min-height:0!important;
+    max-height:none!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    overscroll-behavior:contain!important;
+    -webkit-overflow-scrolling:touch!important;
+  }
+  #checkoutPanel .checkout-step-view[data-checkout-step="2"].is-active > .checkout-price-summary{
+    position:relative!important;
+    inset:auto!important;
+    z-index:3!important;
+    margin:0!important;
+    flex:none!important;
+  }
+  #checkoutPanel .checkout-step-view[data-checkout-step="2"].is-active > .checkout-footer-actions{
+    position:relative!important;
+    inset:auto!important;
+    bottom:auto!important;
+    z-index:4!important;
+    transform:none!important;
+    margin:0!important;
+    padding:0!important;
+    background:transparent!important;
+    display:grid!important;
+    grid-template-columns:minmax(0,.9fr) minmax(0,1.2fr)!important;
+    gap:12px!important;
+  }
+  #checkoutPanel .checkout-step-view[data-checkout-step="2"].is-active > .checkout-footer-actions .button{
+    position:relative!important;
+    inset:auto!important;
+    transform:none!important;
+    margin:0!important;
+    width:100%!important;
+    min-height:48px!important;
+  }
+
+  /* QR content stays compact, leaving room for the summary and actions. */
+  #checkoutPanel.is-qr-payment .payment-qr-layout{
+    display:grid!important;
+    grid-template-columns:160px minmax(0,1fr)!important;
+    grid-template-rows:auto auto minmax(0,1fr)!important;
+    grid-template-areas:
+      "qr label"
+      "qr due"
+      "qr caption"!important;
+    column-gap:18px!important;
+    row-gap:8px!important;
+    align-items:center!important;
+    text-align:left!important;
+  }
+  #checkoutPanel.is-qr-payment .payment-qr-box{
+    grid-area:qr!important;
+    width:160px!important;
+    height:160px!important;
+    max-width:160px!important;
+    max-height:160px!important;
+    margin:0!important;
+  }
+  #checkoutPanel.is-qr-payment .payment-label{grid-area:label!important;justify-self:start!important;margin:0!important}
+  #checkoutPanel.is-qr-payment .payment-due-chip{grid-area:due!important;justify-self:start!important;margin:0!important}
+  #checkoutPanel.is-qr-payment .payment-qr-caption{
+    grid-area:caption!important;
+    justify-items:stretch!important;
+    align-self:start!important;
+    text-align:left!important;
+  }
+  #checkoutPanel.is-qr-payment .payment-qr-caption p{max-width:none!important}
+  #checkoutPanel.is-qr-payment .payment-qr-caption-head .save-qr-image{
+    min-height:36px!important;
+    padding:7px 11px!important;
+    font-size:.72rem!important;
+  }
+}
+
+@media (min-width:768px) and (max-width:1180px) and (orientation:landscape){
+  #checkoutPanel .checkout-step-view[data-checkout-step="2"].is-active{
+    height:min(460px,calc(100dvh - 150px))!important;
+    max-height:calc(100dvh - 150px)!important;
+    gap:8px!important;
+    padding-top:10px!important;
+    padding-bottom:calc(10px + var(--jm-safe-bottom))!important;
+  }
+  #checkoutPanel.is-qr-payment .payment-qr-layout{
+    grid-template-columns:132px minmax(0,1fr)!important;
+    column-gap:14px!important;
+    row-gap:5px!important;
+  }
+  #checkoutPanel.is-qr-payment .payment-qr-box{
+    width:132px!important;
+    height:132px!important;
+    max-width:132px!important;
+    max-height:132px!important;
+  }
+  #checkoutPanel .checkout-step-view[data-checkout-step="2"].is-active > .checkout-footer-actions .button{
+    min-height:44px!important;
+  }
+}
+
+@media (max-width:640px){
+  .payment-qr-caption-head{
+    justify-content:center!important;
+    flex-wrap:wrap!important;
+    gap:7px!important;
+    text-align:center!important;
+  }
+  .payment-qr-caption-head h5{flex:1 1 100%!important;text-align:center!important}
+  .payment-qr-caption-head .save-qr-image{margin:0 auto!important}
+}
+
+/* ========================================================================== */
+/* V59 — iPad checkout uses the same compact layout as mobile                 */
+/* ========================================================================== */
+@media (min-width:641px) and (max-width:1180px){
+  .checkout-overlay{
+    padding:12px!important;
+    align-items:center!important;
+    justify-content:center!important;
+    background:rgba(7,28,62,.48)!important;
+  }
+  .checkout-modal{
+    width:min(94vw,430px)!important;
+    max-height:88dvh!important;
+    border-radius:20px!important;
+    margin:auto!important;
+    overflow:hidden!important;
+  }
+  .checkout-modal-header{padding:12px 13px 9px!important}
+  .checkout-modal-header small{display:none!important}
+  .checkout-steps{padding:7px 10px!important}
+  .checkout-step-line{width:28px!important}
+  .checkout-step-pill{gap:4px!important}
+  .checkout-step-pill span{display:inline!important;font-size:.58rem!important}
+  .checkout-step-pill b{width:24px!important;height:24px!important;font-size:.67rem!important}
+  .checkout-step-view,
+  #checkoutPanel .checkout-step-view[data-checkout-step="1"].is-active,
+  #checkoutPanel .checkout-step-view[data-checkout-step="2"].is-active,
+  #checkoutPanel .checkout-step-view[data-checkout-step="3"].is-active{
+    display:none!important;
+    width:100%!important;
+    height:auto!important;
+    max-height:calc(88dvh - 104px)!important;
+    min-height:0!important;
+    padding:9px 12px 12px!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    overscroll-behavior:contain!important;
+    -webkit-overflow-scrolling:touch!important;
+  }
+  #checkoutPanel .checkout-step-view.is-active{display:block!important}
+  .checkout-card,
+  #checkoutPanel .checkout-step-view[data-checkout-step="2"].is-active > .checkout-card{
+    padding:11px!important;
+    min-height:0!important;
+    max-height:none!important;
+    overflow:visible!important;
+  }
+  .checkout-card-heading{gap:8px!important}
+  .checkout-card-icon{width:34px!important;height:34px!important}
+  .checkout-card-heading p{display:none!important}
+  .discount-entry-row{grid-template-columns:minmax(0,1fr) auto!important;gap:7px!important}
+  .discount-entry-row input{min-height:40px!important}
+  .discount-entry-row .button{padding:8px 10px!important;white-space:nowrap!important}
+
+  .payment-method-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .payment-method-card{
+    display:grid!important;
+    grid-template-columns:32px minmax(0,1fr)!important;
+    gap:7px!important;
+    align-items:center!important;
+    min-height:58px!important;
+    padding:9px 10px!important;
+  }
+  .payment-method-card>span{width:32px!important;height:32px!important}
+  .payment-method-card small{display:none!important}
+  .payment-method-card .payment-check{position:absolute!important;right:7px!important;top:7px!important}
+
+  #checkoutPanel.is-qr-payment .payment-qr-layout,
+  .payment-qr-layout{
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:center!important;
+    justify-content:center!important;
+    gap:5px!important;
+    text-align:center!important;
+  }
+  #checkoutPanel.is-qr-payment .payment-qr-box,
+  .payment-qr-box{
+    width:min(205px,58vw)!important;
+    height:min(205px,58vw)!important;
+    max-width:205px!important;
+    max-height:205px!important;
+    margin:0 auto!important;
+  }
+  #checkoutPanel.is-qr-payment .payment-label,
+  #checkoutPanel.is-qr-payment .payment-due-chip,
+  #checkoutPanel.is-qr-payment .payment-qr-caption{
+    grid-area:auto!important;
+    justify-self:auto!important;
+    align-self:auto!important;
+    text-align:center!important;
+  }
+  .payment-bank-layout{gap:10px!important;align-items:flex-start!important}
+  .payment-bank-icon{width:44px!important;height:44px!important}
+  .payment-detail-panel h5{font-size:1rem!important}
+
+  #checkoutPanel .checkout-step-view[data-checkout-step="2"].is-active > .checkout-price-summary,
+  .checkout-price-summary{
+    position:relative!important;
+    inset:auto!important;
+    margin:8px 0!important;
+  }
+  #checkoutPanel .checkout-step-view[data-checkout-step="2"].is-active > .checkout-footer-actions,
+  .checkout-footer-actions{
+    position:relative!important;
+    inset:auto!important;
+    display:grid!important;
+    grid-template-columns:1fr 1.3fr!important;
+    gap:7px!important;
+    margin:9px 0 0!important;
+    padding:0!important;
+    transform:none!important;
+    background:transparent!important;
+  }
+  .checkout-footer-actions .button,
+  #checkoutPanel .checkout-step-view[data-checkout-step="2"].is-active > .checkout-footer-actions .button{
+    position:relative!important;
+    inset:auto!important;
+    width:100%!important;
+    min-height:39px!important;
+    padding:8px 10px!important;
+    margin:0!important;
+    transform:none!important;
+    font-size:.72rem!important;
+  }
+  .checkout-order-actions{grid-template-columns:1fr!important}
+
+  /* Keep the QR save control on the right side of the account/name row. */
+  .payment-qr-caption-head{
+    width:100%!important;
+    display:flex!important;
+    flex-wrap:nowrap!important;
+    align-items:center!important;
+    justify-content:space-between!important;
+    gap:8px!important;
+    text-align:left!important;
+  }
+  .payment-qr-caption-head h5{
+    flex:1 1 auto!important;
+    min-width:0!important;
+    text-align:left!important;
+    font-size:.94rem!important;
+  }
+  .payment-qr-caption-head .save-qr-image{
+    flex:0 0 auto!important;
+    min-height:34px!important;
+    padding:6px 9px!important;
+    margin:0!important;
+    font-size:.67rem!important;
+    white-space:nowrap!important;
+  }
+}
+
+
+/* V60 — fix iPad checkout active step hidden by V59 specificity */
+@media (min-width:641px) and (max-width:1180px){
+  #checkoutPanel.checkout-overlay .checkout-modal .checkout-step-view{
+    display:none!important;
+  }
+  #checkoutPanel.checkout-overlay .checkout-modal .checkout-step-view.is-active{
+    display:block!important;
+    visibility:visible!important;
+    opacity:1!important;
+  }
+}

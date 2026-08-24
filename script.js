@@ -25,9 +25,24 @@ const state = {
     maintenanceMode: false,
 };
 
-const apiBaseUrl = (window.JokeMooConfig && window.JokeMooConfig.apiBaseUrl)
-    ? window.JokeMooConfig.apiBaseUrl
-    : "https://script.google.com/macros/s/AKfycbyspAWk-Wkf4qShYeswphtQt5iCe2q7hccdDu6G4rd648hdgzNLOlLUMsPVvZmRL0XF/exec";
+const configuredApiBaseUrl = (window.JokeMooConfig && window.JokeMooConfig.apiBaseUrl)
+    ? String(window.JokeMooConfig.apiBaseUrl).trim()
+    : "";
+const legacyApiBaseUrl = "";
+const apiBaseUrls = Array.from(new Set([
+    configuredApiBaseUrl,
+    ...((window.JokeMooConfig && Array.isArray(window.JokeMooConfig.apiFallbackUrls)) ? window.JokeMooConfig.apiFallbackUrls : []),
+    legacyApiBaseUrl,
+].map(value => String(value || '').trim()).filter(Boolean)));
+let activeApiBaseUrl = apiBaseUrls[0] || '';
+
+function orderedApiBaseUrls() {
+    return Array.from(new Set([activeApiBaseUrl, ...apiBaseUrls].filter(Boolean)));
+}
+
+function rememberWorkingApiBaseUrl(url) {
+    if (url) activeApiBaseUrl = url;
+}
 const productCategories = {
     netflix: "Netflix Premium",
     other: "แอพอื่น",
@@ -374,26 +389,25 @@ const defaultReviews = [
 ];
 
 async function fetchGet(action) {
-
-    const url = new URL(apiBaseUrl);
-    const query = new URLSearchParams({ action }).toString();
-    url.search = query;
-
-    const response = await fetch(url.toString(), {
-        cache: 'no-store',
-        mode: 'cors',
-        headers: {
-            'Accept': 'application/json',
-        },
-    });
-    if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+    let lastError = new Error('ไม่พบ API URL');
+    for (const baseUrl of orderedApiBaseUrls()) {
+        try {
+            const url = new URL(baseUrl);
+            url.search = new URLSearchParams({ action }).toString();
+            const response = await fetch(url.toString(), {
+                cache: 'no-store', mode: 'cors', headers: { 'Accept': 'application/json' },
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const result = await response.json();
+            if (!result || !result.success) throw new Error((result && result.message) || 'API error');
+            rememberWorkingApiBaseUrl(baseUrl);
+            return result;
+        } catch (error) {
+            lastError = error;
+            console.warn('API GET failed, trying fallback:', baseUrl, error && error.message ? error.message : error);
+        }
     }
-    const result = await response.json();
-    if (!result || !result.success) {
-        throw new Error((result && result.message) || 'API error');
-    }
-    return result;
+    throw lastError;
 }
 
 async function apiGet(action) {
@@ -417,29 +431,33 @@ async function apiGet(action) {
 }
 
 async function apiPost(action, payload) {
-    const bodyPayload = new URLSearchParams({ action, ...payload });
-    const response = await fetch(apiBaseUrl, {
-        method: 'POST',
-        mode: 'cors',
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: bodyPayload.toString(),
-    });
-    if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`HTTP ${response.status}: ${text}`);
+    const bodyPayload = new URLSearchParams({ action, ...payload }).toString();
+    let lastError = new Error('ไม่พบ API URL');
+    for (const baseUrl of orderedApiBaseUrls()) {
+        try {
+            const response = await fetch(baseUrl, {
+                method: 'POST', mode: 'cors',
+                headers: { 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: bodyPayload,
+            });
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(`HTTP ${response.status}: ${text}`);
+            }
+            const result = await response.json();
+            if (!result || !result.success) throw new Error((result && result.message) || 'API error');
+            rememberWorkingApiBaseUrl(baseUrl);
+            if (action === 'submitReview') {
+                siteDataCache = null;
+                notifyRealtimePeers(action);
+            }
+            return result;
+        } catch (error) {
+            lastError = error;
+            console.warn('API POST failed, trying fallback:', baseUrl, error && error.message ? error.message : error);
+        }
     }
-    const result = await response.json();
-    if (!result || !result.success) {
-        throw new Error((result && result.message) || 'API error');
-    }
-    if (action === 'submitReview') {
-        siteDataCache = null;
-        notifyRealtimePeers(action);
-    }
-    return result;
+    throw lastError;
 }
 
 function parsePromotionDate(value) {
@@ -502,6 +520,8 @@ const DISCOUNT_PROMO_PREFIX = '__JM_DISCOUNT__';
 const ORDER_PROMO_PREFIX = '__JM_ORDER__';
 const SETTINGS_PROMO_PREFIX = '__JM_SETTINGS__';
 const ADMIN_USER_PROMO_PREFIX = '__JM_ADMIN_USER__';
+const ADMIN_AUDIT_PROMO_PREFIX = '__JM_ADMIN_AUDIT__';
+const ADMIN_TOTP_RESET_PROMO_PREFIX = '__JM_ADMIN_2FA_RESET__';
 
 function isMoviePromotionRecord(promo) {
     return !!(promo && String(promo.title || '').startsWith(MOVIE_PROMO_PREFIX));
@@ -570,6 +590,8 @@ function parseStoreOrderPromotionRecord(promo) {
 }
 
 function isAdminUserPromotionRecord(promo) { return !!(promo && String(promo.title || '').startsWith(ADMIN_USER_PROMO_PREFIX)); }
+function isAdminAuditPromotionRecord(promo) { return !!(promo && String(promo.title || '').startsWith(ADMIN_AUDIT_PROMO_PREFIX)); }
+function isAdminTotpResetPromotionRecord(promo) { return !!(promo && String(promo.title || '').startsWith(ADMIN_TOTP_RESET_PROMO_PREFIX)); }
 
 function isSettingsPromotionRecord(promo) {
     return !!(promo && String(promo.title || '').startsWith(SETTINGS_PROMO_PREFIX));
@@ -665,7 +687,7 @@ function applyPromotionAndMovieData(records) {
     state.myOrders = list.map(parseStoreOrderPromotionRecord).filter((order) => order && String(order.clientId || '') === String(currentClientId)).sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
     const settingsRecords = list.map(parseWebSettingsRecord).filter(Boolean);
     state.webSettings = normalizeWebSettings(settingsRecords.length ? settingsRecords[settingsRecords.length - 1] : null);
-    state.promotions = list.filter((promo) => !isMoviePromotionRecord(promo) && !isDiscountPromotionRecord(promo) && !isOrderPromotionRecord(promo) && !isSettingsPromotionRecord(promo) && !isAdminUserPromotionRecord(promo));
+    state.promotions = list.filter((promo) => !isMoviePromotionRecord(promo) && !isDiscountPromotionRecord(promo) && !isOrderPromotionRecord(promo) && !isSettingsPromotionRecord(promo) && !isAdminUserPromotionRecord(promo) && !isAdminAuditPromotionRecord(promo) && !isAdminTotpResetPromotionRecord(promo));
     applyStoreSettingsToUi();
     renderMyOrders();
     if (typeof renderPaymentDetail === 'function') renderPaymentDetail();
@@ -2265,18 +2287,25 @@ function getDiscountLimitStatus(discount) {
 
 async function storeAdminPost(action, payload = {}) {
     const apiKey = (window.JokeMooConfig && window.JokeMooConfig.adminApiKey) || '';
-    const bodyPayload = new URLSearchParams({ action, apiKey, ...payload });
-    const response = await fetch(apiBaseUrl, {
-        method: 'POST', mode: 'cors',
-        headers: { 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: bodyPayload.toString(),
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const result = await response.json();
-    if (!result || !result.success) throw new Error((result && result.message) || 'ไม่สามารถบันทึกการใช้โค้ดได้');
-    siteDataCache = null;
-    notifyRealtimePeers(action);
-    return result;
+    const bodyPayload = new URLSearchParams({ action, apiKey, ...payload }).toString();
+    let lastError = new Error('ไม่พบ API URL');
+    for (const baseUrl of orderedApiBaseUrls()) {
+        try {
+            const response = await fetch(baseUrl, {
+                method: 'POST', mode: 'cors',
+                headers: { 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: bodyPayload,
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const result = await response.json();
+            if (!result || !result.success) throw new Error((result && result.message) || 'ไม่สามารถบันทึกการใช้โค้ดได้');
+            rememberWorkingApiBaseUrl(baseUrl);
+            siteDataCache = null;
+            notifyRealtimePeers(action);
+            return result;
+        } catch (error) { lastError = error; }
+    }
+    throw lastError;
 }
 
 async function consumeDiscountUsage() {
@@ -2404,12 +2433,13 @@ function resetCheckoutFlow({ closePanel = false } = {}) {
         discountFeedback.innerHTML = '';
     }
     document.querySelectorAll('[data-payment-method]').forEach(el => el.classList.remove('is-selected'));
+    if (checkoutPanel) checkoutPanel.classList.remove('is-qr-payment');
     if (checkoutOrderReceipt) checkoutOrderReceipt.classList.add('hidden');
     if (checkoutOrderNumber) checkoutOrderNumber.textContent = '-';
     if (checkoutBackPayment) checkoutBackPayment.classList.remove('hidden');
     if (checkoutToConfirm) {
         checkoutToConfirm.disabled = false;
-        checkoutToConfirm.innerHTML = 'โอนเสร็จแล้ว <i class="fas fa-arrow-right"></i>';
+        checkoutToConfirm.innerHTML = 'ดำเนินการต่อ <i class="fas fa-arrow-right"></i>';
     }
     if (confirmPaymentBtn) {
         confirmPaymentBtn.disabled = false;
@@ -2476,8 +2506,13 @@ function renderPaymentDetail() {
             <span class="payment-label">QR พร้อมเพย์</span>
             <div class="payment-due-chip"><span>ยอดที่ต้องชำระ</span><strong>${money(total)}</strong></div>
             <div class="payment-qr-box">${image ? `<img src="${escapeMovieText(image)}" alt="QR ชำระเงิน">` : `<div class="payment-qr-empty"><i class="fas fa-qrcode"></i><strong>ยังไม่ได้ตั้งค่า QR</strong><small>ตั้งค่า QR ในเมนูจัดการเว็บ</small></div>`}</div>
-            ${image ? `<button class="button button-outline save-qr-image" type="button" data-qr-src="${escapeMovieText(image)}"><i class="fas fa-download"></i> บันทึก QR</button>` : ''}
-            <div class="payment-qr-caption"><h5>${escapeMovieText(cfg.accountName || 'JokeMoo Store')}</h5><p>สแกน QR แล้วตรวจสอบชื่อและยอดก่อนโอน</p></div>
+            <div class="payment-qr-caption">
+                <div class="payment-qr-caption-head">
+                    <h5>${escapeMovieText(cfg.accountName || 'JokeMoo Store')}</h5>
+                    ${image ? `<button class="button button-outline save-qr-image" type="button" data-qr-src="${escapeMovieText(image)}"><i class="fas fa-download"></i> บันทึก QR</button>` : ''}
+                </div>
+                <p>สแกน QR แล้วตรวจสอบชื่อและยอดก่อนโอน</p>
+            </div>
         </div>`;
     } else {
         const number = String(cfg.accountNumber || '').trim();
@@ -2494,6 +2529,7 @@ function selectPaymentMethod(method) {
     if (checkoutState.orderSaved) return;
     checkoutState.paymentMethod = method;
     document.querySelectorAll('[data-payment-method]').forEach(el => el.classList.toggle('is-selected', el.dataset.paymentMethod === method));
+    if (checkoutPanel) checkoutPanel.classList.toggle('is-qr-payment', method === 'qr');
     renderPaymentDetail();
 }
 
@@ -2620,7 +2656,7 @@ async function finalizeOrderAfterTransfer() {
         checkoutState.confirming = false;
         if (checkoutToConfirm) {
             checkoutToConfirm.disabled = false;
-            checkoutToConfirm.innerHTML = originalHtml || 'โอนเสร็จแล้ว <i class="fas fa-arrow-right"></i>';
+            checkoutToConfirm.innerHTML = originalHtml || 'ดำเนินการต่อ <i class="fas fa-arrow-right"></i>';
         }
     }
 }
@@ -2642,7 +2678,7 @@ function fallbackCopyText(text) {
 
 async function copyOrderNumberAndOpenLine() {
     if (!checkoutState.orderSaved || !checkoutState.orderNo) {
-        showToast('ยังไม่มีเลขออเดอร์ กรุณากด “โอนเสร็จแล้ว” ก่อน', 'error');
+        showToast('ยังไม่มีเลขออเดอร์ กรุณากด “ดำเนินการต่อ” ก่อน', 'error');
         setCheckoutStep(2);
         return;
     }
@@ -2758,8 +2794,11 @@ function ensureWheelLoaded() {
     if (!frame) return;
     frame.style.pointerEvents = 'auto';
     frame.style.visibility = 'visible';
-    if (frame.src) { applyWheelSettingsToFrame(frame); return; }
-    const rawSrc = frame.dataset.src;
+    const currentSrc = frame.getAttribute('src');
+    if (currentSrc && currentSrc !== 'about:blank') { applyWheelSettingsToFrame(frame); return; }
+    const localRawSrc = frame.dataset.src;
+    const hostedRawSrc = frame.dataset.fileSrc || 'https://jokemoomovieluckwheel.github.io/wheelnew/';
+    const rawSrc = window.location.protocol === 'file:' ? hostedRawSrc : localRawSrc;
     if (!rawSrc) return;
     let src = rawSrc;
     try {
@@ -2840,6 +2879,13 @@ function showAppPage(page, category = 'all', options = {}) {
 
 function navigateToPage(page, category = 'all') {
     const nextHash = page === 'products' && category !== 'all' ? `#products/${category}` : `#${page}`;
+    // file:// pages are isolated security origins. Updating the file URL/hash from
+    // a framed/local preview can trigger Chromium's "Unsafe attempt to load URL" warning.
+    // Keep routing inside the page while testing locally; normal hosted pages still use hashes.
+    if (window.location.protocol === 'file:') {
+        showAppPage(page, category);
+        return;
+    }
     if (window.location.hash === nextHash) {
         showAppPage(page, category);
     } else {

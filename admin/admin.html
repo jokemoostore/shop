@@ -7,9 +7,9 @@
     <title>JokeMoo Store Admin</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="../styles.css?v=20260825-v59">
     <link rel="stylesheet" href="code-manager/scoped.css">
-    <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="admin.css?v=20260825-v67">
     <link rel="icon" type="image" href="../logo.png">
 </head>
 <body class="admin-shell-body admin-auth-locked">
@@ -21,14 +21,36 @@
                 <img src="../assets/optimized/logo.webp" onerror="this.src='../logo.png'" alt="JokeMoo Store">
                 <div><span>JOKEMOO CONTROL CENTER</span><h1 id="adminLoginTitle">เข้าสู่ระบบหลังร้าน</h1><p>กรอกบัญชีผู้ดูแลเพื่อจัดการร้านค้า</p></div>
             </div>
-            <form id="adminLoginForm" class="admin-auth-form" autocomplete="on">
+            <form id="adminLoginForm" class="admin-auth-form" autocomplete="on" action="javascript:void(0)">
                 <label><span><i class="fas fa-user"></i> Username</span><input id="adminLoginUsername" name="username" type="text" autocomplete="username" placeholder="ชื่อผู้ใช้" required></label>
                 <label><span><i class="fas fa-lock"></i> Password</span><div class="admin-password-wrap"><input id="adminLoginPassword" name="password" type="password" autocomplete="current-password" placeholder="รหัสผ่าน" required><button id="adminLoginPasswordToggle" type="button" aria-label="แสดงรหัสผ่าน"><i class="fas fa-eye"></i></button></div></label>
-                <label class="admin-remember-row"><input id="adminRememberLogin" type="checkbox"><span><b>จดจำการเข้าสู่ระบบ</b><small>จำบัญชีนี้ไว้ 30 วันบนอุปกรณ์นี้</small></span></label>
+                <label class="admin-remember-row"><input id="adminRememberLogin" type="checkbox"><span><b>จดจำการเข้าสู่ระบบ</b><small>ติ๊ก = รีเฟรชแล้วไม่หลุด 30 วัน · ไม่ติ๊ก = รีเฟรชแล้วต้องเข้าใหม่</small></span></label>
                 <div id="adminLoginError" class="admin-auth-error hidden" role="alert"></div>
                 <button id="adminLoginBtn" class="admin-auth-submit" type="submit"><i class="fas fa-right-to-bracket"></i><span>เข้าสู่ระบบ</span></button>
             </form>
-            <div class="admin-auth-foot"><i class="fas fa-shield-halved"></i><span>เฉพาะผู้ดูแลระบบเท่านั้น</span></div>
+
+            <form id="adminTotpForm" class="admin-auth-form admin-totp-form hidden" autocomplete="one-time-code" action="javascript:void(0)">
+                <div class="admin-totp-heading">
+                    <span class="admin-totp-icon"><i class="fas fa-mobile-screen-button"></i></span>
+                    <div><small>2-STEP VERIFICATION</small><h2 id="adminTotpTitle">ยืนยัน Authenticator</h2><p id="adminTotpDescription">กรอกรหัส 6 หลักจากแอป Authenticator</p></div>
+                </div>
+                <div id="adminTotpSetupBox" class="admin-totp-setup hidden">
+                    <div class="admin-totp-setup-note"><i class="fas fa-shield-halved"></i><span><b>ตั้งค่า Authenticator ครั้งแรก</b><small>เพิ่มบัญชีใหม่ใน Google Authenticator, Microsoft Authenticator หรือแอป TOTP อื่น แล้วใส่คีย์ด้านล่าง</small></span></div>
+                    <div class="admin-totp-secret-row"><span>Setup key</span><code id="adminTotpSecret">-</code><button id="adminTotpCopySecret" type="button" title="คัดลอกคีย์"><i class="fas fa-copy"></i></button></div>
+                    <div class="admin-totp-account-row"><span>ชื่อบัญชี</span><strong id="adminTotpAccountLabel">JOKEMOO</strong></div>
+                </div>
+                <label class="admin-totp-code-field"><span><i class="fas fa-key"></i> รหัสยืนยัน 6 หลัก</span><input id="adminTotpCode" name="totp" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" placeholder="000000" required></label>
+                <div id="adminTotpError" class="admin-auth-error hidden" role="alert"></div>
+                <button id="adminTotpVerifyBtn" class="admin-auth-submit" type="submit"><i class="fas fa-shield-check"></i><span>ยืนยันและเข้าสู่ระบบ</span></button>
+                <div class="admin-totp-recovery">
+                    <div class="admin-totp-recovery-head"><i class="fas fa-life-ring"></i><span><b>เข้า Authenticator ไม่ได้?</b><small>ส่งคำร้องให้ผู้จัดการออกโค้ดรีเซ็ตแบบใช้ครั้งเดียว</small></span></div>
+                    <div id="adminTotpResetRequestStatus" class="admin-totp-reset-status hidden"></div>
+                    <div class="admin-totp-recovery-actions"><button id="adminTotpRequestResetBtn" type="button" class="admin-totp-recovery-btn"><i class="fas fa-paper-plane"></i><span>ขอรีเซ็ต Authenticator</span></button><button id="adminTotpHaveResetCodeBtn" type="button" class="admin-totp-recovery-btn is-secondary hidden"><i class="fas fa-key"></i><span>มีโค้ดรีเซ็ตแล้ว</span></button></div>
+                    <div id="adminTotpResetCodeBox" class="admin-totp-reset-code-box hidden"><label><span>โค้ดรีเซ็ตจากผู้จัดการ</span><input id="adminTotpResetCode" type="text" inputmode="numeric" maxlength="8" placeholder="00000000" autocomplete="one-time-code"></label><button id="adminTotpApplyResetCodeBtn" type="button"><i class="fas fa-rotate"></i><span>ยืนยันโค้ดและตั้ง Authenticator ใหม่</span></button></div>
+                </div>
+                <button id="adminTotpBackBtn" class="admin-totp-back" type="button"><i class="fas fa-arrow-left"></i> กลับไปกรอกรหัสผ่าน</button>
+            </form>
+            <div class="admin-auth-foot"><i class="fas fa-shield-halved"></i><span>เฉพาะผู้ดูแลระบบเท่านั้น · ป้องกันด้วย Authenticator</span></div>
         </section>
     </div>
     <div class="admin-app-layout">
@@ -103,12 +125,13 @@
                     </div>
                 </div>
 
-                <div class="admin-nav-group" data-admin-nav-group="system">
+                <div class="admin-nav-group" data-admin-nav-group="system" data-manager-only>
                     <button type="button" class="admin-nav-group-toggle" aria-expanded="false">
                         <span class="admin-nav-icon"><i class="fas fa-gear"></i></span><span>ระบบหลังบ้าน</span><i class="fas fa-chevron-down admin-group-arrow"></i>
                     </button>
                     <div class="admin-nav-submenu">
                         <button type="button" class="admin-tab-button admin-subtab-button" data-target="adminUsersSection" data-admin-title="จัดการผู้ดูแล"><i class="fas fa-user-shield"></i><span>จัดการผู้ดูแล</span></button>
+                        <button type="button" class="admin-tab-button admin-subtab-button" data-target="adminAuditSection" data-admin-title="ประวัติการทำงาน"><i class="fas fa-clock-rotate-left"></i><span>ประวัติการทำงาน</span></button>
                     </div>
                 </div>
 
@@ -139,7 +162,7 @@
                 </div>
                 <div class="admin-topbar-actions">
                     <span class="admin-online-pill"><i class="fas fa-circle"></i> Online</span>
-                    <div class="admin-current-user"><span class="admin-current-user-avatar"><i class="fas fa-user-shield"></i></span><span><small>เข้าสู่ระบบเป็น</small><strong id="adminCurrentUserName">-</strong></span></div>
+                    <div class="admin-current-user"><span class="admin-current-user-avatar"><i class="fas fa-user-shield"></i></span><span><small>เข้าสู่ระบบเป็น</small><strong id="adminCurrentUserName">-</strong><em id="adminCurrentUserRole" class="admin-current-role">-</em></span></div>
                     <button id="adminLogoutBtn" type="button" class="button button-outline admin-logout-btn"><i class="fas fa-arrow-right-from-bracket"></i> ออกจากระบบ</button>
                     <a href="../index.html" class="button button-outline"><i class="fas fa-store"></i> กลับหน้าหลัก</a>
                 </div>
@@ -322,25 +345,68 @@
                     </section>
 
                     <section id="adminUsersSection" class="admin-section hidden">
-                        <div class="admin-section-dashboard">
-                            <div class="admin-section-heading"><span class="admin-section-icon"><i class="fas fa-user-shield"></i></span><div><small>ADMIN ACCESS</small><h2>จัดการผู้ดูแล</h2><p>เพิ่มบัญชีหลังร้าน เปลี่ยนรหัสผ่าน เปิด/ปิดสิทธิ์ และจัดการผู้ดูแลจากหน้าเดียว</p></div></div>
-                            <div class="admin-mini-stats admin-user-mini-stats"><div><span>บัญชีทั้งหมด</span><b id="adminUserStatTotal">0</b></div><div><span>เปิดใช้งาน</span><b id="adminUserStatActive">0</b></div><div class="admin-online-stat"><span>ออนไลน์ตอนนี้</span><b id="adminUserStatOnline">0</b></div><div><span>บัญชีปัจจุบัน</span><b id="adminUserStatCurrent">-</b></div></div>
+                        <div class="admin-section-dashboard admin-users-dashboard-v66">
+                            <div class="admin-section-heading admin-users-heading-v66"><span class="admin-section-icon admin-users-heading-icon-v66"><i class="fas fa-user-shield"></i></span><div><small>ADMIN ACCESS CONTROL</small><h2>จัดการผู้ดูแล</h2><p>ควบคุมบัญชีผู้ดูแล บทบาท สถานะออนไลน์ และความปลอดภัยจากศูนย์กลางเดียว</p><div class="admin-users-heading-chips-v66"><span><i class="fas fa-shield-halved"></i> 2FA Security</span><span><i class="fas fa-signal"></i> Live Presence</span><span><i class="fas fa-clock-rotate-left"></i> Activity Tracking</span></div></div></div>
+                            <div class="admin-mini-stats admin-user-mini-stats admin-user-mini-stats-v66"><div><span>บัญชีทั้งหมด</span><b id="adminUserStatTotal">0</b></div><div><span>เปิดใช้งาน</span><b id="adminUserStatActive">0</b></div><div class="admin-online-stat"><span>ออนไลน์ตอนนี้</span><b id="adminUserStatOnline">0</b></div><div><span>บัญชีปัจจุบัน</span><b id="adminUserStatCurrent">-</b></div></div>
                         </div>
-                        <div class="admin-user-layout">
-                            <div class="admin-card admin-data-card admin-user-create-card">
-                                <div class="admin-card-header admin-user-create-head"><div class="admin-user-create-icon"><i class="fas fa-user-plus"></i></div><div class="admin-card-title-block"><span class="admin-section-kicker">NEW ADMIN</span><h3>เพิ่มผู้ดูแลใหม่</h3><p>สร้างบัญชีใหม่ได้เรื่อย ๆ และเข้าใช้งานได้ทันทีหลังบันทึก</p></div></div>
-                                <div class="admin-user-security-note"><i class="fas fa-shield-halved"></i><span><b>บัญชีหลังร้านปลอดภัย</b><small>รหัสผ่านจะถูก Hash ก่อนบันทึก และสามารถปิดสิทธิ์ภายหลังได้</small></span></div>
-                                <form id="adminUserCreateForm" class="admin-user-form" autocomplete="off">
-                                    <label class="admin-field"><span>Username</span><input id="newAdminUsername" type="text" minlength="3" maxlength="32" placeholder="เช่น staff01" autocomplete="off" required><small>ใช้ a-z, A-Z, 0-9, จุด, ขีดกลาง หรือ _</small></label>
-                                    <label class="admin-field"><span>ชื่อแสดง</span><input id="newAdminDisplayName" type="text" maxlength="60" placeholder="เช่น แอดมินกะเช้า"></label>
-                                    <label class="admin-field field-span-2"><span>รหัสผ่าน</span><input id="newAdminPassword" type="password" minlength="6" maxlength="100" placeholder="อย่างน้อย 6 ตัวอักษร" autocomplete="new-password" required></label>
-                                    <button id="createAdminUserBtn" class="button button-primary field-span-2" type="submit"><i class="fas fa-user-plus"></i> เพิ่มผู้ดูแล</button>
+                        <div class="admin-users-overview-v66">
+                            <div><span class="admin-users-overview-icon role"><i class="fas fa-users-gear"></i></span><p><b>กำหนดสิทธิ์ตามหน้าที่</b><small>แยกบทบาทแอดมินและผู้จัดการให้ชัดเจน</small></p></div>
+                            <div><span class="admin-users-overview-icon security"><i class="fas fa-fingerprint"></i></span><p><b>Authenticator ทุกบัญชี</b><small>ตรวจสอบสถานะ 2FA และรีเซ็ตได้จากจุดเดียว</small></p></div>
+                            <div><span class="admin-users-overview-icon live"><i class="fas fa-circle-nodes"></i></span><p><b>ดูสถานะการใช้งาน</b><small>เห็นเวลาเข้า–ออกและสถานะออนไลน์ของแต่ละบัญชี</small></p></div>
+                        </div>
+                        <div id="adminTotpResetRequestsPanel" class="admin-card admin-data-card admin-reset-requests-panel admin-reset-requests-panel-v66 hidden" data-manager-only>
+                            <div class="admin-reset-requests-head"><div class="admin-reset-requests-title"><span class="admin-reset-requests-icon"><i class="fas fa-shield-halved"></i></span><div><span class="admin-section-kicker">2FA RECOVERY CENTER</span><h3>คำร้องรีเซ็ต Authenticator</h3><p>อนุมัติคำร้องแล้วส่งโค้ด 8 หลักให้เจ้าของบัญชี โค้ดมีอายุ 15 นาทีและใช้ได้ครั้งเดียว</p></div></div><span class="admin-reset-pending-badge"><i class="fas fa-inbox"></i><b id="adminTotpResetPendingCount">0</b><small>คำร้องที่ต้องดู</small></span></div>
+                            <div id="adminTotpResetRequestsList" class="admin-reset-requests-list"></div>
+                        </div>
+                        <div class="admin-user-layout admin-user-layout-v66">
+                            <div class="admin-card admin-data-card admin-user-create-card admin-user-create-card-v66">
+                                <div class="admin-card-header admin-user-create-head">
+                                    <div class="admin-user-create-icon"><i class="fas fa-user-plus"></i></div>
+                                    <div class="admin-card-title-block"><span class="admin-section-kicker">CREATE ACCOUNT</span><h3>เพิ่มผู้ดูแลใหม่</h3><p>สร้างบัญชีหลังร้านและกำหนดสิทธิ์ให้เหมาะกับหน้าที่</p></div>
+                                    <span class="admin-user-create-badge"><i class="fas fa-lock"></i> MANAGER ONLY</span>
+                                </div>
+                                <div class="admin-user-security-note"><i class="fas fa-shield-halved"></i><span><b>ระบบจัดเก็บบัญชีแบบปลอดภัย</b><small>รหัสผ่านจะถูก Hash ก่อนบันทึก และทุกบัญชีต้องยืนยัน Authenticator เมื่อเข้าสู่ระบบ</small></span></div>
+                                <form id="adminUserCreateForm" class="admin-user-form admin-user-form-v61 admin-user-form-v62 admin-user-form-v67" autocomplete="off" action="javascript:void(0)">
+                                    <section class="admin-user-form-section">
+                                        <div class="admin-user-form-section-head"><span class="admin-user-form-step">01</span><div><b>ข้อมูลบัญชี</b><small>ใช้สำหรับเข้าสู่ระบบหลังร้าน</small></div></div>
+                                        <div class="admin-user-field-grid">
+                                            <label class="admin-field admin-user-field"><span><i class="fas fa-at"></i> Username</span><input id="newAdminUsername" type="text" minlength="3" maxlength="32" placeholder="เช่น staff01" autocomplete="off" required><small>ใช้ a-z, A-Z, 0-9, จุด, ขีดกลาง หรือ _</small></label>
+                                            <label class="admin-field admin-user-field"><span><i class="fas fa-id-badge"></i> ชื่อแสดง</span><input id="newAdminDisplayName" type="text" maxlength="60" placeholder="เช่น แอดมินกะเช้า"><small>ชื่อที่จะแสดงในประวัติการทำงาน</small></label>
+                                        </div>
+                                    </section>
+                                    <section class="admin-user-form-section">
+                                        <div class="admin-user-form-section-head"><span class="admin-user-form-step">02</span><div><b>สิทธิ์และความปลอดภัย</b><small>กำหนดบทบาทและรหัสผ่านของบัญชี</small></div></div>
+                                        <div class="admin-user-field-grid">
+                                            <label class="admin-field admin-user-field admin-user-role-field"><span><i class="fas fa-user-tag"></i> บทบาท</span><select id="newAdminRole"><option value="admin">แอดมิน</option><option value="manager">ผู้จัดการ</option></select><small>เลือกสิทธิ์ให้ตรงกับหน้าที่ของผู้ใช้งาน</small></label>
+                                            <label class="admin-field admin-user-field"><span><i class="fas fa-key"></i> รหัสผ่าน</span><input id="newAdminPassword" type="password" minlength="6" maxlength="100" placeholder="อย่างน้อย 6 ตัวอักษร" autocomplete="new-password" required><small>แนะนำให้ใช้ตัวอักษรและตัวเลขผสมกัน</small></label>
+                                        </div>
+                                        <div class="admin-user-role-guide">
+                                            <div><span class="admin-role-guide-icon is-admin"><i class="fas fa-user-shield"></i></span><p><b>แอดมิน</b><small>จัดการข้อมูลร้านตามสิทธิ์ที่กำหนด</small></p></div>
+                                            <div><span class="admin-role-guide-icon is-manager"><i class="fas fa-user-tie"></i></span><p><b>ผู้จัดการ</b><small>จัดการบัญชีแอดมินและดูประวัติการทำงานได้</small></p></div>
+                                        </div>
+                                    </section>
+                                    <div class="admin-user-create-actions">
+                                        <div class="admin-user-create-ready"><i class="fas fa-circle-check"></i><span><b>พร้อมสร้างบัญชี</b><small>ตรวจสอบ Username, บทบาท และรหัสผ่านก่อนบันทึก</small></span></div>
+                                        <button id="createAdminUserBtn" class="button button-primary" type="submit"><i class="fas fa-user-plus"></i><span>เพิ่มผู้ดูแลใหม่</span></button>
+                                    </div>
                                 </form>
                             </div>
-                            <div class="admin-card admin-data-card admin-user-list-card">
-                                <div class="admin-card-header admin-toolbar-header"><div class="admin-card-title-block"><span class="admin-section-kicker">ADMIN USERS</span><h3>บัญชีผู้ดูแลทั้งหมด</h3><p>บัญชีหลักจะไม่สามารถลบหรือปิดใช้งานได้</p></div><button id="refreshAdminUsersBtn" class="button button-outline" type="button"><i class="fas fa-rotate"></i> รีเฟรช</button></div>
-                                <div id="adminUsersList" class="admin-users-list"></div>
+                            <div class="admin-card admin-data-card admin-user-list-card admin-user-directory-v63 admin-user-directory-v66">
+                                <div class="admin-card-header admin-toolbar-header admin-user-directory-head admin-user-directory-head-v66"><div class="admin-card-title-block"><span class="admin-section-kicker">ADMIN DIRECTORY</span><h3>บัญชีผู้ดูแลทั้งหมด</h3><p>ดูสถานะออนไลน์ ความปลอดภัย เวลาใช้งาน และจัดการสิทธิ์ของแต่ละบัญชีในจุดเดียว</p></div><div class="admin-user-directory-tools"><span><i class="fas fa-circle-info"></i> บัญชีหลักลบหรือปิดไม่ได้</span><button id="refreshAdminUsersBtn" class="button button-outline" type="button"><i class="fas fa-rotate"></i> รีเฟรช</button></div></div>
+                                <div id="adminUsersList" class="admin-users-list admin-users-list-v63 admin-users-list-v66"></div>
                             </div>
+                        </div>
+                    </section>
+
+                    <section id="adminAuditSection" class="admin-section hidden" data-manager-only>
+                        <div class="admin-section-dashboard admin-audit-dashboard">
+                            <div class="admin-section-heading"><span class="admin-section-icon"><i class="fas fa-clock-rotate-left"></i></span><div><small>ADMIN ACTIVITY</small><h2>ประวัติการทำงานแอดมิน</h2><p>ดูว่าใครเข้า–ออกเวลาไหน ออนไลน์กี่นาที และเข้ามาแก้ไขอะไรในหลังบ้าน</p></div></div>
+                            <div class="admin-mini-stats admin-audit-stats"><div><span>รายการทั้งหมด</span><b id="adminAuditStatTotal">0</b></div><div><span>วันนี้</span><b id="adminAuditStatToday">0</b></div><div><span>แอดมินที่มีประวัติ</span><b id="adminAuditStatUsers">0</b></div></div>
+                        </div>
+                        <div class="admin-card admin-data-card admin-audit-card">
+                            <div class="admin-card-header admin-toolbar-header"><div class="admin-card-title-block"><span class="admin-section-kicker">ACTIVITY LOG</span><h3>บันทึกการใช้งาน</h3><p>กรองตามบัญชีหรือประเภทกิจกรรมได้ ข้อมูลใหม่จะแสดงล่าสุดก่อน</p></div><button id="refreshAdminAuditBtn" class="button button-outline" type="button"><i class="fas fa-rotate"></i> รีเฟรช</button></div>
+                            <div class="admin-audit-filters"><label><span>บัญชี</span><select id="adminAuditUserFilter"><option value="all">ทุกบัญชี</option></select></label><label><span>ประเภท</span><select id="adminAuditTypeFilter"><option value="all">ทั้งหมด</option><option value="session">เข้า / ออกระบบ</option><option value="action">การแก้ไขข้อมูล</option></select></label><label class="admin-audit-search"><span>ค้นหา</span><input id="adminAuditSearch" type="search" placeholder="เช่น โปรโมชั่น, สินค้า, ชื่อแอดมิน"></label></div>
+                            <div id="adminAuditList" class="admin-audit-list"></div>
                         </div>
                     </section>
 
@@ -558,11 +624,20 @@
         </section>
     </div>
 
+    <div id="adminAuditDetailModal" class="admin-audit-detail-modal hidden" aria-hidden="true">
+        <div class="admin-audit-detail-backdrop" data-close-admin-audit-detail></div>
+        <section class="admin-audit-detail-card" role="dialog" aria-modal="true" aria-labelledby="adminAuditDetailTitle">
+            <div class="admin-audit-detail-head"><div><span>ACTIVITY DETAIL</span><h3 id="adminAuditDetailTitle">รายละเอียดประวัติการทำงาน</h3><p>ข้อมูลกิจกรรมของแอดมินรายการนี้</p></div><button type="button" class="admin-audit-detail-close" data-close-admin-audit-detail aria-label="ปิด"><i class="fas fa-times"></i></button></div>
+            <div id="adminAuditDetailBody" class="admin-audit-detail-body"></div>
+            <div class="admin-audit-detail-actions"><button type="button" class="button button-primary" data-close-admin-audit-detail><i class="fas fa-check"></i> ปิดรายละเอียด</button></div>
+        </section>
+    </div>
+
     <div id="adminPasswordModal" class="admin-user-modal hidden" aria-hidden="true">
         <div class="admin-user-modal-backdrop" data-close-admin-password></div>
         <section class="admin-user-modal-card" role="dialog" aria-modal="true" aria-labelledby="adminPasswordModalTitle">
             <div class="admin-user-modal-head"><div><span>PASSWORD</span><h3 id="adminPasswordModalTitle">เปลี่ยนรหัสผ่าน</h3><p id="adminPasswordModalUser">-</p></div><button type="button" data-close-admin-password><i class="fas fa-times"></i></button></div>
-            <form id="adminPasswordResetForm" class="admin-user-modal-body">
+            <form id="adminPasswordResetForm" class="admin-user-modal-body" action="javascript:void(0)">
                 <input id="adminPasswordTarget" type="hidden">
                 <label class="admin-field"><span>รหัสผ่านใหม่</span><input id="adminPasswordNew" type="password" minlength="6" maxlength="100" autocomplete="new-password" required placeholder="อย่างน้อย 6 ตัวอักษร"></label>
                 <label class="admin-field"><span>ยืนยันรหัสผ่านใหม่</span><input id="adminPasswordConfirm" type="password" minlength="6" maxlength="100" autocomplete="new-password" required placeholder="กรอกรหัสผ่านอีกครั้ง"></label>
@@ -571,8 +646,17 @@
         </section>
     </div>
 
-    <script src="../config.js"></script>
+    <div id="adminTotpResetIssuedModal" class="admin-user-modal admin-reset-code-modal hidden" aria-hidden="true">
+        <div class="admin-user-modal-backdrop" data-close-admin-totp-reset-code></div>
+        <section class="admin-user-modal-card admin-reset-code-modal-card" role="dialog" aria-modal="true" aria-labelledby="adminTotpResetIssuedTitle">
+            <div class="admin-user-modal-head"><div><span>ONE-TIME RECOVERY CODE</span><h3 id="adminTotpResetIssuedTitle">โค้ดรีเซ็ต Authenticator</h3><p id="adminTotpResetIssuedUser">-</p></div><button type="button" data-close-admin-totp-reset-code><i class="fas fa-times"></i></button></div>
+            <div class="admin-reset-code-modal-body"><div class="admin-reset-code-warning"><i class="fas fa-triangle-exclamation"></i><span><b>ส่งโค้ดนี้ให้เจ้าของบัญชีเท่านั้น</b><small>ใช้ได้ครั้งเดียวและหมดอายุภายใน 15 นาที หากปิดหน้าต่างแล้วหาโค้ดไม่เจอสามารถออกโค้ดใหม่ได้</small></span></div><div class="admin-reset-code-display"><span>RECOVERY CODE</span><code id="adminTotpResetIssuedCode">00000000</code><button id="adminTotpResetCopyIssued" type="button"><i class="fas fa-copy"></i> คัดลอกโค้ด</button></div><div class="admin-reset-code-expiry"><span><i class="fas fa-hourglass-half"></i> หมดอายุ</span><b id="adminTotpResetIssuedExpiry">-</b></div></div>
+            <div class="admin-user-modal-actions"><button type="button" class="button button-primary" data-close-admin-totp-reset-code><i class="fas fa-check"></i> เรียบร้อย</button></div>
+        </section>
+    </div>
+
+    <script src="../config.js?v=20260825-v59"></script>
     <script src="../i18n.js"></script>
-    <script src="admin.js"></script>
+    <script src="admin.js?v=20260825-v67"></script>
 </body>
 </html>

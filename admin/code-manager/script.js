@@ -16,6 +16,13 @@ const STORAGE_KEY = 'wheel_codes';
             var q = Object.keys(params).map(function(k) { return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]); }).join('&');
             return fetch(apiBase() + '?' + q).then(function(r) { return r.json(); });
         }
+        function auditCodeManagerAction(action, target, detail) {
+            try {
+                if (typeof window.recordAdminManualAudit === 'function') {
+                    Promise.resolve(window.recordAdminManualAudit(action, target || 'ระบบโค้ดวงล้อ', detail || '')).catch(function() {});
+                }
+            } catch (_) {}
+        }
         function setListLoading(loading) {
             var el = document.getElementById('codeList');
             if (!el) return;
@@ -216,6 +223,7 @@ const STORAGE_KEY = 'wheel_codes';
                         renderTrashList();
                         updateStats();
                         showToast('✅ กู้คืนโค้ด ' + code + ' แล้ว');
+                        auditCodeManagerAction('กู้คืนโค้ดวงล้อ', code, 'กู้คืนจากถังขยะ');
                     } else if (!res.ok) {
                         showToast(res.error === 'already_restored' ? 'โค้ดนี้กู้คืนได้เพียง 1 ครั้ง' : 'กู้คืนไม่สำเร็จ', 'error');
                     }
@@ -249,6 +257,7 @@ const STORAGE_KEY = 'wheel_codes';
             renderTrashList();
             updateStats();
             showToast('✅ กู้คืนโค้ด ' + code + ' แล้ว');
+            auditCodeManagerAction('กู้คืนโค้ดวงล้อ', code, 'กู้คืนจากถังขยะ');
         }
 
         function deleteFromTrash(code) {
@@ -257,6 +266,7 @@ const STORAGE_KEY = 'wheel_codes';
                     trashCache = trashCache.filter(function(t) { return t.code !== code; });
                     renderTrashList();
                     showToast('🗑️ ลบออกจากถังขยะแล้ว');
+                    auditCodeManagerAction('ลบโค้ดถาวร', code, 'ลบออกจากถังขยะ');
                 }).catch(function() { showToast('เชื่อมต่อ API ไม่ได้', 'error'); });
                 return;
             }
@@ -264,6 +274,7 @@ const STORAGE_KEY = 'wheel_codes';
             saveTrash(trash);
             renderTrashList();
             showToast('🗑️ ลบออกจากถังขยะแล้ว');
+            auditCodeManagerAction('ลบโค้ดถาวร', code, 'ลบออกจากถังขยะ');
         }
 
         function generateRandomCode(length) {
@@ -291,6 +302,7 @@ const STORAGE_KEY = 'wheel_codes';
                     var created = res.created || [];
                     if (created.length > 0) {
                         created.forEach(function(c) { codesCache.push(c); });
+                        auditCodeManagerAction('สร้างโค้ดวงล้อ', created.length + ' โค้ด', 'จำนวนสิทธิ์หมุน ' + spins + ' ครั้ง / อายุ ' + expiryDays + ' วัน');
                         renderCodeList();
                         updateStats();
                         var textToCopy = created.map(function(c) { return c.code; }).join('\n');
@@ -364,6 +376,7 @@ const STORAGE_KEY = 'wheel_codes';
             updateStats();
 
             if (newCodes.length > 0) {
+                auditCodeManagerAction('สร้างโค้ดวงล้อ', newCodes.length + ' โค้ด', 'จำนวนสิทธิ์หมุน ' + spins + ' ครั้ง / อายุ ' + expiryDays + ' วัน');
                 var textToCopy = newCodes.join('\n');
                 navigator.clipboard.writeText(textToCopy).then(function() {
                     showToast(newCodes.length === 1
@@ -398,6 +411,7 @@ const STORAGE_KEY = 'wheel_codes';
                             renderTrashList();
                             updateStats();
                             showToast('🗑️ ย้ายโค้ดไปถังขยะแล้ว');
+                            auditCodeManagerAction('ลบโค้ดวงล้อ', code, 'ย้ายไปถังขยะ');
                         } else if (!res.ok) {
                             showToast('ลบไม่สำเร็จ', 'error');
                         }
@@ -428,6 +442,7 @@ const STORAGE_KEY = 'wheel_codes';
                 renderTrashList();
                 updateStats();
                 showToast('🗑️ ย้ายโค้ดไปถังขยะแล้ว');
+                auditCodeManagerAction('ลบโค้ดวงล้อ', code, 'ย้ายไปถังขยะ');
             });
         }
 
@@ -466,6 +481,7 @@ const STORAGE_KEY = 'wheel_codes';
                     renderTrashList();
                     updateStats();
                     showToast('🗑️ ย้ายโค้ดทั้งหมดไปถังขยะแล้ว');
+                    auditCodeManagerAction('ลบโค้ดวงล้อทั้งหมด', codes.length + ' โค้ด', 'ย้ายทั้งหมดไปถังขยะ');
                     codes.forEach(function(c) {
                         apiGet({ action: 'delete', code: c.code }).catch(function() {});
                     });
@@ -493,6 +509,7 @@ const STORAGE_KEY = 'wheel_codes';
                 renderTrashList();
                 updateStats();
                 showToast('🗑️ ย้ายโค้ดทั้งหมดไปถังขยะแล้ว');
+                auditCodeManagerAction('ลบโค้ดวงล้อทั้งหมด', codes.length + ' โค้ด', 'ย้ายทั้งหมดไปถังขยะ');
             });
         }
 
@@ -533,6 +550,7 @@ const STORAGE_KEY = 'wheel_codes';
                     renderTrashList();
                     updateStats();
                     showToast('🗑️ ย้ายโค้ดที่เลือกไปถังขยะแล้ว');
+                    auditCodeManagerAction('ลบโค้ดวงล้อที่เลือก', toDelete.length + ' โค้ด', 'ย้ายรายการที่เลือกไปถังขยะ');
                     toMove.forEach(function(c) {
                         apiGet({ action: 'delete', code: c.code }).catch(function() {});
                     });
@@ -564,6 +582,7 @@ const STORAGE_KEY = 'wheel_codes';
                 renderTrashList();
                 updateStats();
                 showToast('🗑️ ย้ายโค้ดที่เลือกไปถังขยะแล้ว');
+                auditCodeManagerAction('ลบโค้ดวงล้อที่เลือก', toDelete.length + ' โค้ด', 'ย้ายรายการที่เลือกไปถังขยะ');
             });
         }
 

@@ -1,6 +1,10 @@
 const DEFAULT_ADMIN_API_URL = (window.JokeMooConfig && window.JokeMooConfig.apiBaseUrl)
   ? window.JokeMooConfig.apiBaseUrl
-  : 'https://script.google.com/macros/s/AKfycbyspAWk-Wkf4qShYeswphtQt5iCe2q7hccdDu6G4rd648hdgzNLOlLUMsPVvZmRL0XF/exec';
+  : 'https://script.google.com/macros/s/AKfycbwt0fMJ8FZqx3w2W6E7pR67WemP1IRhlfoteuSaJLRc1CgnLqaErl8eruZYop_-Haqf/exec';
+const LEGACY_ADMIN_API_URL = 'https://script.google.com/macros/s/AKfycbwt0fMJ8FZqx3w2W6E7pR67WemP1IRhlfoteuSaJLRc1CgnLqaErl8eruZYop_-Haqf/exec';
+const CONFIG_ADMIN_API_FALLBACKS = (window.JokeMooConfig && Array.isArray(window.JokeMooConfig.apiFallbackUrls))
+  ? window.JokeMooConfig.apiFallbackUrls.map(url => String(url || '').trim()).filter(Boolean)
+  : [];
 const DEFAULT_ADMIN_API_KEY = (window.JokeMooConfig && window.JokeMooConfig.adminApiKey)
   ? window.JokeMooConfig.adminApiKey
   : 'ldmbvu219-126dhidk;das';
@@ -123,6 +127,8 @@ const adminState = {
   discounts: [],
   orders: [],
   adminUsers: [],
+  adminAuditLogs: [],
+  adminTotpResetRequests: [],
   currentAdminUser: null,
   webSettings: null,
   orderSearch: '',
@@ -470,18 +476,33 @@ const DISCOUNT_PROMO_PREFIX = '__JM_DISCOUNT__';
 const ORDER_PROMO_PREFIX = '__JM_ORDER__';
 const SETTINGS_PROMO_PREFIX = '__JM_SETTINGS__';
 const ADMIN_USER_PROMO_PREFIX = '__JM_ADMIN_USER__';
+const ADMIN_AUDIT_PROMO_PREFIX = '__JM_ADMIN_AUDIT__';
+const ADMIN_TOTP_RESET_PROMO_PREFIX = '__JM_ADMIN_2FA_RESET__';
+const ADMIN_TOTP_RESET_TTL_MS = 15 * 60 * 1000;
 const ADMIN_SESSION_KEY = 'jokemoo_admin_session_v1';
 const ADMIN_SESSION_DAYS = 30;
 const ADMIN_SESSION_MS = ADMIN_SESSION_DAYS * 24 * 60 * 60 * 1000;
+const ADMIN_DEVICE_ID_KEY = 'jokemoo_admin_device_v1';
+function getAdminDeviceId(){
+  try{
+    let id=localStorage.getItem(ADMIN_DEVICE_ID_KEY);
+    if(!id){ id=crypto.randomUUID?crypto.randomUUID():`device-${Date.now()}-${Math.random().toString(36).slice(2,10)}`; localStorage.setItem(ADMIN_DEVICE_ID_KEY,id); }
+    return id;
+  }catch(_){ return `device-${Date.now()}-${Math.random().toString(36).slice(2,10)}`; }
+}
+const ADMIN_DEVICE_ID = getAdminDeviceId();
 const ROOT_ADMIN_USERNAME = 'adminbank';
 const ROOT_ADMIN_FALLBACK = Object.freeze({
   username: ROOT_ADMIN_USERNAME,
   displayName: 'Bank Admin',
-  role: 'owner',
+  role: 'manager',
   enabled: true,
   salt: '+bsvLvT4FNwB5KWQd7MweA==',
   hash: 'wu7yJURQMxmXwBelux7pc2SiDKteHU2fWEYKmOgFhsA=',
   iterations: 120000,
+  totpEnabled: false,
+  totpSecret: '',
+  totpVerifiedAt: '',
   isRoot: true,
   synced: false,
 });
@@ -582,21 +603,133 @@ function parseAdminUserPromotionRecord(promo) {
   const fallback = String(promo.title || '').slice(ADMIN_USER_PROMO_PREFIX.length).replace(/^\|/, '').trim().toLowerCase();
   const username = String(meta.username || fallback || '').trim().toLowerCase();
   if (!username) return null;
+  const normalizedRole = (meta.role === 'manager' || meta.role === 'owner') ? 'manager' : 'admin';
   return {
-    id: promo.id, username, displayName: String(meta.displayName || username), role: meta.role === 'owner' ? 'owner' : 'admin',
+    id: promo.id, username, displayName: String(meta.displayName || username), role: normalizedRole,
     enabled: meta.enabled !== false, salt: String(meta.salt || ''), hash: String(meta.hash || ''),
-    iterations: Math.max(60000, Number(meta.iterations) || 120000), createdAt: meta.createdAt || '', updatedAt: meta.updatedAt || '',
+    iterations: Math.max(60000, Number(meta.iterations) || 120000),
+    totpEnabled: meta.totpEnabled === true, totpSecret: String(meta.totpSecret || ''), totpVerifiedAt: meta.totpVerifiedAt || '',
+    createdAt: meta.createdAt || '', updatedAt: meta.updatedAt || '',
     lastLoginAt: meta.lastLoginAt || '', lastSeenAt: meta.lastSeenAt || '', lastActivityAt: meta.lastActivityAt || '', lastLogoutAt: meta.lastLogoutAt || '',
-    isRoot: username === ROOT_ADMIN_USERNAME || meta.role === 'owner', synced: true
+    currentSessionStartedAt: meta.currentSessionStartedAt || '', currentSessionId: meta.currentSessionId || '', currentDeviceId: meta.currentDeviceId || '',
+    lastSessionDurationSec: Math.max(0, Number(meta.lastSessionDurationSec) || 0), totalOnlineSec: Math.max(0, Number(meta.totalOnlineSec) || 0),
+    isRoot: username === ROOT_ADMIN_USERNAME, synced: true
   };
 }
 
 function adminUserToPromotionPayload(user) {
   const username = String(user.username || '').trim().toLowerCase();
+  const normalizedRole = (user.role === 'manager' || user.role === 'owner' || user.isRoot) ? 'manager' : 'admin';
   return {
     title: `${ADMIN_USER_PROMO_PREFIX}|${username}`,
-    description: JSON.stringify({ username, displayName: String(user.displayName || username), role: user.isRoot || user.role === 'owner' ? 'owner' : 'admin', enabled: user.enabled !== false, salt: user.salt, hash: user.hash, iterations: Number(user.iterations) || 120000, createdAt: user.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString(), lastLoginAt: user.lastLoginAt || '', lastSeenAt: user.lastSeenAt || '', lastActivityAt: user.lastActivityAt || '', lastLogoutAt: user.lastLogoutAt || '' }),
+    description: JSON.stringify({ username, displayName: String(user.displayName || username), role: normalizedRole, enabled: user.enabled !== false, salt: user.salt, hash: user.hash, iterations: Number(user.iterations) || 120000, totpEnabled: user.totpEnabled === true, totpSecret: String(user.totpSecret || ''), totpVerifiedAt: user.totpVerifiedAt || '', createdAt: user.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString(), lastLoginAt: user.lastLoginAt || '', lastSeenAt: user.lastSeenAt || '', lastActivityAt: user.lastActivityAt || '', lastLogoutAt: user.lastLogoutAt || '', currentSessionStartedAt: user.currentSessionStartedAt || '', currentSessionId: user.currentSessionId || '', currentDeviceId: user.currentDeviceId || '', lastSessionDurationSec: Math.max(0, Number(user.lastSessionDurationSec) || 0), totalOnlineSec: Math.max(0, Number(user.totalOnlineSec) || 0) }),
     startAt: '', endAt: '', image: '', enabled: false
+  };
+}
+
+function isAdminTotpResetPromotionRecord(promo) {
+  return !!(promo && String(promo.title || '').startsWith(ADMIN_TOTP_RESET_PROMO_PREFIX));
+}
+
+function parseAdminTotpResetPromotionRecord(promo) {
+  if (!isAdminTotpResetPromotionRecord(promo)) return null;
+  let meta = {};
+  try { meta = JSON.parse(String(promo.description || '{}')); } catch (_) { meta = {}; }
+  const fallback = String(promo.title || '').slice(ADMIN_TOTP_RESET_PROMO_PREFIX.length).replace(/^\|/, '').trim();
+  const requestId = String(meta.requestId || fallback || '').trim();
+  const username = String(meta.username || '').trim().toLowerCase();
+  if (!requestId || !username) return null;
+  return {
+    id: promo.id,
+    requestId,
+    username,
+    displayName: String(meta.displayName || username),
+    status: ['pending','approved','used','rejected','expired'].includes(meta.status) ? meta.status : 'pending',
+    requestedAt: meta.requestedAt || '',
+    requestedDeviceId: String(meta.requestedDeviceId || ''),
+    approvedAt: meta.approvedAt || '',
+    approvedBy: String(meta.approvedBy || ''),
+    usedAt: meta.usedAt || '',
+    rejectedAt: meta.rejectedAt || '',
+    rejectedBy: String(meta.rejectedBy || ''),
+    codeSalt: String(meta.codeSalt || ''),
+    codeHash: String(meta.codeHash || ''),
+    expiresAt: meta.expiresAt || '',
+    synced: true,
+  };
+}
+
+function adminTotpResetToPromotionPayload(req) {
+  const requestId = String(req.requestId || (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2,8)}`));
+  return {
+    title: `${ADMIN_TOTP_RESET_PROMO_PREFIX}|${requestId}`,
+    description: JSON.stringify({
+      requestId,
+      username: String(req.username || '').trim().toLowerCase(),
+      displayName: String(req.displayName || req.username || ''),
+      status: String(req.status || 'pending'),
+      requestedAt: req.requestedAt || new Date().toISOString(),
+      requestedDeviceId: String(req.requestedDeviceId || ''),
+      approvedAt: req.approvedAt || '',
+      approvedBy: String(req.approvedBy || ''),
+      usedAt: req.usedAt || '',
+      rejectedAt: req.rejectedAt || '',
+      rejectedBy: String(req.rejectedBy || ''),
+      codeSalt: String(req.codeSalt || ''),
+      codeHash: String(req.codeHash || ''),
+      expiresAt: req.expiresAt || '',
+    }),
+    startAt: '', endAt: '', image: '', enabled: false,
+  };
+}
+
+function isAdminAuditPromotionRecord(promo) {
+  return !!(promo && String(promo.title || '').startsWith(ADMIN_AUDIT_PROMO_PREFIX));
+}
+
+function parseAdminAuditPromotionRecord(promo) {
+  if (!isAdminAuditPromotionRecord(promo)) return null;
+  let meta = {};
+  try { meta = JSON.parse(String(promo.description || '{}')); } catch (_) { meta = {}; }
+  const changes = Array.isArray(meta.changes) ? meta.changes.slice(0, 40).map((item) => ({
+    label: String(item?.label || 'ข้อมูล'),
+    before: String(item?.before ?? '—'),
+    after: String(item?.after ?? '—'),
+    type: String(item?.type || 'change'),
+  })) : [];
+  return {
+    id: promo.id,
+    kind: String(meta.kind || 'action'),
+    actorUsername: String(meta.actorUsername || '').toLowerCase(),
+    actorDisplayName: String(meta.actorDisplayName || meta.actorUsername || '-'),
+    actorRole: meta.actorRole === 'manager' ? 'manager' : 'admin',
+    action: String(meta.action || ''),
+    label: String(meta.label || ''),
+    detail: String(meta.detail || ''),
+    target: String(meta.target || ''),
+    changes,
+    at: meta.at || promo.startAt || '',
+    sessionId: String(meta.sessionId || ''),
+    synced: true,
+  };
+}
+
+function adminAuditToPromotionPayload(log) {
+  const at = log.at || new Date().toISOString();
+  const idPart = String(log.sessionId || (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2,8)}`));
+  const changes = Array.isArray(log.changes) ? log.changes.slice(0, 40).map((item) => ({
+    label: String(item?.label || 'ข้อมูล').slice(0, 120),
+    before: String(item?.before ?? '—').slice(0, 1600),
+    after: String(item?.after ?? '—').slice(0, 1600),
+    type: String(item?.type || 'change').slice(0, 30),
+  })) : [];
+  return {
+    title: `${ADMIN_AUDIT_PROMO_PREFIX}|${idPart}`,
+    description: JSON.stringify({
+      kind: log.kind || 'action', actorUsername: log.actorUsername || '', actorDisplayName: log.actorDisplayName || '', actorRole: log.actorRole === 'manager' ? 'manager' : 'admin',
+      action: log.action || '', label: log.label || '', detail: log.detail || '', target: log.target || '', changes, at, sessionId: log.sessionId || ''
+    }),
+    startAt: '', endAt: '', image: '', enabled: false,
   };
 }
 
@@ -606,9 +739,11 @@ function splitPromotionsAndMovies(records) {
   adminState.discounts = list.map(parseDiscountPromotionRecord).filter(Boolean);
   adminState.orders = list.map(parseOrderPromotionRecord).filter(Boolean).sort((a,b) => new Date(b.createdAt||0)-new Date(a.createdAt||0));
   adminState.adminUsers = list.map(parseAdminUserPromotionRecord).filter(Boolean);
+  adminState.adminAuditLogs = list.map(parseAdminAuditPromotionRecord).filter(Boolean).sort((a,b) => new Date(b.at||0)-new Date(a.at||0));
+  adminState.adminTotpResetRequests = list.map(parseAdminTotpResetPromotionRecord).filter(Boolean).sort((a,b) => new Date(b.requestedAt||0)-new Date(a.requestedAt||0));
   const settings = list.map(parseWebSettingsPromotionRecord).filter(Boolean);
   adminState.webSettings = normalizeAdminWebSettings(settings.length ? settings[settings.length - 1] : null);
-  adminState.promotions = list.filter((promo) => !isMoviePromotionRecord(promo) && !isDiscountPromotionRecord(promo) && !isOrderPromotionRecord(promo) && !isSettingsPromotionRecord(promo) && !isAdminUserPromotionRecord(promo));
+  adminState.promotions = list.filter((promo) => !isMoviePromotionRecord(promo) && !isDiscountPromotionRecord(promo) && !isOrderPromotionRecord(promo) && !isSettingsPromotionRecord(promo) && !isAdminUserPromotionRecord(promo) && !isAdminAuditPromotionRecord(promo) && !isAdminTotpResetPromotionRecord(promo));
 }
 
 function movieToPromotionPayload(movie) {
@@ -789,25 +924,68 @@ function createNewPromotion() {
   showAdminToast('เพิ่มโปรโมชั่นใหม่แล้ว กรุณากรอกข้อมูลและกดบันทึก', 'success');
 }
 
+function isAdminLocalFileMode() {
+  // V56: allow the confirmed Google Apps Script deployment to be used from file:// too.
+  return false;
+}
+
+function getAdminApiCandidates() {
+  // V55: do not retry dead legacy deployments. Only use the URL explicitly configured.
+  return Array.from(new Set([adminState.apiUrl, ...CONFIG_ADMIN_API_FALLBACKS]
+    .map(url => String(url || '').trim()).filter(Boolean)));
+}
+
+function loadAdminLocalPreviewData() {
+  const configuredPromotions = Array.isArray(window.JokeMooConfig?.promotions)
+    ? window.JokeMooConfig.promotions.map(item => ({ ...item, synced: false }))
+    : [];
+  adminState.products = defaultProducts.map(item => ({ ...item, synced: false }));
+  adminState.reviews = [];
+  splitPromotionsAndMovies(configuredPromotions);
+  adminState.maintenanceMode = false;
+  renderProductTable(adminState.products);
+  renderReviewTable(adminState.reviews, adminState.reviewSearchQuery);
+  renderPromotionTable(adminState.promotions);
+  renderMovieTable(adminState.movies);
+  renderDiscountTable(adminState.discounts);
+  renderWebSettingsEditor();
+  renderOrdersDashboard();
+  renderAdminUsers();
+  renderAdminAuditLog();
+  updateAdminStats();
+  updateMaintenanceStatus();
+  updateApiStatus('โหมดทดสอบในเครื่อง — ยังไม่เชื่อม API', 'success');
+}
+
+function rememberWorkingAdminApiUrl(url) {
+  if (url) adminState.apiUrl = url;
+}
+
 async function fetchAdminGet(action, params = {}) {
-
-  if (!adminState.apiUrl) {
-    throw new Error('กรุณาใส่ Google Script API URL ก่อน');
+  if (isAdminLocalFileMode()) {
+    const error = new Error('LOCAL_FILE_MODE');
+    error.code = 'LOCAL_FILE_MODE';
+    throw error;
   }
-
-  const url = new URL(adminState.apiUrl);
-  const query = new URLSearchParams({ action, apiKey: adminState.apiKey, ...params }).toString();
-  url.search = query;
-
-  const response = await fetch(url.toString(), { cache: 'no-store', mode: 'cors' });
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`);
+  const candidates = getAdminApiCandidates();
+  if (!candidates.length) throw new Error('กรุณาใส่ Google Script API URL ก่อน');
+  let lastError = new Error('ไม่สามารถเชื่อมต่อ API ได้');
+  for (const baseUrl of candidates) {
+    try {
+      const url = new URL(baseUrl);
+      url.search = new URLSearchParams({ action, apiKey: adminState.apiKey, ...params }).toString();
+      const response = await fetch(url.toString(), { cache: 'no-store', mode: 'cors' });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const result = await response.json();
+      if (!result || !result.success) throw new Error((result && result.message) || 'API error');
+      rememberWorkingAdminApiUrl(baseUrl);
+      return result.data || result;
+    } catch (error) {
+      lastError = error;
+      console.warn('Admin API GET failed:', baseUrl, error && error.message ? error.message : error);
+    }
   }
-  const result = await response.json();
-  if (!result || !result.success) {
-    throw new Error((result && result.message) || 'API error');
-  }
-  return result.data || result;
+  throw lastError;
 }
 
 async function adminApiFetch(action, params = {}) {
@@ -825,44 +1003,301 @@ function notifyIndexReload(reason = 'admin-change') {
   try { adminLiveSyncChannel?.postMessage(payload); } catch (_) {}
 }
 
+function isCurrentAdminManager() {
+  return !!adminState.currentAdminUser && (adminState.currentAdminUser.role === 'manager' || adminState.currentAdminUser.username === ROOT_ADMIN_USERNAME);
+}
+
+function adminRoleLabel(role) { return role === 'manager' ? 'ผู้จัดการ' : 'แอดมิน'; }
+
+function findAdminDataTargetById(id) {
+  const sid = String(id ?? '');
+  const buckets = [
+    ['สินค้า', adminState.products, item => item.name || item.title || `ID ${sid}`],
+    ['รีวิว', adminState.reviews, item => item.name || item.customerName || item.reviewer || `ID ${sid}`],
+    ['โปรโมชั่น', adminState.promotions, item => item.title || `ID ${sid}`],
+    ['หนัง', adminState.movies, item => item.title || `ID ${sid}`],
+    ['โค้ดส่วนลด', adminState.discounts, item => item.code || `ID ${sid}`],
+    ['ออเดอร์', adminState.orders, item => item.orderNo || `ID ${sid}`],
+    ['บัญชีผู้ดูแล', adminState.adminUsers, item => item.username || `ID ${sid}`],
+  ];
+  for (const [type, list, getName] of buckets) {
+    const item = (Array.isArray(list) ? list : []).find(row => String(row?.id ?? row?._recordId ?? '') === sid);
+    if (item) return { type, name: String(getName(item) || `ID ${sid}`) };
+  }
+  return { type: 'รายการ', name: `ID ${sid}` };
+}
+
+function getPromotionAuditTarget(payload = {}) {
+  const title = String(payload.title || '');
+  let meta = {};
+  try { meta = JSON.parse(String(payload.description || '{}')); } catch (_) { meta = {}; }
+  if (title.startsWith(ADMIN_AUDIT_PROMO_PREFIX)) return { skip: true };
+  if (title.startsWith(ADMIN_TOTP_RESET_PROMO_PREFIX)) return { skip: true };
+  if (title.startsWith(ADMIN_USER_PROMO_PREFIX)) return { type: 'บัญชีผู้ดูแล', name: String(meta.username || title.split('|').slice(1).join('|') || '').trim() };
+  if (title.startsWith(SETTINGS_PROMO_PREFIX)) return { type: 'ตั้งค่าเว็บไซต์', name: 'ข้อมูลร้านและเว็บไซต์' };
+  if (title.startsWith(MOVIE_PROMO_PREFIX)) return { type: 'หนัง', name: String(meta.title || title.split('|').slice(1).join('|') || 'หนัง') };
+  if (title.startsWith(DISCOUNT_PROMO_PREFIX)) return { type: 'โค้ดส่วนลด', name: String(meta.code || title.split('|').slice(1).join('|') || 'โค้ด') };
+  if (title.startsWith(ORDER_PROMO_PREFIX)) return { type: 'ออเดอร์', name: String(meta.orderNo || title.split('|').slice(1).join('|') || 'ออเดอร์') };
+  return { type: 'โปรโมชั่น', name: String(payload.title || 'โปรโมชั่น') };
+}
+
+function auditFindById(list, id) {
+  const sid = String(id ?? '');
+  return (Array.isArray(list) ? list : []).find((row) => String(row?.id ?? row?._recordId ?? '') === sid) || null;
+}
+function auditReadPath(obj, path) {
+  return String(path || '').split('.').reduce((value, key) => value == null ? undefined : value[key], obj);
+}
+function auditText(value) {
+  if (value === undefined || value === null || value === '') return '—';
+  if (typeof value === 'boolean') return value ? 'เปิด' : 'ปิด';
+  if (Array.isArray(value)) return value.length ? value.join(', ') : '—';
+  if (typeof value === 'object') { try { return JSON.stringify(value); } catch (_) { return String(value); } }
+  return String(value);
+}
+function auditImageText(value) {
+  const text = String(value || '').trim();
+  if (!text) return 'ไม่มีรูปภาพ';
+  if (/^data:/i.test(text)) return 'รูปภาพที่อัปโหลด';
+  return text.length > 180 ? 'มีรูปภาพ / ลิงก์รูปภาพ' : text;
+}
+function auditBoolText(value, onLabel='เปิด', offLabel='ปิด') { return value === false || value === 'false' ? offLabel : onLabel; }
+function auditRoleText(value) { return value === 'manager' || value === 'owner' ? 'ผู้จัดการ' : 'แอดมิน'; }
+function auditDiscountTypeText(value) { return value === 'fixed' ? 'ลดเป็นจำนวนเงิน' : 'ลดเป็นเปอร์เซ็นต์'; }
+function auditMovieTypeText(value) { return value === 'upcoming' ? 'หนังใกล้เข้า' : value === 'recommended' ? 'หนังแนะนำจากทางร้าน' : 'หนังติด TOP'; }
+function auditWheelRatesText(value) {
+  const rates = Array.isArray(value) ? value : [];
+  return rates.length ? rates.map((item) => `${String(item?.label || item?.id || 'รางวัล')}: ${Number(item?.rate) || 0}`).join(' | ') : '—';
+}
+function auditValueEqual(a, b) {
+  if ((a && typeof a === 'object') || (b && typeof b === 'object')) {
+    try { return JSON.stringify(a ?? null) === JSON.stringify(b ?? null); } catch (_) {}
+  }
+  return String(a ?? '') === String(b ?? '');
+}
+function auditBuildChanges(before, after, fields, mode='update') {
+  const changes = [];
+  for (const field of fields) {
+    const beforeRaw = auditReadPath(before || {}, field.path);
+    const afterRaw = auditReadPath(after || {}, field.path);
+    if (mode === 'update' && auditValueEqual(beforeRaw, afterRaw)) continue;
+    const format = typeof field.format === 'function' ? field.format : auditText;
+    changes.push({
+      label: field.label,
+      before: mode === 'create' ? '—' : format(beforeRaw),
+      after: mode === 'delete' ? 'ลบออกจากระบบ' : format(afterRaw),
+      type: mode,
+    });
+  }
+  return changes.slice(0, 40);
+}
+function auditSummarizeChanges(changes, mode='update') {
+  const list = Array.isArray(changes) ? changes : [];
+  if (!list.length) return mode === 'delete' ? 'ลบรายการออกจากระบบ' : 'บันทึกข้อมูล โดยไม่พบค่าที่เปลี่ยนจากข้อมูลเดิม';
+  const names = list.slice(0, 5).map((item) => item.label).join(', ');
+  const extra = list.length > 5 ? ` และอีก ${list.length - 5} จุด` : '';
+  if (mode === 'create') return `เพิ่มข้อมูลใหม่ ${list.length} จุด: ${names}${extra}`;
+  if (mode === 'delete') return `ลบรายการออกจากระบบ: ${names}${extra}`;
+  return `แก้ไข ${list.length} จุด: ${names}${extra}`;
+}
+function auditParsePayloadMeta(payload) {
+  try { return JSON.parse(String(payload?.description || '{}')); } catch (_) { return {}; }
+}
+function auditProductChanges(action, payload) {
+  const mode = action.includes('Create') ? 'create' : action.includes('Delete') ? 'delete' : 'update';
+  const before = auditFindById(adminState.products, payload.id) || {};
+  const after = mode === 'delete' ? before : { ...before, ...payload };
+  const fields = [
+    {path:'name',label:'ชื่อสินค้า'}, {path:'desc',label:'รายละเอียดสินค้า'},
+    {path:'price',label:'ราคา',format:v=>v===undefined||v===null||v===''?'—':adminMoney(v)},
+    {path:'category',label:'หมวดสินค้า'}, {path:'available',label:'สถานะขาย',format:v=>auditBoolText(v,'เปิดขาย','ปิดขาย')},
+    {path:'image',label:'รูปสินค้า',format:auditImageText},
+  ];
+  if (mode === 'delete') return [{label:'สถานะรายการ',before:'มีสินค้าอยู่ในระบบ',after:'ลบสินค้าออกจากระบบ',type:'delete'}, ...auditBuildChanges(before,before,fields,'delete').slice(0,8)];
+  return auditBuildChanges(before, after, fields, mode);
+}
+function auditReviewChanges(action, payload) {
+  const mode = action.includes('Delete') ? 'delete' : 'update';
+  const before = auditFindById(adminState.reviews, payload.id) || {};
+  const after = mode === 'delete' ? before : { ...before, ...payload };
+  const fields = [
+    {path:'name',label:'ชื่อลูกค้า'}, {path:'date',label:'วันที่รีวิว'},
+    {path:'rating',label:'คะแนน',format:v=>v===undefined||v===null?'—':`${v} ดาว`},
+    {path:'comment',label:'ข้อความรีวิว'}, {path:'imageUrl',label:'รูปรีวิว',format:auditImageText},
+  ];
+  if (mode === 'delete') return [{label:'สถานะรายการ',before:'มีรีวิวอยู่ในระบบ',after:'ลบรีวิวออกจากระบบ',type:'delete'}, ...auditBuildChanges(before,before,fields,'delete').slice(0,8)];
+  return auditBuildChanges(before, after, fields, mode);
+}
+function auditPromotionChanges(action, payload) {
+  const title = String(payload.title || '');
+  const meta = auditParsePayloadMeta(payload);
+  const mode = action.includes('Create') ? 'create' : action.includes('Delete') ? 'delete' : 'update';
+  if (action === 'adminDeletePromotion') {
+    const target = findAdminDataTargetById(payload.id);
+    return [{label:'สถานะรายการ',before:`มี${target.type}อยู่ในระบบ`,after:`ลบ${target.type}ออกจากระบบ`,type:'delete'}];
+  }
+  if (title.startsWith(ADMIN_USER_PROMO_PREFIX)) {
+    const username = String(meta.username || '').toLowerCase();
+    const before = auditFindById(adminState.adminUsers, payload.id) || (adminState.adminUsers || []).find(u=>String(u.username||'').toLowerCase()===username) || {};
+    const after = meta;
+    const fields = [
+      {path:'username',label:'Username'}, {path:'displayName',label:'ชื่อที่แสดง'},
+      {path:'role',label:'บทบาท',format:auditRoleText}, {path:'enabled',label:'สถานะบัญชี',format:v=>auditBoolText(v,'เปิดใช้งาน','ปิดใช้งาน')},
+    ];
+    const changes = auditBuildChanges(before, after, fields, mode);
+    const beforeHash = String(before?.hash || ''); const afterHash = String(after?.hash || '');
+    if (mode === 'create' && afterHash) changes.push({label:'รหัสผ่าน',before:'—',after:'ตั้งค่ารหัสผ่านแล้ว (ซ่อนค่า)',type:'create'});
+    else if (beforeHash && afterHash && beforeHash !== afterHash) changes.push({label:'รหัสผ่าน',before:'รหัสเดิม (ซ่อนค่า)',after:'เปลี่ยนเป็นรหัสผ่านใหม่แล้ว (ซ่อนค่า)',type:'update'});
+    return changes;
+  }
+  if (title.startsWith(SETTINGS_PROMO_PREFIX)) {
+    const before = normalizeAdminWebSettings(adminState.webSettings);
+    const after = normalizeAdminWebSettings(meta);
+    const fields = [
+      {path:'lineUrl',label:'ลิงก์ LINE'}, {path:'contacts.pageUrl',label:'ลิงก์เพจร้าน'}, {path:'contacts.ownerUrl',label:'ลิงก์เจ้าของร้าน'},
+      {path:'payment.bankName',label:'ชื่อธนาคาร'}, {path:'payment.accountName',label:'ชื่อบัญชี'}, {path:'payment.accountNumber',label:'เลขบัญชี'},
+      {path:'payment.bankImage',label:'รูปธนาคาร',format:auditImageText}, {path:'payment.qrImage',label:'รูป QR',format:auditImageText},
+      {path:'wheelRates',label:'อัตรารางวัลวงล้อ',format:auditWheelRatesText},
+    ];
+    return auditBuildChanges(before, after, fields, mode);
+  }
+  if (title.startsWith(MOVIE_PROMO_PREFIX)) {
+    const before = auditFindById(adminState.movies, payload.id) || {};
+    const after = {...meta,image:payload.image};
+    const fields = [
+      {path:'title',label:'ชื่อหนังภาษาไทย'}, {path:'titleEn',label:'ชื่อหนังภาษาอังกฤษ'},
+      {path:'type',label:'หมวดหนัง',format:auditMovieTypeText}, {path:'rank',label:'อันดับ TOP'},
+      {path:'releaseDate',label:'วันที่เข้า'}, {path:'note',label:'รายละเอียดภาษาไทย'}, {path:'noteEn',label:'รายละเอียดภาษาอังกฤษ'},
+      {path:'watchUrl',label:'ลิงก์รับชม'}, {path:'image',label:'โปสเตอร์',format:auditImageText},
+      {path:'enabled',label:'สถานะแสดงผล',format:v=>auditBoolText(v,'เปิดแสดง','ปิดแสดง')},
+    ];
+    return auditBuildChanges(before, after, fields, mode);
+  }
+  if (title.startsWith(DISCOUNT_PROMO_PREFIX)) {
+    const before = auditFindById(adminState.discounts, payload.id) || {};
+    const after = meta;
+    const fields = [
+      {path:'code',label:'โค้ดส่วนลด'}, {path:'type',label:'รูปแบบส่วนลด',format:auditDiscountTypeText},
+      {path:'value',label:'มูลค่าส่วนลด'}, {path:'minSpend',label:'ยอดขั้นต่ำ'}, {path:'startAt',label:'วันเริ่ม'}, {path:'endAt',label:'วันสิ้นสุด'},
+      {path:'enabled',label:'สถานะโค้ด',format:v=>auditBoolText(v,'เปิดใช้งาน','ปิดใช้งาน')}, {path:'maxPeople',label:'จำนวนผู้ใช้สูงสุด'},
+      {path:'maxUsesPerPerson',label:'จำนวนครั้งต่อคน'}, {path:'usedCount',label:'จำนวนใช้แล้ว'},
+    ];
+    return auditBuildChanges(before, after, fields, mode);
+  }
+  if (title.startsWith(ORDER_PROMO_PREFIX)) return [];
+  const before = auditFindById(adminState.promotions, payload.id) || {};
+  const after = {...before,...payload};
+  const fields = [
+    {path:'title',label:'ชื่อโปรโมชั่น'}, {path:'description',label:'รายละเอียดโปรโมชั่น'}, {path:'startAt',label:'วันเริ่ม'}, {path:'endAt',label:'วันสิ้นสุด'},
+    {path:'image',label:'รูปโปรโมชั่น',format:auditImageText}, {path:'enabled',label:'สถานะโปรโมชั่น',format:v=>auditBoolText(v,'เปิดใช้งาน','ปิดใช้งาน')},
+  ];
+  return auditBuildChanges(before, after, fields, mode);
+}
+
+function describeAdminMutation(action, payload = {}) {
+  const verb = action.includes('Create') ? 'เพิ่ม' : action.includes('Delete') ? 'ลบ' : action.includes('Edit') || action.includes('Update') ? 'แก้ไข' : 'เปลี่ยน';
+  if (action === 'adminToggleMaintenance') {
+    const changes=[{label:'สถานะเว็บไซต์',before:adminState.maintenanceMode?'ปิดปรับปรุง':'เปิดใช้งานปกติ',after:(payload.enabled === true || payload.enabled === 'true')?'ปิดปรับปรุง':'เปิดใช้งานปกติ',type:'update'}];
+    return { action, label: 'เปลี่ยนโหมดอัปเดตเว็บ', target: payload.enabled === true || payload.enabled === 'true' ? 'เปิดโหมดปรับปรุง' : 'เปิดเว็บไซต์', detail:auditSummarizeChanges(changes), changes };
+  }
+  if (action === 'adminCreateProduct' || action === 'adminUpdateProduct') {
+    const changes=auditProductChanges(action,payload); const mode=action.includes('Create')?'create':'update';
+    return { action, label: `${verb}สินค้า`, target: String(payload.name || payload.title || payload.id || '-'), detail:auditSummarizeChanges(changes,mode), changes };
+  }
+  if (action === 'adminDeleteProduct') {
+    const t=findAdminDataTargetById(payload.id); const changes=auditProductChanges(action,payload);
+    return { action, label:'ลบสินค้า', target:t.name, detail:auditSummarizeChanges(changes,'delete'), changes };
+  }
+  if (action === 'adminEditReview') {
+    const changes=auditReviewChanges(action,payload);
+    return { action, label:'แก้ไขรีวิว', target:String(payload.name || payload.customerName || payload.id || '-'), detail:auditSummarizeChanges(changes,'update'), changes };
+  }
+  if (action === 'adminDeleteReview') {
+    const t=findAdminDataTargetById(payload.id); const changes=auditReviewChanges(action,payload);
+    return { action, label:'ลบรีวิว', target:t.name, detail:auditSummarizeChanges(changes,'delete'), changes };
+  }
+  if (action === 'adminCreatePromotion' || action === 'adminUpdatePromotion') {
+    const t=getPromotionAuditTarget(payload); if (t.skip) return null;
+    const changes=auditPromotionChanges(action,payload); const mode=action.includes('Create')?'create':'update';
+    return { action, label:`${verb}${t.type}`, target:t.name, detail:auditSummarizeChanges(changes,mode), changes };
+  }
+  if (action === 'adminDeletePromotion') {
+    const t=findAdminDataTargetById(payload.id); const changes=auditPromotionChanges(action,payload);
+    return { action, label:`ลบ${t.type}`, target:t.name, detail:auditSummarizeChanges(changes,'delete'), changes };
+  }
+  return null;
+}
+
+async function writeAdminAuditLog(meta = {}) {
+  const actor = adminState.currentAdminUser;
+  if (!actor || !meta || !meta.label) return;
+  const log = {
+    kind:meta.kind || 'action', actorUsername:actor.username, actorDisplayName:actor.displayName || actor.username,
+    actorRole:actor.role === 'manager' || actor.username === ROOT_ADMIN_USERNAME ? 'manager' : 'admin',
+    action:meta.action || '', label:meta.label || '', detail:meta.detail || '', target:meta.target || '',
+    changes:Array.isArray(meta.changes)?meta.changes.slice(0,40):[],
+    at:new Date().toISOString(), sessionId:meta.sessionId || actor.currentSessionId || ''
+  };
+  try {
+    await adminApiPostSilent('adminCreatePromotion', adminAuditToPromotionPayload(log));
+    adminState.adminAuditLogs.unshift({...log,id:`local-audit-${Date.now()}`});
+    if (adminState.adminAuditLogs.length > 300) adminState.adminAuditLogs.length = 300;
+    renderAdminAuditLog();
+  } catch (error) { console.warn('admin audit log skipped', error); }
+}
+window.recordAdminManualAudit = (label, target='', detail='') => writeAdminAuditLog({action:'manual',label,target,detail});
+
 async function adminApiPost(action, payload = {}) {
-  if (!adminState.apiUrl) {
-    throw new Error('กรุณาใส่ Google Script API URL ก่อน');
-  }
-
+  const auditMeta = describeAdminMutation(action, payload);
+  const candidates = getAdminApiCandidates();
+  if (!candidates.length) throw new Error('กรุณาใส่ Google Script API URL ก่อน');
   const requestBody = new URLSearchParams({ action, apiKey: adminState.apiKey, ...payload }).toString();
-  const response = await fetch(adminState.apiUrl, {
-    method: 'POST',
-    mode: 'cors',
-    headers: {
-      'Accept': 'application/json',
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: requestBody,
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`HTTP ${response.status}: ${text}`);
+  let lastError = new Error('ไม่สามารถเชื่อมต่อ API ได้');
+  for (const baseUrl of candidates) {
+    try {
+      const response = await fetch(baseUrl, {
+        method: 'POST', mode: 'cors',
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: requestBody,
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`HTTP ${response.status}: ${text}`);
+      }
+      const result = await response.json();
+      if (!result || !result.success) throw new Error((result && result.message) || 'API error');
+      rememberWorkingAdminApiUrl(baseUrl);
+      notifyIndexReload();
+      if (auditMeta) await writeAdminAuditLog(auditMeta);
+      return result.data || result;
+    } catch (error) {
+      lastError = error;
+      console.warn('Admin API POST failed, trying fallback:', baseUrl, error && error.message ? error.message : error);
+    }
   }
-
-  const result = await response.json();
-  if (!result || !result.success) {
-    throw new Error((result && result.message) || 'API error');
-  }
-
-  notifyIndexReload();
-  return result.data || result;
+  throw lastError;
 }
 
 async function adminApiPostSilent(action, payload = {}) {
-  if (!adminState.apiUrl) throw new Error('กรุณาใส่ Google Script API URL ก่อน');
+  const candidates = getAdminApiCandidates();
+  if (!candidates.length) throw new Error('กรุณาใส่ Google Script API URL ก่อน');
   const requestBody = new URLSearchParams({ action, apiKey: adminState.apiKey, ...payload }).toString();
-  const response = await fetch(adminState.apiUrl, { method:'POST', mode:'cors', headers:{'Accept':'application/json','Content-Type':'application/x-www-form-urlencoded'}, body:requestBody });
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  const result = await response.json();
-  if (!result || !result.success) throw new Error((result && result.message) || 'API error');
-  return result.data || result;
+  let lastError = new Error('ไม่สามารถเชื่อมต่อ API ได้');
+  for (const baseUrl of candidates) {
+    try {
+      const response = await fetch(baseUrl, {
+        method:'POST', mode:'cors',
+        headers:{'Accept':'application/json','Content-Type':'application/x-www-form-urlencoded'},
+        body:requestBody
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const result = await response.json();
+      if (!result || !result.success) throw new Error((result && result.message) || 'API error');
+      rememberWorkingAdminApiUrl(baseUrl);
+      return result.data || result;
+    } catch (error) { lastError = error; }
+  }
+  throw lastError;
 }
 
 function fileToDataUrl(file) {
@@ -1997,16 +2432,19 @@ function applyRealtimeAdminData(result) {
   renderWebSettingsEditor();
   renderOrdersDashboard();
   renderAdminUsers();
+  renderAdminAuditLog();
   updateAdminStats();
   updateMaintenanceStatus();
 }
 
 async function refreshAdminPresenceOnly() {
-  if (document.hidden || !adminState.currentAdminUser || adminPresenceWriteBusy) return;
+  if (isAdminLocalFileMode()) return;
+  if (!adminState.currentAdminUser || adminPresenceWriteBusy) return;
   try {
-    const result = await adminApiFetch('adminData');
+    const result = await adminApiFetch('adminData', {_presence: Date.now()});
     const promotions = Array.isArray(result?.promotions) ? result.promotions : [];
     const freshUsers = promotions.map(parseAdminUserPromotionRecord).filter(Boolean);
+    adminState.adminTotpResetRequests = promotions.map(parseAdminTotpResetPromotionRecord).filter(Boolean).sort((a,b)=>new Date(b.requestedAt||0)-new Date(a.requestedAt||0));
     if (!freshUsers.length) return;
     adminState.adminUsers = freshUsers;
     const currentFresh = freshUsers.find((u) => u.username === adminState.currentAdminUser?.username);
@@ -2018,6 +2456,7 @@ async function refreshAdminPresenceOnly() {
 }
 
 async function refreshAdminDataRealtime(force = false) {
+  if (isAdminLocalFileMode()) return;
   if (adminRealtimeInFlight || document.hidden || !adminState.currentAdminUser) return;
   if (adminHasUnsavedEditorFocus()) return;
   adminRealtimeInFlight = true;
@@ -2057,11 +2496,15 @@ function initAdminRealtimeSync() {
   }, ADMIN_REALTIME_POLL_MS);
   // Online/presence updates are intentionally isolated from content rendering.
   setInterval(() => {
-    if (!document.hidden && adminState.currentAdminUser) refreshAdminPresenceOnly();
-  }, 15000);
+    if (adminState.currentAdminUser) refreshAdminPresenceOnly();
+  }, 10000);
 }
 
 async function loadAdminData() {
+  if (isAdminLocalFileMode()) {
+    loadAdminLocalPreviewData();
+    return;
+  }
   try {
     updateApiStatus('กำลังโหลดข้อมูลจาก API...', 'loading');
     const result = await adminApiFetch('adminData');
@@ -2081,6 +2524,7 @@ async function loadAdminData() {
     renderWebSettingsEditor();
     renderOrdersDashboard();
     renderAdminUsers();
+    renderAdminAuditLog();
     updateAdminStats();
     updateMaintenanceStatus();
     updateApiStatus('โหลดข้อมูลเรียบร้อย', 'success');
@@ -2104,6 +2548,7 @@ async function loadAdminData() {
     renderWebSettingsEditor();
     renderOrdersDashboard();
     renderAdminUsers();
+    renderAdminAuditLog();
     updateAdminStats();
     updateMaintenanceStatus();
     updateApiStatus('โหลดข้อมูลสำรองเรียบร้อย', 'success');
@@ -2114,6 +2559,9 @@ async function loadAdminData() {
 }
 
 function initializeAdmin() {
+  if (isAdminLocalFileMode()) {
+    document.body.classList.add('admin-local-file-mode');
+  }
   attachAdminEvents();
   attachV9AdminEvents();
   attachAdminAuthEvents();
@@ -2446,6 +2894,209 @@ async function adminHashPassword(password, saltB64, iterations=120000) {
 }
 function adminRandomSalt() { const a=new Uint8Array(16); crypto.getRandomValues(a); return adminAuthBase64(a); }
 function adminSafeEqual(a,b){ a=String(a||'');b=String(b||''); if(a.length!==b.length)return false; let d=0; for(let i=0;i<a.length;i++)d|=a.charCodeAt(i)^b.charCodeAt(i); return d===0; }
+
+let adminPendingTotpLogin = null;
+const ADMIN_TOTP_ISSUER = 'JOKEMOO MOVIE';
+const ADMIN_TOTP_PERIOD = 30;
+const ADMIN_TOTP_DIGITS = 6;
+
+function adminBase32Encode(bytes){
+  const alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'; let bits=0,value=0,out='';
+  for(const byte of bytes){ value=(value<<8)|byte; bits+=8; while(bits>=5){ out+=alphabet[(value>>>(bits-5))&31]; bits-=5; } }
+  if(bits>0) out+=alphabet[(value<<(5-bits))&31];
+  return out;
+}
+function adminBase32Decode(value){
+  const alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'; const clean=String(value||'').toUpperCase().replace(/[^A-Z2-7]/g,'');
+  let bits=0,acc=0; const out=[];
+  for(const ch of clean){ const n=alphabet.indexOf(ch); if(n<0) continue; acc=(acc<<5)|n; bits+=5; if(bits>=8){ out.push((acc>>>(bits-8))&255); bits-=8; } }
+  return new Uint8Array(out);
+}
+function adminGenerateTotpSecret(){ const bytes=new Uint8Array(20); crypto.getRandomValues(bytes); return adminBase32Encode(bytes); }
+async function adminTotpAt(secret,timeMs=Date.now()){
+  const counter=Math.floor(timeMs/1000/ADMIN_TOTP_PERIOD); const msg=new ArrayBuffer(8); const view=new DataView(msg);
+  const hi=Math.floor(counter/0x100000000), lo=counter>>>0; view.setUint32(0,hi,false); view.setUint32(4,lo,false);
+  const key=await crypto.subtle.importKey('raw',adminBase32Decode(secret),{name:'HMAC',hash:'SHA-1'},false,['sign']);
+  const sig=new Uint8Array(await crypto.subtle.sign('HMAC',key,msg)); const off=sig[sig.length-1]&15;
+  const bin=((sig[off]&0x7f)<<24)|((sig[off+1]&0xff)<<16)|((sig[off+2]&0xff)<<8)|(sig[off+3]&0xff);
+  return String(bin%(10**ADMIN_TOTP_DIGITS)).padStart(ADMIN_TOTP_DIGITS,'0');
+}
+async function adminVerifyTotp(secret,code){
+  const clean=String(code||'').replace(/\D/g,''); if(clean.length!==ADMIN_TOTP_DIGITS||!secret) return false;
+  const now=Date.now(); for(const drift of [-1,0,1]){ if(adminSafeEqual(await adminTotpAt(secret,now+drift*ADMIN_TOTP_PERIOD*1000),clean)) return true; }
+  return false;
+}
+function setAdminTotpError(message=''){ const el=document.getElementById('adminTotpError'); if(!el)return; el.textContent=message; el.classList.toggle('hidden',!message); }
+function showAdminPasswordStep(){
+  adminPendingTotpLogin=null; document.getElementById('adminLoginForm')?.classList.remove('hidden'); document.getElementById('adminTotpForm')?.classList.add('hidden');
+  setAdminTotpError(''); setAdminTotpRecoveryStatus(''); toggleAdminTotpResetCodeBox(false); const code=document.getElementById('adminTotpCode'); if(code) code.value=''; setTimeout(()=>document.getElementById('adminLoginPassword')?.focus(),80);
+}
+function beginAdminTotpChallenge(user,remember){
+  const hasSetup=user?.totpEnabled===true && !!String(user?.totpSecret||'').trim();
+  const secret=hasSetup?String(user.totpSecret):adminGenerateTotpSecret();
+  adminPendingTotpLogin={user,remember,secret,isSetup:!hasSetup};
+  document.getElementById('adminLoginForm')?.classList.add('hidden'); document.getElementById('adminTotpForm')?.classList.remove('hidden');
+  const setup=document.getElementById('adminTotpSetupBox'); setup?.classList.toggle('hidden',hasSetup);
+  document.querySelector('.admin-totp-recovery')?.classList.toggle('hidden',!hasSetup);
+  const title=document.getElementById('adminTotpTitle'); const desc=document.getElementById('adminTotpDescription');
+  if(title) title.textContent=hasSetup?'ยืนยัน Authenticator':'ตั้งค่า Authenticator';
+  if(desc) desc.textContent=hasSetup?'กรอกรหัส 6 หลักจากแอป Authenticator ของบัญชีนี้':'ตั้งค่าครั้งแรก แล้วกรอกรหัส 6 หลักเพื่อยืนยัน';
+  const secretEl=document.getElementById('adminTotpSecret'); if(secretEl) secretEl.textContent=secret.replace(/(.{4})/g,'$1 ').trim();
+  const account=document.getElementById('adminTotpAccountLabel'); if(account) account.textContent=`${ADMIN_TOTP_ISSUER} · @${user.username}`;
+  const code=document.getElementById('adminTotpCode'); if(code){code.value='';setTimeout(()=>code.focus(),100);} setAdminTotpError(''); toggleAdminTotpResetCodeBox(false); refreshAdminTotpRecoveryUi(user.username);
+}
+async function persistAdminTotpSetup(user,secret){
+  const updated={...user,totpEnabled:true,totpSecret:secret,totpVerifiedAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+  const payload=adminUserToPromotionPayload(updated);
+  if(user.synced&&Number.isFinite(Number(user.id))){ payload.id=Number(user.id); await adminApiPost('adminUpdatePromotion',payload); }
+  else { await adminApiPost('adminCreatePromotion',payload); }
+  return updated;
+}
+async function handleAdminTotpVerify(event){
+  event?.preventDefault(); const pending=adminPendingTotpLogin; if(!pending){showAdminPasswordStep();return;}
+  const code=String(document.getElementById('adminTotpCode')?.value||'').replace(/\D/g,''); const btn=document.getElementById('adminTotpVerifyBtn');
+  if(code.length!==6){setAdminTotpError('กรุณากรอกรหัส Authenticator 6 หลัก');return;}
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin"></i><span>กำลังยืนยัน...</span>';} setAdminTotpError('');
+  try{
+    const ok=await adminVerifyTotp(pending.secret,code); if(!ok) throw new Error('รหัส Authenticator ไม่ถูกต้องหรือหมดอายุแล้ว');
+    let user=pending.user;
+    if(pending.isSetup){ user=await persistAdminTotpSetup(user,pending.secret); showAdminToast('เปิดใช้งาน Authenticator แล้ว','success'); }
+    adminPendingTotpLogin=null; await completeAdminLogin(user,pending.remember);
+    document.getElementById('adminTotpForm')?.classList.add('hidden'); document.getElementById('adminLoginForm')?.classList.remove('hidden');
+  }catch(error){setAdminTotpError(error.message||'ยืนยัน Authenticator ไม่สำเร็จ');}
+  finally{if(btn){btn.disabled=false;btn.innerHTML='<i class="fas fa-shield-check"></i><span>ยืนยันและเข้าสู่ระบบ</span>';}}
+}
+const adminIssuedTotpResetCodes = new Map();
+
+function adminGenerateRecoveryCode(){
+  const a=new Uint32Array(1); crypto.getRandomValues(a); return String(a[0]%100000000).padStart(8,'0');
+}
+async function adminRecoveryCodeHash(code,salt){
+  const bytes=new TextEncoder().encode(`${String(salt||'')}|${String(code||'').replace(/\D/g,'')}`);
+  const digest=new Uint8Array(await crypto.subtle.digest('SHA-256',bytes));
+  return adminAuthBase64(digest);
+}
+function adminResetRequestIsLive(req){
+  if(!req) return false;
+  if(req.status==='pending') return true;
+  if(req.status==='approved') return !req.expiresAt || new Date(req.expiresAt).getTime()>Date.now();
+  return false;
+}
+function findLatestAdminTotpResetRequest(username, statuses=[]){
+  const user=String(username||'').trim().toLowerCase();
+  return (adminState.adminTotpResetRequests||[]).find(r=>r.username===user && (!statuses.length||statuses.includes(r.status)))||null;
+}
+function setAdminTotpRecoveryStatus(message='',type='info'){
+  const el=document.getElementById('adminTotpResetRequestStatus'); if(!el)return;
+  el.textContent=message; el.dataset.type=type; el.classList.toggle('hidden',!message);
+}
+function refreshAdminTotpRecoveryUi(username){
+  const req=findLatestAdminTotpResetRequest(username,['pending','approved']);
+  const requestBtn=document.getElementById('adminTotpRequestResetBtn');
+  const haveBtn=document.getElementById('adminTotpHaveResetCodeBtn');
+  if(requestBtn) requestBtn.disabled=!!(req&&adminResetRequestIsLive(req));
+  if(haveBtn) haveBtn.classList.toggle('hidden',!(req&&adminResetRequestIsLive(req)));
+  if(!req){ setAdminTotpRecoveryStatus(''); return; }
+  if(req.status==='pending') setAdminTotpRecoveryStatus('ส่งคำร้องแล้ว · รอผู้จัดการอนุมัติและส่งโค้ดรีเซ็ตให้คุณ','pending');
+  else if(req.status==='approved'&&adminResetRequestIsLive(req)) setAdminTotpRecoveryStatus(`คำร้องได้รับอนุมัติแล้ว · กรอกโค้ด 8 หลักที่ได้รับจากผู้จัดการ${req.expiresAt?` ภายใน ${new Date(req.expiresAt).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}`:''}`,'approved');
+}
+async function requestAdminTotpReset(){
+  const pending=adminPendingTotpLogin; if(!pending?.user){setAdminTotpError('กรุณาตรวจสอบ Username และ Password ก่อนส่งคำร้อง');return;}
+  const btn=document.getElementById('adminTotpRequestResetBtn');
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin"></i><span>กำลังส่งคำร้อง...</span>';}
+  try{
+    await fetchAuthUsersOnly();
+    const existing=findLatestAdminTotpResetRequest(pending.user.username,['pending','approved']);
+    if(existing&&adminResetRequestIsLive(existing)){refreshAdminTotpRecoveryUi(pending.user.username);return;}
+    const requestId=crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(36).slice(2,10)}`;
+    const req={requestId,username:pending.user.username,displayName:pending.user.displayName||pending.user.username,status:'pending',requestedAt:new Date().toISOString(),requestedDeviceId:ADMIN_DEVICE_ID};
+    await adminApiPostSilent('adminCreatePromotion',adminTotpResetToPromotionPayload(req));
+    adminState.adminTotpResetRequests.unshift({...req,id:`local-${requestId}`});
+    setAdminTotpRecoveryStatus('ส่งคำร้องรีเซ็ต Authenticator แล้ว · กรุณาติดต่อผู้จัดการเพื่อรับโค้ด','pending');
+    showAdminToast('ส่งคำร้องรีเซ็ต Authenticator แล้ว','success');
+  }catch(error){setAdminTotpError(error.message||'ส่งคำร้องไม่สำเร็จ');}
+  finally{if(btn){btn.disabled=false;btn.innerHTML='<i class="fas fa-life-ring"></i><span>ขอรีเซ็ต Authenticator</span>';} refreshAdminTotpRecoveryUi(pending.user.username);}
+}
+function toggleAdminTotpResetCodeBox(show){
+  const box=document.getElementById('adminTotpResetCodeBox'); if(!box)return; box.classList.toggle('hidden',!show);
+  if(show){const input=document.getElementById('adminTotpResetCode'); if(input){input.value='';setTimeout(()=>input.focus(),60);}}
+}
+async function applyAdminTotpResetCode(){
+  const pending=adminPendingTotpLogin; if(!pending?.user){setAdminTotpError('เซสชันเข้าสู่ระบบหมดอายุ กรุณากลับไปกรอกรหัสผ่านใหม่');return;}
+  const code=String(document.getElementById('adminTotpResetCode')?.value||'').replace(/\D/g,'').slice(0,8);
+  const btn=document.getElementById('adminTotpApplyResetCodeBtn');
+  if(code.length!==8){setAdminTotpError('กรุณากรอกโค้ดรีเซ็ต 8 หลัก');return;}
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin"></i><span>กำลังตรวจสอบ...</span>';}
+  try{
+    await fetchAuthUsersOnly();
+    const req=(adminState.adminTotpResetRequests||[]).find(r=>r.username===pending.user.username&&r.status==='approved'&&adminResetRequestIsLive(r));
+    if(!req||!req.codeSalt||!req.codeHash) throw new Error('ไม่พบโค้ดรีเซ็ตที่ยังใช้งานได้ กรุณาขอให้ผู้จัดการออกโค้ดใหม่');
+    const hash=await adminRecoveryCodeHash(code,req.codeSalt); if(!adminSafeEqual(hash,req.codeHash)) throw new Error('โค้ดรีเซ็ตไม่ถูกต้อง');
+    const freshUser=findAdminUser(pending.user.username)||pending.user;
+    const updatedUser={...freshUser,totpEnabled:false,totpSecret:'',totpVerifiedAt:'',updatedAt:new Date().toISOString()};
+    const userPayload=adminUserToPromotionPayload(updatedUser); if(freshUser.synced&&Number.isFinite(Number(freshUser.id))) userPayload.id=Number(freshUser.id);
+    await adminApiPostSilent(freshUser.synced&&Number.isFinite(Number(freshUser.id))?'adminUpdatePromotion':'adminCreatePromotion',userPayload);
+    const used={...req,status:'used',usedAt:new Date().toISOString(),codeSalt:'',codeHash:'',expiresAt:''}; const reqPayload=adminTotpResetToPromotionPayload(used); reqPayload.id=Number(req.id);
+    await adminApiPostSilent('adminUpdatePromotion',reqPayload);
+    showAdminToast('ยืนยันโค้ดสำเร็จ · ตั้ง Authenticator ใหม่ได้เลย','success');
+    toggleAdminTotpResetCodeBox(false);
+    beginAdminTotpChallenge(updatedUser,pending.remember);
+    setAdminTotpRecoveryStatus('รีเซ็ตสำเร็จ · กรุณาตั้ง Authenticator ใหม่ด้วย Setup key ชุดใหม่','approved');
+  }catch(error){setAdminTotpError(error.message||'รีเซ็ต Authenticator ไม่สำเร็จ');}
+  finally{if(btn){btn.disabled=false;btn.innerHTML='<i class="fas fa-rotate"></i><span>ยืนยันโค้ดและตั้ง Authenticator ใหม่</span>';}}
+}
+function showIssuedAdminTotpResetCode(req,code){
+  const modal=document.getElementById('adminTotpResetIssuedModal'); if(!modal)return;
+  document.getElementById('adminTotpResetIssuedUser').textContent=`@${req.username}`;
+  document.getElementById('adminTotpResetIssuedCode').textContent=code;
+  document.getElementById('adminTotpResetIssuedExpiry').textContent=req.expiresAt?new Date(req.expiresAt).toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'}):'-';
+  modal.classList.remove('hidden'); modal.setAttribute('aria-hidden','false'); document.body.classList.add('admin-modal-open');
+}
+function closeIssuedAdminTotpResetCode(){const modal=document.getElementById('adminTotpResetIssuedModal');if(!modal)return;modal.classList.add('hidden');modal.setAttribute('aria-hidden','true');document.body.classList.remove('admin-modal-open');}
+async function approveAdminTotpResetRequest(requestId){
+  if(!isCurrentAdminManager()){showAdminToast('เฉพาะผู้จัดการเท่านั้น','error');return;}
+  const req=(adminState.adminTotpResetRequests||[]).find(r=>r.requestId===requestId); if(!req)return;
+  const code=adminGenerateRecoveryCode(), salt=adminRandomSalt(), codeHash=await adminRecoveryCodeHash(code,salt);
+  const updated={...req,status:'approved',approvedAt:new Date().toISOString(),approvedBy:adminState.currentAdminUser?.username||'',codeSalt:salt,codeHash,expiresAt:new Date(Date.now()+ADMIN_TOTP_RESET_TTL_MS).toISOString(),usedAt:'',rejectedAt:'',rejectedBy:''};
+  const payload=adminTotpResetToPromotionPayload(updated); payload.id=Number(req.id);
+  try{await adminApiPostSilent('adminUpdatePromotion',payload);adminIssuedTotpResetCodes.set(requestId,code);showIssuedAdminTotpResetCode(updated,code);await writeAdminAuditLog({kind:'action',action:'approve_totp_reset',label:'ออกโค้ดรีเซ็ต Authenticator',target:req.username,detail:'ออกโค้ดใช้ครั้งเดียว อายุ 15 นาที'});await loadAdminData();}
+  catch(error){showAdminToast(error.message||'ออกโค้ดรีเซ็ตไม่สำเร็จ','error');}
+}
+async function rejectAdminTotpResetRequest(requestId){
+  if(!isCurrentAdminManager())return; const req=(adminState.adminTotpResetRequests||[]).find(r=>r.requestId===requestId); if(!req)return;
+  if(!confirm(`ปฏิเสธคำร้องรีเซ็ต Authenticator ของ ${req.username} หรือไม่?`))return;
+  const updated={...req,status:'rejected',rejectedAt:new Date().toISOString(),rejectedBy:adminState.currentAdminUser?.username||'',codeSalt:'',codeHash:'',expiresAt:''}; const payload=adminTotpResetToPromotionPayload(updated);payload.id=Number(req.id);
+  try{await adminApiPostSilent('adminUpdatePromotion',payload);await writeAdminAuditLog({kind:'action',action:'reject_totp_reset',label:'ปฏิเสธคำร้องรีเซ็ต Authenticator',target:req.username,detail:'คำร้องถูกปฏิเสธ'});showAdminToast('ปฏิเสธคำร้องแล้ว','success');await loadAdminData();}catch(error){showAdminToast(error.message||'ปฏิเสธคำร้องไม่สำเร็จ','error');}
+}
+function renderAdminTotpResetRequests(){
+  const panel=document.getElementById('adminTotpResetRequestsPanel'), listEl=document.getElementById('adminTotpResetRequestsList'), countEl=document.getElementById('adminTotpResetPendingCount');
+  if(!panel||!listEl)return; if(!isCurrentAdminManager()){panel.classList.add('hidden');listEl.innerHTML='';return;}
+  panel.classList.remove('hidden');
+  const all=(adminState.adminTotpResetRequests||[]).slice().sort((a,b)=>new Date(b.requestedAt||0)-new Date(a.requestedAt||0));
+  const pending=all.filter(r=>r.status==='pending'||(r.status==='approved'&&adminResetRequestIsLive(r)));
+  if(countEl) countEl.textContent=String(pending.length);
+  const rows=(pending.length?pending:all.slice(0,4));
+  if(!rows.length){listEl.innerHTML='<div class="admin-reset-empty"><i class="fas fa-shield-circle-check"></i><div><b>ไม่มีคำร้องรีเซ็ต</b><small>เมื่อแอดมินขอรีเซ็ต Authenticator คำร้องจะขึ้นตรงนี้ทันที</small></div></div>';return;}
+  listEl.innerHTML=rows.map(req=>{
+    const live=req.status==='approved'&&adminResetRequestIsLive(req), expired=req.status==='approved'&&!adminResetRequestIsLive(req);
+    const status= req.status==='pending'?['รออนุมัติ','pending','fa-clock']:live?['ออกโค้ดแล้ว','approved','fa-key']:req.status==='used'?['ใช้แล้ว','used','fa-circle-check']:req.status==='rejected'?['ปฏิเสธ','rejected','fa-circle-xmark']:['หมดอายุ','expired','fa-hourglass-end'];
+    const issued=adminIssuedTotpResetCodes.get(req.requestId)||'';
+    const actions=req.status==='pending'||live||expired?`<div class="admin-reset-request-actions"><button type="button" class="button button-primary admin-reset-approve" data-request="${escapeAdminHtml(req.requestId)}"><i class="fas fa-key"></i>${req.status==='pending'?'อนุมัติและออกโค้ด':'ออกโค้ดใหม่'}</button>${issued?`<button type="button" class="button button-outline admin-reset-show-code" data-request="${escapeAdminHtml(req.requestId)}"><i class="fas fa-eye"></i> ดูโค้ด</button>`:''}<button type="button" class="button button-outline admin-reset-reject" data-request="${escapeAdminHtml(req.requestId)}"><i class="fas fa-ban"></i> ปฏิเสธ</button></div>`:'';
+    return `<article class="admin-reset-request-card status-${status[1]}"><div class="admin-reset-request-icon"><i class="fas fa-mobile-screen-button"></i></div><div class="admin-reset-request-main"><div class="admin-reset-request-title"><strong>${escapeAdminHtml(req.displayName||req.username)}</strong><code>@${escapeAdminHtml(req.username)}</code><span class="admin-reset-request-status ${status[1]}"><i class="fas ${status[2]}"></i>${status[0]}</span></div><div class="admin-reset-request-meta"><span><i class="fas fa-calendar"></i>${escapeAdminHtml(req.requestedAt?formatAdminUserDate(req.requestedAt):'-')}</span>${req.approvedBy?`<span><i class="fas fa-user-check"></i>อนุมัติโดย @${escapeAdminHtml(req.approvedBy)}</span>`:''}${live&&req.expiresAt?`<span><i class="fas fa-hourglass-half"></i>หมดอายุ ${escapeAdminHtml(new Date(req.expiresAt).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}))}</span>`:''}</div></div>${actions}</article>`;
+  }).join('');
+}
+
+async function resetAdminAuthenticator(username){
+  if(!isCurrentAdminManager()){showAdminToast('เฉพาะผู้จัดการเท่านั้น','error');return;}
+  const user=findAdminUser(username); if(!user)return; if(!confirm(`รีเซ็ต Authenticator ของ ${username} หรือไม่? ครั้งถัดไปที่ล็อกอินจะต้องตั้งค่าใหม่`))return;
+  try{
+    const updated={...user,totpEnabled:false,totpSecret:'',totpVerifiedAt:'',updatedAt:new Date().toISOString()}; const payload=adminUserToPromotionPayload(updated);
+    if(user.synced&&Number.isFinite(Number(user.id))){payload.id=Number(user.id);await adminApiPost('adminUpdatePromotion',payload);}else{await adminApiPost('adminCreatePromotion',payload);}
+    const activeRequests=(adminState.adminTotpResetRequests||[]).filter(r=>r.username===username&&(r.status==='pending'||r.status==='approved'));
+    for(const req of activeRequests){try{const closed={...req,status:'used',usedAt:new Date().toISOString(),codeSalt:'',codeHash:'',expiresAt:''};const rp=adminTotpResetToPromotionPayload(closed);rp.id=Number(req.id);await adminApiPostSilent('adminUpdatePromotion',rp);}catch(_){}}
+    showAdminToast(`รีเซ็ต Authenticator ของ ${username} แล้ว`,'success'); await loadAdminData();
+  }catch(error){showAdminToast(error.message||'รีเซ็ต Authenticator ไม่สำเร็จ','error');}
+}
 function getEffectiveAdminUsers(){
   const list=Array.isArray(adminState.adminUsers)?adminState.adminUsers.slice():[];
   if(!list.some(u=>u.username===ROOT_ADMIN_USERNAME)) list.unshift({...ROOT_ADMIN_FALLBACK});
@@ -2454,35 +3105,76 @@ function getEffectiveAdminUsers(){
 function findAdminUser(username){ return getEffectiveAdminUsers().find(u=>u.username===String(username||'').trim().toLowerCase())||null; }
 function setAdminAuthLocked(locked){ document.body.classList.toggle('admin-auth-locked',!!locked); const gate=document.getElementById('adminAuthGate'); if(gate) gate.classList.toggle('hidden',!locked); }
 function setAdminLoginError(message=''){ const el=document.getElementById('adminLoginError'); if(!el)return; el.textContent=message; el.classList.toggle('hidden',!message); }
-function adminSessionStorage(remember){ return remember ? localStorage : sessionStorage; }
-function clearAdminSessions(){ localStorage.removeItem(ADMIN_SESSION_KEY); sessionStorage.removeItem(ADMIN_SESSION_KEY); }
+function clearAdminSessions(){
+  // Clear both stores so old versions that used sessionStorage cannot keep a login alive.
+  try{ localStorage.removeItem(ADMIN_SESSION_KEY); }catch(_){}
+  try{ sessionStorage.removeItem(ADMIN_SESSION_KEY); }catch(_){}
+}
 function readAdminSession(){
-  for(const storage of [localStorage,sessionStorage]){
-    try{const raw=storage.getItem(ADMIN_SESSION_KEY);if(!raw)continue;const s=JSON.parse(raw);if(!s||!s.username||Number(s.expiresAt)<=Date.now()){storage.removeItem(ADMIN_SESSION_KEY);continue;}return s;}catch(_){storage.removeItem(ADMIN_SESSION_KEY);}
+  // V54: ONLY the explicit "remember 30 days" option survives a refresh/reopen.
+  // An unchecked login lives only in the current JS memory and therefore requires
+  // a new login on every page reload, exactly as shown in the login UI.
+  try{ sessionStorage.removeItem(ADMIN_SESSION_KEY); }catch(_){}
+  try{
+    const raw=localStorage.getItem(ADMIN_SESSION_KEY);
+    if(!raw)return null;
+    const s=JSON.parse(raw);
+    if(!s||!s.username||s.remember!==true||Number(s.expiresAt)<=Date.now()){
+      localStorage.removeItem(ADMIN_SESSION_KEY);
+      return null;
+    }
+    return s;
+  }catch(_){
+    try{localStorage.removeItem(ADMIN_SESSION_KEY);}catch(__){}
+    return null;
   }
-  return null;
 }
 function writeAdminSession(user,remember){
-  clearAdminSessions(); const expiresAt=remember?Date.now()+ADMIN_SESSION_MS:Date.now()+12*60*60*1000;
-  const data={username:user.username,displayName:user.displayName||user.username,createdAt:Date.now(),expiresAt,remember:!!remember,nonce:crypto.randomUUID?crypto.randomUUID():String(Math.random()).slice(2)};
-  adminSessionStorage(remember).setItem(ADMIN_SESSION_KEY,JSON.stringify(data));
+  clearAdminSessions();
+  if(!remember) return; // ไม่ติ๊ก = ไม่บันทึก session; F5 ต้องล็อกอินใหม่
+  const data={
+    username:user.username,
+    displayName:user.displayName||user.username,
+    role:(user.username===ROOT_ADMIN_USERNAME||user.role==='manager')?'manager':'admin',
+    createdAt:Date.now(),
+    expiresAt:Date.now()+ADMIN_SESSION_MS,
+    remember:true,
+    deviceId:ADMIN_DEVICE_ID,
+    nonce:crypto.randomUUID?crypto.randomUUID():String(Math.random()).slice(2)
+  };
+  localStorage.setItem(ADMIN_SESSION_KEY,JSON.stringify(data));
+}
+function applyAdminRoleUi(){
+  const manager=isCurrentAdminManager();
+  document.body.classList.toggle('admin-role-manager',manager);
+  document.body.classList.toggle('admin-role-admin',!!adminState.currentAdminUser&&!manager);
+  document.querySelectorAll('[data-manager-only]').forEach(el=>el.classList.toggle('role-hidden',!manager));
+  const activeManagerSection=document.querySelector('#adminUsersSection:not(.hidden),#adminAuditSection:not(.hidden)');
+  if(!manager&&activeManagerSection){
+    const fallback=document.querySelector('.admin-tab-button[data-target="productSection"]');
+    fallback?.click();
+  }
 }
 function updateCurrentAdminUi(){
-  const u=adminState.currentAdminUser; const name=u?(u.displayName||u.username):'-';
+  const u=adminState.currentAdminUser; const name=u?(u.displayName||u.username):'-'; const role=u?(u.username===ROOT_ADMIN_USERNAME||u.role==='manager'?'manager':'admin'):'';
   document.getElementById('adminCurrentUserName') && (document.getElementById('adminCurrentUserName').textContent=name);
   document.getElementById('adminSidebarUserName') && (document.getElementById('adminSidebarUserName').textContent=name);
+  const roleEl=document.getElementById('adminCurrentUserRole'); if(roleEl){roleEl.textContent=role?adminRoleLabel(role):'-';roleEl.dataset.role=role;}
+  applyAdminRoleUi();
 }
 async function fetchAuthUsersOnly(){
-  try{const result=await adminApiFetch('adminData');const promotions=Array.isArray(result?.promotions)?result.promotions:[];adminState.adminUsers=promotions.map(parseAdminUserPromotionRecord).filter(Boolean);return true;}catch(error){console.warn('auth users fetch failed',error);return false;}
+  if(isAdminLocalFileMode()){ adminState.adminUsers=[]; return true; }
+  try{const result=await adminApiFetch('adminData');const promotions=Array.isArray(result?.promotions)?result.promotions:[];adminState.adminUsers=promotions.map(parseAdminUserPromotionRecord).filter(Boolean);adminState.adminTotpResetRequests=promotions.map(parseAdminTotpResetPromotionRecord).filter(Boolean).sort((a,b)=>new Date(b.requestedAt||0)-new Date(a.requestedAt||0));return true;}catch(error){console.warn('auth users fetch failed',error);return false;}
 }
 async function persistRootAdminIfNeeded(user){
+  if(isAdminLocalFileMode()) return;
   if(user.username!==ROOT_ADMIN_USERNAME || (adminState.adminUsers||[]).some(u=>u.username===ROOT_ADMIN_USERNAME)) return;
   try{const payload=adminUserToPromotionPayload({...ROOT_ADMIN_FALLBACK,createdAt:new Date().toISOString()});await adminApiPost('adminCreatePromotion',payload);await fetchAuthUsersOnly();}catch(error){console.warn('root admin persistence skipped',error);}
 }
 async function completeAdminLogin(user,remember){
   adminState.currentAdminUser=user; writeAdminSession(user,remember); updateCurrentAdminUi(); setAdminAuthLocked(false); setAdminLoginError('');
   await persistRootAdminIfNeeded(user); await loadAdminData();
-  adminState.currentAdminUser=findAdminUser(user.username)||user; noteAdminInteraction(); await markCurrentAdminPresence({login:true}); startAdminPresence();
+  adminState.currentAdminUser=findAdminUser(user.username)||user; updateCurrentAdminUi(); noteAdminInteraction(); await markCurrentAdminPresence({login:true}); startAdminPresence();
 }
 async function handleAdminLogin(event){
   event?.preventDefault(); const username=String(document.getElementById('adminLoginUsername')?.value||'').trim().toLowerCase(); const password=String(document.getElementById('adminLoginPassword')?.value||''); const remember=!!document.getElementById('adminRememberLogin')?.checked; const btn=document.getElementById('adminLoginBtn');
@@ -2491,16 +3183,71 @@ async function handleAdminLogin(event){
   try{
     await fetchAuthUsersOnly(); const user=findAdminUser(username); if(!user||user.enabled===false||!user.salt||!user.hash){throw new Error('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');}
     const hash=await adminHashPassword(password,user.salt,user.iterations); if(!adminSafeEqual(hash,user.hash))throw new Error('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
-    await completeAdminLogin(user,remember);
+    beginAdminTotpChallenge(user,remember);
   }catch(error){setAdminLoginError(error.message||'เข้าสู่ระบบไม่สำเร็จ');}
   finally{if(btn){btn.disabled=false;btn.innerHTML='<i class="fas fa-right-to-bracket"></i><span>เข้าสู่ระบบ</span>';}}
 }
 async function initializeAdminAuth(){
-  setAdminAuthLocked(true); await fetchAuthUsersOnly(); const session=readAdminSession();
-  if(session){const user=findAdminUser(session.username);if(user&&user.enabled!==false){adminState.currentAdminUser=user;updateCurrentAdminUi();setAdminAuthLocked(false);await loadAdminData();adminState.currentAdminUser=findAdminUser(session.username)||user;noteAdminInteraction();await markCurrentAdminPresence();startAdminPresence();return;}clearAdminSessions();}
-  const username=document.getElementById('adminLoginUsername'); if(username) setTimeout(()=>username.focus(),80);
+  setAdminAuthLocked(true);
+
+  // V58: read the remembered 30-day session BEFORE waiting for the API.
+  // This prevents F5 from throwing the user back to the login gate when the
+  // Apps Script request is slow, redirecting, or temporarily unavailable.
+  const session=readAdminSession();
+  if(session){
+    const cachedUser={
+      username:String(session.username||'').trim().toLowerCase(),
+      displayName:session.displayName||session.username,
+      role:session.role==='manager'?'manager':'admin',
+      enabled:true,
+      fromRememberedSession:true
+    };
+
+    adminState.currentAdminUser=cachedUser;
+    updateCurrentAdminUi();
+    setAdminAuthLocked(false);
+    noteAdminInteraction();
+
+    const usersLoaded=await fetchAuthUsersOnly();
+    let user=cachedUser;
+    if(usersLoaded){
+      const syncedUser=findAdminUser(session.username);
+      if(!syncedUser||syncedUser.enabled===false){
+        clearAdminSessions();
+        adminState.currentAdminUser=null;
+        updateCurrentAdminUi();
+        setAdminAuthLocked(true);
+        const username=document.getElementById('adminLoginUsername');
+        if(username) setTimeout(()=>username.focus(),80);
+        return;
+      }
+      user=syncedUser;
+      adminState.currentAdminUser=user;
+      updateCurrentAdminUi();
+    }
+
+    const seenMs=new Date(user.lastSeenAt||0).getTime();
+    const serverDeviceId=String(user.currentDeviceId||'');
+    const shouldStartNewSession=!Number.isFinite(seenMs)||seenMs<=0||Date.now()-seenMs>ADMIN_PRESENCE_ONLINE_MS||serverDeviceId!==ADMIN_DEVICE_ID;
+
+    try{
+      await loadAdminData();
+      adminState.currentAdminUser=findAdminUser(session.username)||user;
+      updateCurrentAdminUi();
+      noteAdminInteraction();
+      try{await markCurrentAdminPresence({login:shouldStartNewSession});}catch(error){console.warn('presence sync after remembered login failed',error);}
+    }finally{
+      startAdminPresence();
+    }
+    return;
+  }
+
+  // No remembered session: load accounts for a normal username/password login.
+  await fetchAuthUsersOnly();
+  const username=document.getElementById('adminLoginUsername');
+  if(username) setTimeout(()=>username.focus(),80);
 }
-async function logoutAdmin(){ try{await markCurrentAdminPresence({logout:true});}catch(_){} stopAdminPresence(); clearAdminSessions(); adminState.currentAdminUser=null; updateCurrentAdminUi(); setAdminAuthLocked(true); const p=document.getElementById('adminLoginPassword');if(p)p.value=''; setAdminLoginError(''); setTimeout(()=>document.getElementById('adminLoginUsername')?.focus(),80); }
+async function logoutAdmin(){ try{await markCurrentAdminPresence({logout:true});}catch(_){} stopAdminPresence(); clearAdminSessions(); adminState.currentAdminUser=null; updateCurrentAdminUi(); setAdminAuthLocked(true); showAdminPasswordStep(); const p=document.getElementById('adminLoginPassword');if(p)p.value=''; setAdminLoginError(''); setTimeout(()=>document.getElementById('adminLoginUsername')?.focus(),80); }
 function formatAdminUserDate(value){ if(!value)return '-';const d=new Date(value);return Number.isNaN(d.getTime())?'-':d.toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'}); }
 function formatAdminPresenceAgo(value){
   if(!value)return 'ยังไม่เคยออนไลน์'; const t=new Date(value).getTime(); if(!Number.isFinite(t))return '-';
@@ -2508,19 +3255,34 @@ function formatAdminPresenceAgo(value){
   const min=Math.floor(sec/60); if(min<60)return `${min} นาทีที่แล้ว`; const hr=Math.floor(min/60); if(hr<24)return `${hr} ชม.ที่แล้ว`;
   return formatAdminUserDate(value);
 }
-const ADMIN_PRESENCE_INTERVAL_MS=30000;
-const ADMIN_PRESENCE_ONLINE_MS=75000;
+const ADMIN_PRESENCE_INTERVAL_MS=20000;
+const ADMIN_PRESENCE_ONLINE_MS=65000;
 const ADMIN_PRESENCE_ACTIVE_MS=90000;
 let adminPresenceTimer=0;
 let adminPresenceEventsBound=false;
 let adminLastInteractionAt=Date.now();
 let adminPresenceWriteBusy=false;
 function adminPresenceInfo(user){
-  const now=Date.now(); const seen=new Date(user?.lastSeenAt||0).getTime(); const activeAt=new Date(user?.lastActivityAt||0).getTime();
-  const isCurrent=user?.username===adminState.currentAdminUser?.username;
-  const online=isCurrent || (Number.isFinite(seen) && seen>0 && now-seen<=ADMIN_PRESENCE_ONLINE_MS);
-  const active=online && (isCurrent || (Number.isFinite(activeAt) && activeAt>0 && now-activeAt<=ADMIN_PRESENCE_ACTIVE_MS));
+  // V59: online state is server-shared only. Never force the current account to
+  // appear online just because this browser has it selected; every device sees
+  // the same truth from lastSeenAt/lastLogoutAt stored in the API.
+  const now=Date.now(); const seen=new Date(user?.lastSeenAt||0).getTime(); const activeAt=new Date(user?.lastActivityAt||0).getTime(); const logoutAt=new Date(user?.lastLogoutAt||0).getTime();
+  const explicitLogout=Number.isFinite(logoutAt)&&logoutAt>0&&Number.isFinite(seen)&&logoutAt>=seen;
+  const online=!explicitLogout && Number.isFinite(seen) && seen>0 && now-seen<=ADMIN_PRESENCE_ONLINE_MS;
+  const active=online && Number.isFinite(activeAt) && activeAt>0 && now-activeAt<=ADMIN_PRESENCE_ACTIVE_MS;
   return {online,active};
+}
+function adminSessionDurationSec(user){
+  const presence=adminPresenceInfo(user); const start=new Date(user?.currentSessionStartedAt||user?.lastLoginAt||0).getTime();
+  if(Number.isFinite(start)&&start>0){
+    const end=presence.online?Date.now():new Date(user?.lastLogoutAt||user?.lastSeenAt||0).getTime();
+    if(Number.isFinite(end)&&end>=start)return Math.max(0,Math.floor((end-start)/1000));
+  }
+  return Math.max(0,Number(user?.lastSessionDurationSec)||0);
+}
+function formatAdminDuration(seconds){
+  const total=Math.max(0,Math.floor(Number(seconds)||0)); const min=Math.floor(total/60); const hr=Math.floor(min/60); const day=Math.floor(hr/24);
+  if(day>0)return `${day} วัน ${hr%24} ชม.`; if(hr>0)return `${hr} ชม. ${min%60} นาที`; if(min>0)return `${min} นาที`; return `${Math.max(0,total)} วินาที`;
 }
 function noteAdminInteraction(){ adminLastInteractionAt=Date.now(); }
 function bindAdminPresenceEvents(){
@@ -2533,65 +3295,202 @@ async function markCurrentAdminPresence({login=false,logout=false}={}){
   const user=findAdminUser(username)||adminState.currentAdminUser; if(!user?.synced || !Number.isFinite(Number(user.id)))return;
   adminPresenceWriteBusy=true;
   try{
-    const nowIso=new Date().toISOString();
-    const activityIso=new Date(adminLastInteractionAt||Date.now()).toISOString();
+    const now=new Date(); const nowIso=now.toISOString(); const activityIso=new Date(adminLastInteractionAt||Date.now()).toISOString();
+    const existingStart=user.currentSessionStartedAt||user.lastLoginAt||'';
+    const sessionStart=login?nowIso:(existingStart||nowIso);
+    const sessionId=login?(crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(36).slice(2,8)}`):(user.currentSessionId||'');
+    let durationSec=Math.max(0,Number(user.lastSessionDurationSec)||0); let totalOnlineSec=Math.max(0,Number(user.totalOnlineSec)||0);
+    if(logout){
+      const startMs=new Date(existingStart||user.lastLoginAt||nowIso).getTime();
+      durationSec=Number.isFinite(startMs)?Math.max(0,Math.floor((now.getTime()-startMs)/1000)):0;
+      totalOnlineSec+=durationSec;
+    }
     const updated={...user,
       lastLoginAt:login?nowIso:(user.lastLoginAt||''),
-      lastSeenAt:logout?'':nowIso,
-      lastActivityAt:logout?(user.lastActivityAt||''):activityIso,
-      lastLogoutAt:logout?nowIso:(user.lastLogoutAt||'')
+      lastSeenAt:nowIso,
+      lastActivityAt:logout?(user.lastActivityAt||activityIso):activityIso,
+      lastLogoutAt:logout?nowIso:(login?'':(user.lastLogoutAt||'')),
+      currentSessionStartedAt:logout?'':sessionStart,
+      currentSessionId:logout?'':sessionId,
+      currentDeviceId:logout?'':ADMIN_DEVICE_ID,
+      lastSessionDurationSec:logout?durationSec:(user.lastSessionDurationSec||0),
+      totalOnlineSec
     };
     const payload=adminUserToPromotionPayload(updated); payload.id=Number(user.id);
     await adminApiPostSilent('adminUpdatePromotion',payload);
     Object.assign(user,updated); Object.assign(adminState.currentAdminUser,updated);
     renderAdminUsers();
+    if(login) await writeAdminAuditLog({kind:'session',action:'login',label:'เข้าสู่ระบบหลังบ้าน',target:username,sessionId});
+    if(logout) await writeAdminAuditLog({kind:'session',action:'logout',label:'ออกจากระบบหลังบ้าน',target:username,detail:`ออนไลน์ ${formatAdminDuration(durationSec)}`,sessionId:user.currentSessionId||sessionId});
   }catch(error){ console.warn('admin presence update skipped',error); }
   finally{ adminPresenceWriteBusy=false; }
 }
 function startAdminPresence(){
   bindAdminPresenceEvents(); clearInterval(adminPresenceTimer);
-  adminPresenceTimer=setInterval(()=>{ if(!document.hidden && adminState.currentAdminUser) markCurrentAdminPresence().catch(()=>{}); },ADMIN_PRESENCE_INTERVAL_MS);
+  // Keep a lightweight heartbeat even when the tab is in the background. This
+  // makes b1/b2 status visible consistently across different computers.
+  if(adminState.currentAdminUser) markCurrentAdminPresence().catch(()=>{});
+  adminPresenceTimer=setInterval(()=>{ if(adminState.currentAdminUser) markCurrentAdminPresence().catch(()=>{}); },ADMIN_PRESENCE_INTERVAL_MS);
 }
 function stopAdminPresence(){ clearInterval(adminPresenceTimer); adminPresenceTimer=0; }
 function renderAdminUsers(){
-  const listEl=document.getElementById('adminUsersList');if(!listEl)return; const users=getEffectiveAdminUsers(); const current=adminState.currentAdminUser?.username||'';
+  const listEl=document.getElementById('adminUsersList');if(!listEl)return; const users=getEffectiveAdminUsers(); const current=adminState.currentAdminUser?.username||''; const canManage=isCurrentAdminManager();
   const onlineCount=users.filter(u=>adminPresenceInfo(u).online && u.enabled!==false).length;
   document.getElementById('adminUserStatTotal') && (document.getElementById('adminUserStatTotal').textContent=users.length);
   document.getElementById('adminUserStatActive') && (document.getElementById('adminUserStatActive').textContent=users.filter(u=>u.enabled!==false).length);
   document.getElementById('adminUserStatOnline') && (document.getElementById('adminUserStatOnline').textContent=onlineCount);
   document.getElementById('adminUserStatCurrent') && (document.getElementById('adminUserStatCurrent').textContent=current||'-');
+  renderAdminTotpResetRequests();
+  if(!users.length){listEl.innerHTML='<div class="admin-users-empty-v63"><i class="fas fa-users-slash"></i><b>ยังไม่มีบัญชีผู้ดูแล</b><small>สร้างบัญชีใหม่จากแบบฟอร์มด้านบน</small></div>';return;}
   listEl.innerHTML=users.map(u=>{
-    const root=u.username===ROOT_ADMIN_USERNAME||u.isRoot; const isCurrent=u.username===current; const presence=adminPresenceInfo(u);
-    const presenceClass=presence.active?'is-active-now':presence.online?'is-online':'is-offline';
-    const presenceText=presence.active?'กำลังใช้งานอยู่':presence.online?'ออนไลน์':'ออฟไลน์';
-    const lastSeenText=isCurrent?'กำลังใช้งานหน้านี้':`ออนไลน์ล่าสุด ${formatAdminPresenceAgo(u.lastSeenAt||u.lastLogoutAt)}`;
-    const loginText=u.lastLoginAt?`เข้าสู่ระบบล่าสุด ${formatAdminPresenceAgo(u.lastLoginAt)}`:'ยังไม่มีประวัติเข้าสู่ระบบ';
-    return `<article class="admin-user-row admin-user-card ${u.enabled===false?'is-disabled':''} ${presenceClass}">
-      <div class="admin-user-avatar-wrap"><div class="admin-user-avatar"><i class="fas ${root?'fa-crown':'fa-user-shield'}"></i></div><span class="admin-presence-dot" title="${presenceText}"></span></div>
-      <div class="admin-user-info"><div class="admin-user-name-line"><strong>${escapeAdminHtml(u.displayName||u.username)}</strong>${root?'<span class="admin-user-badge owner"><i class="fas fa-crown"></i> บัญชีหลัก</span>':''}${isCurrent?'<span class="admin-user-badge current">บัญชีนี้</span>':''}</div><code>@${escapeAdminHtml(u.username)}</code><div class="admin-user-activity-meta"><span class="admin-presence-label ${presenceClass}"><i class="fas fa-circle"></i> ${presenceText}</span><small><i class="far fa-clock"></i> ${lastSeenText}</small><small><i class="fas fa-right-to-bracket"></i> ${loginText}</small></div></div>
-      <div class="admin-user-status"><span class="admin-status-badge ${u.enabled===false?'status-error':'status-success'}"><i class="fas ${u.enabled===false?'fa-ban':'fa-circle-check'}"></i> ${u.enabled===false?'ปิดใช้งาน':'เปิดใช้งาน'}</span>${u.synced?`<small>สร้าง ${formatAdminUserDate(u.createdAt)}</small>`:'<small>บัญชีเริ่มต้นของระบบ</small>'}</div>
-      <div class="admin-user-actions"><button type="button" class="button button-outline admin-user-password" data-user="${escapeAdminHtml(u.username)}"><i class="fas fa-key"></i><span>รหัสผ่าน</span></button>${root?'':`<button type="button" class="button button-outline admin-user-toggle" data-user="${escapeAdminHtml(u.username)}"><i class="fas ${u.enabled===false?'fa-toggle-off':'fa-toggle-on'}"></i><span>${u.enabled===false?'เปิด':'ปิด'}</span></button><button type="button" class="button button-danger admin-user-delete" data-user="${escapeAdminHtml(u.username)}" title="ลบบัญชี"><i class="fas fa-trash"></i></button>`}</div>
+    const root=u.username===ROOT_ADMIN_USERNAME||u.isRoot; const isCurrent=u.username===current; const presence=adminPresenceInfo(u); const role=root||u.role==='manager'?'manager':'admin';
+    const presenceClass=presence.active?'is-active-now':presence.online?'is-online':'is-offline'; const presenceText=presence.active?'กำลังใช้งาน':presence.online?'ออนไลน์':'ออฟไลน์';
+    const loginExact=u.lastLoginAt?formatAdminUserDate(u.lastLoginAt):'-'; const logoutSource=u.lastLogoutAt||(!presence.online?u.lastSeenAt:''); const logoutExact=presence.online?'ยังออนไลน์อยู่':(logoutSource?formatAdminUserDate(logoutSource):'-');
+    const durationText=formatAdminDuration(adminSessionDurationSec(u)); const totalText=formatAdminDuration(Math.max(0,Number(u.totalOnlineSec)||0));
+    const twoFaReady=u.totpEnabled===true&&!!String(u.totpSecret||'').trim();
+    const roleControl=canManage&&!root?`<label class="admin-role-control admin-role-control-v63"><span><i class="fas fa-user-tag"></i> บทบาท</span><select class="admin-user-role-select" data-user="${escapeAdminHtml(u.username)}" ${isCurrent?'disabled':''}><option value="admin" ${role==='admin'?'selected':''}>แอดมิน</option><option value="manager" ${role==='manager'?'selected':''}>ผู้จัดการ</option></select></label>`:'';
+    const actions=canManage?`<div class="admin-user-actions-v63">${roleControl}<div class="admin-user-action-buttons-v63"><button type="button" class="button button-outline admin-user-password" data-user="${escapeAdminHtml(u.username)}"><i class="fas fa-key"></i><span>เปลี่ยนรหัส</span></button><button type="button" class="button button-outline admin-user-2fa-reset" data-user="${escapeAdminHtml(u.username)}"><i class="fas fa-mobile-screen-button"></i><span>รีเซ็ต 2FA</span></button>${root?'':`<button type="button" class="button button-outline admin-user-toggle" data-user="${escapeAdminHtml(u.username)}"><i class="fas ${u.enabled===false?'fa-toggle-off':'fa-toggle-on'}"></i><span>${u.enabled===false?'เปิดบัญชี':'ปิดบัญชี'}</span></button><button type="button" class="button button-danger admin-user-delete" data-user="${escapeAdminHtml(u.username)}" title="ลบบัญชี"><i class="fas fa-trash"></i><span>ลบ</span></button>`}</div></div>`:'';
+    return `<article class="admin-user-card-v63 ${u.enabled===false?'is-disabled':''} ${presenceClass}">
+      <div class="admin-user-card-v63-accent"></div>
+      <header class="admin-user-card-v63-head">
+        <div class="admin-user-avatar-v63 role-${role}"><i class="fas ${root?'fa-crown':role==='manager'?'fa-user-tie':'fa-user-shield'}"></i><span class="admin-presence-dot ${presenceClass}"></span></div>
+        <div class="admin-user-identity-v63"><div class="admin-user-name-v63"><strong>${escapeAdminHtml(u.displayName||u.username)}</strong>${root?'<span class="admin-user-badge owner"><i class="fas fa-crown"></i> บัญชีหลัก</span>':''}${isCurrent?'<span class="admin-user-badge current"><i class="fas fa-location-dot"></i> เครื่องนี้</span>':''}</div><code>@${escapeAdminHtml(u.username)}</code><small>${role==='manager'?'สิทธิ์ผู้จัดการ · จัดการบัญชีและตรวจสอบประวัติได้':'สิทธิ์แอดมิน · จัดการข้อมูลร้านตามสิทธิ์'}</small></div>
+        <div class="admin-user-live-v63"><span class="admin-presence-label ${presenceClass}"><i class="fas fa-circle"></i>${presenceText}</span><span class="admin-status-badge ${u.enabled===false?'status-error':'status-success'}"><i class="fas ${u.enabled===false?'fa-ban':'fa-circle-check'}"></i>${u.enabled===false?'ปิดใช้งาน':'เปิดใช้งาน'}</span></div>
+      </header>
+      <div class="admin-user-security-v63">
+        <div class="security-tile role"><span><i class="fas ${role==='manager'?'fa-user-tie':'fa-user-shield'}"></i></span><div><small>บทบาท</small><b>${adminRoleLabel(role)}</b></div></div>
+        <div class="security-tile ${twoFaReady?'secure':'warning'}"><span><i class="fas ${twoFaReady?'fa-shield-halved':'fa-triangle-exclamation'}"></i></span><div><small>Authenticator</small><b>${twoFaReady?'2FA พร้อมใช้งาน':'รอตั้งค่า 2FA'}</b></div></div>
+        <div class="security-tile"><span><i class="fas fa-desktop"></i></span><div><small>สถานะเครื่อง</small><b>${presence.online?'กำลังซิงก์ออนไลน์':'ไม่ได้เชื่อมต่อ'}</b></div></div>
+      </div>
+      <div class="admin-user-metrics-v63"><div><span><i class="fas fa-right-to-bracket"></i> เข้าล่าสุด</span><b>${escapeAdminHtml(loginExact)}</b></div><div><span><i class="fas fa-arrow-right-from-bracket"></i> ออกล่าสุด</span><b>${escapeAdminHtml(logoutExact)}</b></div><div><span><i class="far fa-clock"></i>${presence.online?'ออนไลน์รอบนี้':'รอบล่าสุด'}</span><b>${escapeAdminHtml(durationText)}</b></div><div><span><i class="fas fa-hourglass-half"></i> ออนไลน์สะสม</span><b>${escapeAdminHtml(totalText)}</b></div></div>
+      <div class="admin-user-created-v63"><i class="fas fa-calendar-plus"></i><span>สร้างบัญชี</span><b>${u.synced?escapeAdminHtml(formatAdminUserDate(u.createdAt)):'บัญชีเริ่มต้นของระบบ'}</b></div>
+      ${actions}
     </article>`;
   }).join('');
 }
-async function createAdminUser(event){
-  event.preventDefault(); const username=String(document.getElementById('newAdminUsername')?.value||'').trim().toLowerCase(); const displayName=String(document.getElementById('newAdminDisplayName')?.value||'').trim(); const password=String(document.getElementById('newAdminPassword')?.value||''); const btn=document.getElementById('createAdminUserBtn');
-  if(!/^[a-zA-Z0-9._-]{3,32}$/.test(username)){showAdminToast('Username ใช้ได้เฉพาะ a-z, 0-9, จุด, _ และ - จำนวน 3–32 ตัว','error');return;} if(password.length<6){showAdminToast('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร','error');return;} if(findAdminUser(username)){showAdminToast('มี Username นี้อยู่แล้ว','error');return;}
-  setButtonLoading(btn,'กำลังเพิ่ม...'); try{const salt=adminRandomSalt();const hash=await adminHashPassword(password,salt,120000);const user={username,displayName:displayName||username,role:'admin',enabled:true,salt,hash,iterations:120000,createdAt:new Date().toISOString()};await adminApiPost('adminCreatePromotion',adminUserToPromotionPayload(user));event.target.reset();showAdminToast(`เพิ่มผู้ดูแล ${username} แล้ว`,'success');await loadAdminData();}catch(error){showAdminToast(error.message||'เพิ่มผู้ดูแลไม่สำเร็จ','error');}finally{clearButtonLoading(btn);}
+
+function renderAdminAuditLog(){
+  const listEl=document.getElementById('adminAuditList'); if(!listEl)return;
+  if(!isCurrentAdminManager()){listEl.innerHTML='';return;}
+  const logs=Array.isArray(adminState.adminAuditLogs)?adminState.adminAuditLogs:[];
+  const userSelect=document.getElementById('adminAuditUserFilter'); const typeSelect=document.getElementById('adminAuditTypeFilter'); const searchInput=document.getElementById('adminAuditSearch');
+  const previousUser=userSelect?.value||'all';
+  if(userSelect){
+    const names=[...new Set(logs.map(l=>l.actorUsername).filter(Boolean))].sort();
+    userSelect.innerHTML='<option value="all">ทุกบัญชี</option>'+names.map(name=>`<option value="${escapeAdminHtml(name)}">@${escapeAdminHtml(name)}</option>`).join('');
+    userSelect.value=names.includes(previousUser)?previousUser:'all';
+  }
+  const userFilter=userSelect?.value||'all'; const typeFilter=typeSelect?.value||'all'; const q=String(searchInput?.value||'').trim().toLowerCase();
+  const filtered=logs.filter(log=>{
+    if(userFilter!=='all'&&log.actorUsername!==userFilter)return false;
+    if(typeFilter!=='all'&&log.kind!==typeFilter)return false;
+    if(q&&!`${log.actorUsername} ${log.actorDisplayName} ${log.label} ${log.target} ${log.detail}`.toLowerCase().includes(q))return false;
+    return true;
+  }).slice(0,250);
+  const today=new Date(); const todayKey=`${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
+  document.getElementById('adminAuditStatTotal') && (document.getElementById('adminAuditStatTotal').textContent=logs.length);
+  document.getElementById('adminAuditStatToday') && (document.getElementById('adminAuditStatToday').textContent=logs.filter(l=>{const d=new Date(l.at);return !Number.isNaN(d.getTime())&&`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`===todayKey;}).length);
+  document.getElementById('adminAuditStatUsers') && (document.getElementById('adminAuditStatUsers').textContent=new Set(logs.map(l=>l.actorUsername).filter(Boolean)).size);
+  if(!filtered.length){listEl.innerHTML='<div class="admin-audit-empty"><i class="fas fa-clock-rotate-left"></i><strong>ยังไม่มีประวัติในตัวกรองนี้</strong><span>เมื่อแอดมินเข้าใช้งานหรือแก้ข้อมูล รายการจะขึ้นที่นี่อัตโนมัติ</span></div>';return;}
+  listEl.innerHTML=filtered.map(log=>{
+    const isSession=log.kind==='session'; const isLogin=log.action==='login';
+    const icon=isSession?(isLogin?'fa-right-to-bracket':'fa-arrow-right-from-bracket'):'fa-pen-to-square';
+    const role=log.actorRole==='manager'?'manager':'admin';
+    const logIndex=logs.indexOf(log);
+    return `<article class="admin-audit-row ${isSession?'is-session':'is-action'}"><span class="admin-audit-icon"><i class="fas ${icon}"></i></span><div class="admin-audit-main"><div><strong>${escapeAdminHtml(log.label||'กิจกรรม')}</strong>${log.target?`<span>${escapeAdminHtml(log.target)}</span>`:''}</div><p>${escapeAdminHtml(log.detail||'')}</p><small><i class="far fa-clock"></i> ${formatAdminUserDate(log.at)}</small></div><div class="admin-audit-actor"><b>${escapeAdminHtml(log.actorDisplayName||log.actorUsername||'-')}</b><code>@${escapeAdminHtml(log.actorUsername||'-')}</code><span class="admin-user-badge role-${role}">${adminRoleLabel(role)}</span><button type="button" class="admin-audit-detail-btn" data-audit-index="${logIndex}"><i class="fas fa-eye"></i><span>ดูรายละเอียด</span></button></div></article>`;
+  }).join('');
 }
-function openAdminPasswordModal(username){const u=findAdminUser(username);if(!u)return;document.getElementById('adminPasswordTarget').value=u.username;document.getElementById('adminPasswordModalUser').textContent=`บัญชี: ${u.username}`;document.getElementById('adminPasswordNew').value='';document.getElementById('adminPasswordConfirm').value='';const modal=document.getElementById('adminPasswordModal');modal?.classList.remove('hidden');modal?.setAttribute('aria-hidden','false');setTimeout(()=>document.getElementById('adminPasswordNew')?.focus(),80);}
+
+
+function adminAuditKindLabel(log){
+  if(log?.kind==='session') return log?.action==='login'?'เข้าสู่ระบบ':'ออกจากระบบ';
+  return 'การแก้ไขข้อมูล';
+}
+function openAdminAuditDetail(index){
+  if(!isCurrentAdminManager())return;
+  const log=(Array.isArray(adminState.adminAuditLogs)?adminState.adminAuditLogs:[])[Number(index)];
+  if(!log){showAdminToast('ไม่พบรายละเอียดรายการนี้','error');return;}
+  const modal=document.getElementById('adminAuditDetailModal'); const body=document.getElementById('adminAuditDetailBody');
+  if(!modal||!body)return;
+  const role=log.actorRole==='manager'?'manager':'admin';
+  const isSession=log.kind==='session';
+  const sessionStatus=isSession?(log.action==='login'?'<span class="admin-audit-detail-status is-login"><i class="fas fa-right-to-bracket"></i> เข้าสู่ระบบ</span>':'<span class="admin-audit-detail-status is-logout"><i class="fas fa-arrow-right-from-bracket"></i> ออกจากระบบ</span>'):'<span class="admin-audit-detail-status is-action"><i class="fas fa-pen-to-square"></i> แก้ไขข้อมูล</span>';
+  const rows=[
+    ['กิจกรรม',log.label||'กิจกรรม','fa-list-check'],
+    ['รายการ / เป้าหมาย',log.target||'-','fa-bullseye'],
+    ['สรุปการทำงาน',log.detail||'-','fa-align-left'],
+    ['ผู้ดำเนินการ',log.actorDisplayName||log.actorUsername||'-','fa-user-shield'],
+    ['Username',log.actorUsername?`@${log.actorUsername}`:'-','fa-at'],
+    ['บทบาท',adminRoleLabel(role),'fa-user-tag'],
+    ['วันและเวลา',formatAdminUserDate(log.at),'fa-calendar-clock'],
+    ['Action',log.action||'-','fa-code'],
+    ['Session ID',log.sessionId||'-','fa-fingerprint'],
+    ['Log ID',String(log.id??'-'),'fa-hashtag'],
+  ];
+  const changes=Array.isArray(log.changes)?log.changes:[];
+  let changeHtml='';
+  if(!isSession){
+    if(changes.length){
+      changeHtml=`<section class="admin-audit-change-section"><div class="admin-audit-change-head"><div><span>CHANGE DETAILS</span><h4><i class="fas fa-code-compare"></i> แก้ไขอะไร / อย่างไร</h4><p>แสดงค่าก่อนแก้และค่าหลังแก้ของรายการนี้</p></div><b>${changes.length} จุด</b></div><div class="admin-audit-change-list">${changes.map((change)=>{
+        const type=change.type==='create'?'create':change.type==='delete'?'delete':'update';
+        const before=escapeAdminHtml(String(change.before??'—')).replace(/\n/g,'<br>');
+        const after=escapeAdminHtml(String(change.after??'—')).replace(/\n/g,'<br>');
+        return `<article class="admin-audit-change-row is-${type}"><div class="admin-audit-change-label"><i class="fas ${type==='create'?'fa-plus':type==='delete'?'fa-trash-can':'fa-pen'}"></i><strong>${escapeAdminHtml(change.label||'ข้อมูล')}</strong></div><div class="admin-audit-change-values"><div class="before"><span>ก่อนแก้</span><p>${before}</p></div><i class="fas fa-arrow-right admin-audit-change-arrow"></i><div class="after"><span>หลังแก้</span><p>${after}</p></div></div></article>`;
+      }).join('')}</div></section>`;
+    }else{
+      changeHtml=`<section class="admin-audit-change-section"><div class="admin-audit-change-head"><div><span>CHANGE DETAILS</span><h4><i class="fas fa-code-compare"></i> แก้ไขอะไร / อย่างไร</h4></div></div><div class="admin-audit-change-legacy"><i class="fas fa-circle-info"></i><div><strong>รายการนี้ยังไม่มีค่าก่อน–หลังแบบละเอียด</strong><p>${escapeAdminHtml(log.detail||'Log นี้อาจถูกบันทึกจากเวอร์ชันก่อนที่ระบบติดตามการเปลี่ยนแปลงแบบละเอียดจะถูกเพิ่มเข้ามา')}</p></div></div></section>`;
+    }
+  }
+  body.innerHTML=`<div class="admin-audit-detail-summary"><div class="admin-audit-detail-summary-icon"><i class="fas ${isSession?(log.action==='login'?'fa-right-to-bracket':'fa-arrow-right-from-bracket'):'fa-pen-to-square'}"></i></div><div><small>ADMIN ACTIVITY DETAIL</small><h4>${escapeAdminHtml(log.label||'รายละเอียดกิจกรรม')}</h4><div>${sessionStatus}<span class="admin-user-badge role-${role}">${adminRoleLabel(role)}</span></div></div></div>${changeHtml}<div class="admin-audit-detail-grid">${rows.map(([label,value,icon])=>`<div class="admin-audit-detail-field"><span><i class="fas ${icon}"></i>${escapeAdminHtml(label)}</span><strong>${escapeAdminHtml(String(value))}</strong></div>`).join('')}</div>`;
+  modal.classList.remove('hidden'); modal.setAttribute('aria-hidden','false');
+  document.body.classList.add('admin-modal-open');
+}
+function closeAdminAuditDetail(){
+  const modal=document.getElementById('adminAuditDetailModal'); if(!modal)return;
+  modal.classList.add('hidden'); modal.setAttribute('aria-hidden','true'); document.body.classList.remove('admin-modal-open');
+}
+
+async function createAdminUser(event){
+  event.preventDefault(); if(!isCurrentAdminManager()){showAdminToast('เฉพาะผู้จัดการเท่านั้นที่เพิ่มบัญชีได้','error');return;}
+  const username=String(document.getElementById('newAdminUsername')?.value||'').trim().toLowerCase(); const displayName=String(document.getElementById('newAdminDisplayName')?.value||'').trim(); const password=String(document.getElementById('newAdminPassword')?.value||''); const role=document.getElementById('newAdminRole')?.value==='manager'?'manager':'admin'; const btn=document.getElementById('createAdminUserBtn');
+  if(!/^[a-zA-Z0-9._-]{3,32}$/.test(username)){showAdminToast('Username ใช้ได้เฉพาะ a-z, 0-9, จุด, _ และ - จำนวน 3–32 ตัว','error');return;} if(password.length<6){showAdminToast('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร','error');return;} if(findAdminUser(username)){showAdminToast('มี Username นี้อยู่แล้ว','error');return;}
+  setButtonLoading(btn,'กำลังเพิ่ม...'); try{const salt=adminRandomSalt();const hash=await adminHashPassword(password,salt,120000);const user={username,displayName:displayName||username,role,enabled:true,salt,hash,iterations:120000,createdAt:new Date().toISOString()};await adminApiPost('adminCreatePromotion',adminUserToPromotionPayload(user));event.target.reset();showAdminToast(`เพิ่ม${adminRoleLabel(role)} ${username} แล้ว`,'success');await loadAdminData();}catch(error){showAdminToast(error.message||'เพิ่มผู้ดูแลไม่สำเร็จ','error');}finally{clearButtonLoading(btn);}
+}
+function openAdminPasswordModal(username){const u=findAdminUser(username);if(!u)return;if(!isCurrentAdminManager()&&username!==adminState.currentAdminUser?.username){showAdminToast('ไม่มีสิทธิ์แก้รหัสผ่านบัญชีนี้','error');return;}document.getElementById('adminPasswordTarget').value=u.username;document.getElementById('adminPasswordModalUser').textContent=`บัญชี: ${u.username}`;document.getElementById('adminPasswordNew').value='';document.getElementById('adminPasswordConfirm').value='';const modal=document.getElementById('adminPasswordModal');modal?.classList.remove('hidden');modal?.setAttribute('aria-hidden','false');setTimeout(()=>document.getElementById('adminPasswordNew')?.focus(),80);}
 function closeAdminPasswordModal(){const modal=document.getElementById('adminPasswordModal');modal?.classList.add('hidden');modal?.setAttribute('aria-hidden','true');}
 async function saveAdminPassword(event){
-  event.preventDefault();const username=document.getElementById('adminPasswordTarget').value;const pass=document.getElementById('adminPasswordNew').value;const confirmPass=document.getElementById('adminPasswordConfirm').value;const user=findAdminUser(username);const btn=document.getElementById('saveAdminPasswordBtn');if(!user)return;if(pass.length<6){showAdminToast('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร','error');return;}if(pass!==confirmPass){showAdminToast('รหัสผ่านยืนยันไม่ตรงกัน','error');return;}setButtonLoading(btn,'กำลังบันทึก...');try{const salt=adminRandomSalt();const hash=await adminHashPassword(pass,salt,120000);const updated={...user,salt,hash,iterations:120000,updatedAt:new Date().toISOString()};const payload=adminUserToPromotionPayload(updated);if(user.synced&&Number.isFinite(Number(user.id))){payload.id=Number(user.id);await adminApiPost('adminUpdatePromotion',payload);}else{await adminApiPost('adminCreatePromotion',payload);}closeAdminPasswordModal();showAdminToast(`เปลี่ยนรหัสผ่าน ${username} แล้ว`,'success');await loadAdminData();}catch(error){showAdminToast(error.message||'เปลี่ยนรหัสผ่านไม่สำเร็จ','error');}finally{clearButtonLoading(btn);}
+  event.preventDefault();const username=document.getElementById('adminPasswordTarget').value;const pass=document.getElementById('adminPasswordNew').value;const confirmPass=document.getElementById('adminPasswordConfirm').value;const user=findAdminUser(username);const btn=document.getElementById('saveAdminPasswordBtn');if(!user)return;if(!isCurrentAdminManager()&&username!==adminState.currentAdminUser?.username){showAdminToast('ไม่มีสิทธิ์แก้บัญชีนี้','error');return;}if(pass.length<6){showAdminToast('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร','error');return;}if(pass!==confirmPass){showAdminToast('รหัสผ่านยืนยันไม่ตรงกัน','error');return;}setButtonLoading(btn,'กำลังบันทึก...');try{const salt=adminRandomSalt();const hash=await adminHashPassword(pass,salt,120000);const updated={...user,salt,hash,iterations:120000,updatedAt:new Date().toISOString()};const payload=adminUserToPromotionPayload(updated);if(user.synced&&Number.isFinite(Number(user.id))){payload.id=Number(user.id);await adminApiPost('adminUpdatePromotion',payload);}else{await adminApiPost('adminCreatePromotion',payload);}closeAdminPasswordModal();showAdminToast(`เปลี่ยนรหัสผ่าน ${username} แล้ว`,'success');await loadAdminData();}catch(error){showAdminToast(error.message||'เปลี่ยนรหัสผ่านไม่สำเร็จ','error');}finally{clearButtonLoading(btn);}
 }
-async function toggleAdminUser(username){const user=findAdminUser(username);if(!user||user.isRoot||user.username===ROOT_ADMIN_USERNAME)return;if(!user.synced){showAdminToast('บัญชียังไม่ซิงก์กับระบบ','error');return;}try{const payload=adminUserToPromotionPayload({...user,enabled:user.enabled===false});payload.id=Number(user.id);await adminApiPost('adminUpdatePromotion',payload);showAdminToast(`${user.enabled===false?'เปิด':'ปิด'}บัญชี ${username} แล้ว`,'success');await loadAdminData();}catch(error){showAdminToast(error.message,'error');}}
-async function deleteAdminUser(username){const user=findAdminUser(username);if(!user||user.isRoot||user.username===ROOT_ADMIN_USERNAME)return;if(username===adminState.currentAdminUser?.username){showAdminToast('ไม่สามารถลบบัญชีที่กำลังใช้งานอยู่','error');return;}if(!confirm(`ลบบัญชีผู้ดูแล ${username} หรือไม่?`))return;try{await adminApiPost('adminDeletePromotion',{id:Number(user.id)});showAdminToast(`ลบบัญชี ${username} แล้ว`,'success');await loadAdminData();}catch(error){showAdminToast(error.message,'error');}}
+async function changeAdminUserRole(username,role){
+  const user=findAdminUser(username); if(!isCurrentAdminManager()||!user||user.isRoot||user.username===ROOT_ADMIN_USERNAME||username===adminState.currentAdminUser?.username)return;
+  const nextRole=role==='manager'?'manager':'admin'; if(user.role===nextRole)return;
+  try{const payload=adminUserToPromotionPayload({...user,role:nextRole,updatedAt:new Date().toISOString()});payload.id=Number(user.id);await adminApiPost('adminUpdatePromotion',payload);showAdminToast(`เปลี่ยน ${username} เป็น ${adminRoleLabel(nextRole)} แล้ว`,'success');await loadAdminData();}catch(error){showAdminToast(error.message||'เปลี่ยนบทบาทไม่สำเร็จ','error');renderAdminUsers();}
+}
+async function toggleAdminUser(username){if(!isCurrentAdminManager()){showAdminToast('เฉพาะผู้จัดการเท่านั้น','error');return;}const user=findAdminUser(username);if(!user||user.isRoot||user.username===ROOT_ADMIN_USERNAME)return;if(!user.synced){showAdminToast('บัญชียังไม่ซิงก์กับระบบ','error');return;}try{const payload=adminUserToPromotionPayload({...user,enabled:user.enabled===false});payload.id=Number(user.id);await adminApiPost('adminUpdatePromotion',payload);showAdminToast(`${user.enabled===false?'เปิด':'ปิด'}บัญชี ${username} แล้ว`,'success');await loadAdminData();}catch(error){showAdminToast(error.message,'error');}}
+async function deleteAdminUser(username){if(!isCurrentAdminManager()){showAdminToast('เฉพาะผู้จัดการเท่านั้น','error');return;}const user=findAdminUser(username);if(!user||user.isRoot||user.username===ROOT_ADMIN_USERNAME)return;if(username===adminState.currentAdminUser?.username){showAdminToast('ไม่สามารถลบบัญชีที่กำลังใช้งานอยู่','error');return;}if(!confirm(`ลบบัญชีผู้ดูแล ${username} หรือไม่?`))return;try{await adminApiPost('adminDeletePromotion',{id:Number(user.id)});showAdminToast(`ลบบัญชี ${username} แล้ว`,'success');await loadAdminData();}catch(error){showAdminToast(error.message,'error');}}
+
 function attachAdminAuthEvents(){
   document.getElementById('adminLoginForm')?.addEventListener('submit',handleAdminLogin);
+  document.getElementById('adminTotpForm')?.addEventListener('submit',handleAdminTotpVerify);
+  document.getElementById('adminTotpBackBtn')?.addEventListener('click',showAdminPasswordStep);
+  document.getElementById('adminTotpCopySecret')?.addEventListener('click',async()=>{const value=String(adminPendingTotpLogin?.secret||'');if(!value)return;try{await navigator.clipboard.writeText(value);showAdminToast('คัดลอก Setup key แล้ว','success');}catch(_){showAdminToast('คัดลอกไม่สำเร็จ กรุณาคัดลอกด้วยตนเอง','error');}});
+  document.getElementById('adminTotpCode')?.addEventListener('input',e=>{e.target.value=String(e.target.value||'').replace(/\D/g,'').slice(0,6);});
+  document.getElementById('adminTotpRequestResetBtn')?.addEventListener('click',requestAdminTotpReset);
+  document.getElementById('adminTotpHaveResetCodeBtn')?.addEventListener('click',()=>toggleAdminTotpResetCodeBox(true));
+  document.getElementById('adminTotpResetCode')?.addEventListener('input',e=>{e.target.value=String(e.target.value||'').replace(/\D/g,'').slice(0,8);});
+  document.getElementById('adminTotpApplyResetCodeBtn')?.addEventListener('click',applyAdminTotpResetCode);
   document.getElementById('adminLoginPasswordToggle')?.addEventListener('click',()=>{const input=document.getElementById('adminLoginPassword');if(!input)return;input.type=input.type==='password'?'text':'password';document.querySelector('#adminLoginPasswordToggle i')?.classList.toggle('fa-eye-slash',input.type==='text');});
   document.getElementById('adminLogoutBtn')?.addEventListener('click',logoutAdmin); document.getElementById('adminSidebarLogoutBtn')?.addEventListener('click',logoutAdmin);
-  document.getElementById('adminUserCreateForm')?.addEventListener('submit',createAdminUser); document.getElementById('refreshAdminUsersBtn')?.addEventListener('click',loadAdminData);
-  document.getElementById('adminUsersList')?.addEventListener('click',e=>{const pass=e.target.closest('.admin-user-password');if(pass)return openAdminPasswordModal(pass.dataset.user);const tog=e.target.closest('.admin-user-toggle');if(tog)return toggleAdminUser(tog.dataset.user);const del=e.target.closest('.admin-user-delete');if(del)return deleteAdminUser(del.dataset.user);});
+  document.getElementById('adminUserCreateForm')?.addEventListener('submit',createAdminUser); document.getElementById('refreshAdminUsersBtn')?.addEventListener('click',loadAdminData); document.getElementById('refreshAdminAuditBtn')?.addEventListener('click',loadAdminData);
+  document.getElementById('adminUsersList')?.addEventListener('click',e=>{const pass=e.target.closest('.admin-user-password');if(pass)return openAdminPasswordModal(pass.dataset.user);const twofa=e.target.closest('.admin-user-2fa-reset');if(twofa)return resetAdminAuthenticator(twofa.dataset.user);const tog=e.target.closest('.admin-user-toggle');if(tog)return toggleAdminUser(tog.dataset.user);const del=e.target.closest('.admin-user-delete');if(del)return deleteAdminUser(del.dataset.user);});
+  document.getElementById('adminTotpResetRequestsList')?.addEventListener('click',e=>{const approve=e.target.closest('.admin-reset-approve');if(approve)return approveAdminTotpResetRequest(approve.dataset.request);const reject=e.target.closest('.admin-reset-reject');if(reject)return rejectAdminTotpResetRequest(reject.dataset.request);const show=e.target.closest('.admin-reset-show-code');if(show){const req=(adminState.adminTotpResetRequests||[]).find(r=>r.requestId===show.dataset.request),code=adminIssuedTotpResetCodes.get(show.dataset.request);if(req&&code)showIssuedAdminTotpResetCode(req,code);}});
+  document.querySelectorAll('[data-close-admin-totp-reset-code]').forEach(el=>el.addEventListener('click',closeIssuedAdminTotpResetCode));
+  document.getElementById('adminTotpResetCopyIssued')?.addEventListener('click',async()=>{const code=String(document.getElementById('adminTotpResetIssuedCode')?.textContent||'').trim();if(!code)return;try{await navigator.clipboard.writeText(code);showAdminToast('คัดลอกโค้ดรีเซ็ตแล้ว','success');}catch(_){showAdminToast('คัดลอกไม่สำเร็จ','error');}});
+  document.getElementById('adminUsersList')?.addEventListener('change',e=>{const role=e.target.closest('.admin-user-role-select');if(role)changeAdminUserRole(role.dataset.user,role.value);});
+  document.getElementById('adminAuditUserFilter')?.addEventListener('change',renderAdminAuditLog); document.getElementById('adminAuditTypeFilter')?.addEventListener('change',renderAdminAuditLog); document.getElementById('adminAuditSearch')?.addEventListener('input',renderAdminAuditLog);
+  document.getElementById('adminAuditList')?.addEventListener('click',e=>{const detail=e.target.closest('.admin-audit-detail-btn');if(detail)openAdminAuditDetail(detail.dataset.auditIndex);});
+  document.querySelectorAll('[data-close-admin-audit-detail]').forEach(el=>el.addEventListener('click',closeAdminAuditDetail));
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.getElementById('adminAuditDetailModal')?.classList.contains('hidden'))closeAdminAuditDetail();});
   document.getElementById('adminPasswordResetForm')?.addEventListener('submit',saveAdminPassword); document.querySelectorAll('[data-close-admin-password]').forEach(el=>el.addEventListener('click',closeAdminPasswordModal));
 }
 
@@ -2604,6 +3503,7 @@ document.addEventListener('jokemoo:languagechange', (event) => {
     renderWebSettingsEditor();
     renderOrdersDashboard();
     renderAdminUsers();
+    renderAdminAuditLog();
     updateAdminStats();
   } catch (error) {
     console.warn('admin language refresh skipped', error);
