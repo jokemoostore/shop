@@ -28,7 +28,7 @@ const state = {
 const configuredApiBaseUrl = (window.JokeMooConfig && window.JokeMooConfig.apiBaseUrl)
     ? String(window.JokeMooConfig.apiBaseUrl).trim()
     : "";
-const legacyApiBaseUrl = "";
+const legacyApiBaseUrl = "https://script.google.com/macros/s/AKfycbwWCUnFiqCqz_bpzSV4uDeRDigbibQU474pUtpW8NnVdI58hLKC_353e-Y7H5KfuCsg/exec";
 const apiBaseUrls = Array.from(new Set([
     configuredApiBaseUrl,
     ...((window.JokeMooConfig && Array.isArray(window.JokeMooConfig.apiFallbackUrls)) ? window.JokeMooConfig.apiFallbackUrls : []),
