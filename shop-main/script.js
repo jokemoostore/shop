@@ -34,7 +34,7 @@ const REVIEWS_PER_PAGE = 4;
 const PENDING_REVIEWS_STORAGE_KEY = 'jokemoo_pending_reviews';
 const REVIEW_SETTINGS_STORAGE_KEY = 'jokemoo_review_settings';
 const ADMIN_RELOAD_STORAGE_KEY = 'jokemoo_admin_reload';
-const SITE_DATA_POLL_INTERVAL_MS = 10000;
+const SITE_DATA_POLL_INTERVAL_MS = 5000; // V72: faster legacy storefront sync while visible
 let lastSiteDataSignature = '';
 let reviewPageIndex = 0;
 let pendingReviewImageDataUrl = null;
@@ -1328,7 +1328,8 @@ async function init() {
         }
     }
 
-    setInterval(refreshSiteDataIfChanged, SITE_DATA_POLL_INTERVAL_MS);
+    setInterval(() => { if (!document.hidden) refreshSiteDataIfChanged(); }, SITE_DATA_POLL_INTERVAL_MS);
+    window.addEventListener('focus', () => { if (!document.hidden) refreshSiteDataIfChanged(); }, { passive: true });
     // Update promotion banner every minute to check date/time constraints
     setInterval(renderPromotionBanner, 60000);
 

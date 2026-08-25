@@ -28,7 +28,7 @@ const state = {
 const configuredApiBaseUrl = (window.JokeMooConfig && window.JokeMooConfig.apiBaseUrl)
     ? String(window.JokeMooConfig.apiBaseUrl).trim()
     : "";
-const legacyApiBaseUrl = "https://script.google.com/macros/s/AKfycbwWCUnFiqCqz_bpzSV4uDeRDigbibQU474pUtpW8NnVdI58hLKC_353e-Y7H5KfuCsg/exec";
+const legacyApiBaseUrl = "";
 const apiBaseUrls = Array.from(new Set([
     configuredApiBaseUrl,
     ...((window.JokeMooConfig && Array.isArray(window.JokeMooConfig.apiFallbackUrls)) ? window.JokeMooConfig.apiFallbackUrls : []),
@@ -79,9 +79,20 @@ const ADMIN_RELOAD_STORAGE_KEY = 'jokemoo_admin_reload';
 const LIVE_SYNC_STORAGE_KEY = 'jokemoo_live_sync';
 const LIVE_SYNC_CHANNEL_NAME = 'jokemoo_live_sync_v1';
 const CHECKOUT_RETURN_STORAGE_KEY = 'jokemoo_checkout_returned_from_line';
-const SITE_DATA_POLL_INTERVAL_MS = 5000;
+// V72 Fast Realtime: quick sync while the customer is active, adaptive backoff
+// while idle, and fully paused while hidden. Same-browser admin changes still
+// fan out immediately through BroadcastChannel/storage.
+const SITE_DATA_ACTIVE_POLL_MS = 2500;
+const SITE_DATA_NORMAL_POLL_MS = 4500;
+const SITE_DATA_IDLE_POLL_MS = 9000;
+const SITE_DATA_ACTIVE_WINDOW_MS = 45000;
+const SITE_DATA_IDLE_AFTER_MS = 90000;
+const SITE_DATA_MIN_REMOTE_GAP_MS = 800;
 let siteRefreshInFlight = false;
 let lastSiteDataSignature = '';
+let lastSiteRemoteFetchAt = 0;
+let storefrontLastInteractionAt = Date.now();
+let sitePollTimer = 0;
 let liveSyncChannel = null;
 let realtimeRefreshTimer = 0;
 let reviewPageIndex = 0;
@@ -90,6 +101,7 @@ let pendingReviewImageDataUrl = null;
 // App page navigation
 let activePage = 'home';
 let activeProductCategory = 'all';
+let lastProductsDomSignature = ''; // V78: skip rebuilding unchanged package DOM
 let activePromotionFilter = 'all';
 const appPageTitles = {
     home: 'หน้าแรก',
@@ -97,15 +109,15 @@ const appPageTitles = {
     wheel: 'วงล้อสุ่มโชค',
     reviews: 'รีวิวลูกค้า',
     promotions: 'โปรโมชั่น',
-    'promotions-active': 'โปรโมชั่น • เริ่ม',
-    'promotions-upcoming': 'โปรโมชั่น • รอเริ่ม',
+    'promotions-active': 'โปรโมชั่น • โปรโมชั่นเริ่มใช้งาน',
+    'promotions-upcoming': 'โปรโมชั่น • โปรโมชั่นรอเริ่ม',
     'promotions-disabled': 'โปรโมชั่น • ปิดการใช้งาน',
     movies: 'แนะนำหนัง',
     'movies-top': 'หนังติด TOP',
     'movies-upcoming': 'หนังที่ใกล้จะเข้า',
     'movies-recommended': 'หนังแนะนำจากทางร้าน',
-    'promotions-active': 'โปรโมชั่น • เริ่ม',
-    'promotions-upcoming': 'โปรโมชั่น • รอเริ่ม',
+    'promotions-active': 'โปรโมชั่น • โปรโมชั่นเริ่มใช้งาน',
+    'promotions-upcoming': 'โปรโมชั่น • โปรโมชั่นรอเริ่ม',
     'promotions-disabled': 'โปรโมชั่น • ปิดการใช้งาน',
     'my-orders': 'ประวัติการซื้อของฉัน',
     faq: 'คำถามที่พบบ่อย',
@@ -238,11 +250,38 @@ function handleAdminReloadEvent(event) {
     requestRealtimeRefresh(80);
 }
 
-function requestRealtimeRefresh(delay = 120) {
+function requestRealtimeRefresh(delay = 120, force = true) {
     clearTimeout(realtimeRefreshTimer);
     realtimeRefreshTimer = setTimeout(() => {
-        if (!document.hidden) refreshSiteDataIfChanged();
+        if (!document.hidden) refreshSiteDataIfChanged(force);
     }, Math.max(0, Number(delay) || 0));
+}
+
+function noteStorefrontInteraction() {
+    storefrontLastInteractionAt = Date.now();
+}
+
+function getSmartSitePollDelay() {
+    const idleFor = Date.now() - storefrontLastInteractionAt;
+    if (idleFor <= SITE_DATA_ACTIVE_WINDOW_MS) return SITE_DATA_ACTIVE_POLL_MS;
+    if (idleFor >= SITE_DATA_IDLE_AFTER_MS) return SITE_DATA_IDLE_POLL_MS;
+    return SITE_DATA_NORMAL_POLL_MS;
+}
+
+function scheduleNextSitePoll(delay) {
+    clearTimeout(sitePollTimer);
+    const wait = Math.max(500, Number(delay) || getSmartSitePollDelay());
+    sitePollTimer = setTimeout(async () => {
+        if (!document.hidden) await refreshSiteDataIfChanged(false);
+        scheduleNextSitePoll();
+    }, wait);
+}
+
+function startSmartSitePolling() {
+    ['pointerdown', 'keydown', 'touchstart'].forEach((type) => {
+        window.addEventListener(type, noteStorefrontInteraction, { passive: true });
+    });
+    scheduleNextSitePoll(SITE_DATA_ACTIVE_POLL_MS);
 }
 
 function notifyRealtimePeers(reason = 'storefront-change') {
@@ -255,15 +294,18 @@ function initRealtimeSync() {
     try {
         if ('BroadcastChannel' in window) {
             liveSyncChannel = new BroadcastChannel(LIVE_SYNC_CHANNEL_NAME);
-            liveSyncChannel.addEventListener('message', () => requestRealtimeRefresh(60));
+            liveSyncChannel.addEventListener('message', () => requestRealtimeRefresh(40, true));
         }
     } catch (_) { liveSyncChannel = null; }
-    window.addEventListener('focus', () => requestRealtimeRefresh(30), { passive: true });
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) requestRealtimeRefresh(30); }, { passive: true });
+    window.addEventListener('focus', () => { noteStorefrontInteraction(); requestRealtimeRefresh(20, true); }, { passive: true });
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) { noteStorefrontInteraction(); requestRealtimeRefresh(20, true); scheduleNextSitePoll(SITE_DATA_ACTIVE_POLL_MS); } }, { passive: true });
 }
 
-async function refreshSiteDataIfChanged() {
+async function refreshSiteDataIfChanged(force = false) {
     if (siteRefreshInFlight || document.hidden || document.body.classList.contains('checkout-active')) return;
+    const now = Date.now();
+    if (!force && now - lastSiteRemoteFetchAt < SITE_DATA_MIN_REMOTE_GAP_MS) return;
+    lastSiteRemoteFetchAt = now;
     siteRefreshInFlight = true;
     try {
         siteDataCache = null;
@@ -388,13 +430,31 @@ const defaultReviews = [
     },
 ];
 
+const siteGetInFlight = new Map();
+
+const SITE_API_GET_TIMEOUT_MS = 6500;
+
+async function fetchWithSiteTimeout(url, options = {}, timeoutMs = SITE_API_GET_TIMEOUT_MS) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        return await fetch(url, { ...options, signal: controller.signal });
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
 async function fetchGet(action) {
+    const requestKey = String(action || '');
+    if (siteGetInFlight.has(requestKey)) return siteGetInFlight.get(requestKey);
+
+    const requestPromise = (async () => {
     let lastError = new Error('ไม่พบ API URL');
     for (const baseUrl of orderedApiBaseUrls()) {
         try {
             const url = new URL(baseUrl);
             url.search = new URLSearchParams({ action }).toString();
-            const response = await fetch(url.toString(), {
+            const response = await fetchWithSiteTimeout(url.toString(), {
                 cache: 'no-store', mode: 'cors', headers: { 'Accept': 'application/json' },
             });
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -408,6 +468,13 @@ async function fetchGet(action) {
         }
     }
     throw lastError;
+    })();
+    siteGetInFlight.set(requestKey, requestPromise);
+    try {
+        return await requestPromise;
+    } finally {
+        if (siteGetInFlight.get(requestKey) === requestPromise) siteGetInFlight.delete(requestKey);
+    }
 }
 
 async function apiGet(action) {
@@ -634,6 +701,7 @@ function normalizeWebSettings(settings) {
             bankName: String(payment.bankName || fallbackPayment.bankName || '').trim(),
             accountName: String(payment.accountName || fallbackPayment.accountName || 'JokeMoo Store').trim(),
             accountNumber: String(payment.accountNumber || fallbackPayment.accountNumber || '').trim(),
+            promptpayId: String(payment.promptpayId || fallbackPayment.promptpayId || '').trim(),
             bankImage: String(payment.bankImage || fallbackPayment.bankImage || '').trim(),
             qrImage: String(payment.qrImage || fallbackPayment.qrImage || '').trim(),
         },
@@ -1027,10 +1095,10 @@ function getPromotionDateRange(promo) {
 
 function getPromotionStateLabel(stateName) {
     const en = window.JMI18n && window.JMI18n.lang === 'en';
-    if (stateName === 'upcoming') return en ? 'Waiting to Start' : 'รอเริ่ม';
+    if (stateName === 'upcoming') return en ? 'Waiting to Start' : 'โปรสุดคุ้มวันนี้ใกล้เริ่มแล้ว';
     if (stateName === 'expired') return en ? 'Disabled' : 'ปิดการใช้งาน';
     if (stateName === 'disabled') return en ? 'Disabled' : 'ปิดการใช้งาน';
-    return en ? 'Started' : 'เริ่ม';
+    return en ? 'Started' : 'โปรโมชั่นที่สามารถใช้งานได้';
 }
 
 function getPromotionSortValue(promo) {
@@ -1391,66 +1459,189 @@ function openPromotionsModal() {
     modal.classList.remove('hidden');
 }
 
+const PRODUCT_DESC_META_PREFIX = 'JM_PRODUCT_V2:';
+
+function parseProductDescriptionMeta(value) {
+    const raw = String(value || '').trim();
+    if (raw.startsWith(PRODUCT_DESC_META_PREFIX)) {
+        try {
+            const parsed = JSON.parse(raw.slice(PRODUCT_DESC_META_PREFIX.length));
+            return {
+                summary: String(parsed.summary || parsed.short || '').trim(),
+                details: String(parsed.details || parsed.detail || '').trim(),
+            };
+        } catch (_) {}
+    }
+    return { summary: raw, details: '' };
+}
+
+function productDetailsListHtml(details, fallback) {
+    const raw = String(details || '').trim();
+    const lines = raw.split(/\r?\n/).map(line => line.replace(/^\s*[-•*]\s*/, '').trim()).filter(Boolean);
+    if (lines.length > 1) {
+        return `<ul class="product-detail-list">${lines.map(line => `<li><i class="fas fa-check"></i><span>${escapeMovieText(line)}</span></li>`).join('')}</ul>`;
+    }
+    const text = raw || String(fallback || '').trim() || 'สอบถามรายละเอียดเพิ่มเติมกับแอดมินได้ก่อนสั่งซื้อ';
+    return `<p class="product-detail-copy">${escapeMovieText(text).replace(/\n/g, '<br>')}</p>`;
+}
+
+function ensureProductDetailModal() {
+    let overlay = document.getElementById('productDetailOverlay');
+    if (overlay) return overlay;
+    overlay = document.createElement('div');
+    overlay.id = 'productDetailOverlay';
+    overlay.className = 'product-detail-overlay hidden';
+    overlay.innerHTML = `
+        <section class="product-detail-modal" role="dialog" aria-modal="true" aria-labelledby="productDetailTitle">
+            <button type="button" class="product-detail-close" data-product-detail-close aria-label="ปิดรายละเอียด"><i class="fas fa-times"></i></button>
+            <div class="product-detail-media"><div id="productDetailImageWrap" class="product-detail-image-wrap"></div></div>
+            <div class="product-detail-content">
+                <div class="product-detail-kicker"><i class="fas fa-box-open"></i><span>PACKAGE DETAIL</span></div>
+                <div class="product-detail-title-row">
+                    <div><h3 id="productDetailTitle">รายละเอียดแพ็กเกจ</h3><p id="productDetailSummary"></p></div>
+                    <span id="productDetailStatus" class="product-status available">พร้อมขาย</span>
+                </div>
+                <div class="product-detail-price-row"><span>ราคาแพ็กเกจ</span><strong id="productDetailPrice">฿0</strong></div>
+                <div class="product-detail-info-box"><span><i class="fas fa-circle-info"></i> รายละเอียด</span><div id="productDetailBody"></div></div>
+                <div class="product-detail-actions">
+                    <button type="button" class="button button-outline" data-product-detail-close><i class="fas fa-arrow-left"></i> กลับ</button>
+                    <button type="button" class="button button-primary" id="productDetailAddCart"><i class="fas fa-cart-plus"></i> เพิ่มเข้าตะกร้า</button>
+                </div>
+            </div>
+        </section>`;
+    document.body.appendChild(overlay);
+    overlay.querySelectorAll('[data-product-detail-close]').forEach(btn => btn.addEventListener('click', () => overlay.classList.add('hidden')));
+    overlay.addEventListener('click', event => { if (event.target === overlay) overlay.classList.add('hidden'); });
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && !overlay.classList.contains('hidden')) overlay.classList.add('hidden');
+    });
+    return overlay;
+}
+
+function openProductDetail(productId) {
+    const product = state.products.find(item => Number(item.id) === Number(productId));
+    if (!product) return;
+    const overlay = ensureProductDetailModal();
+    const meta = parseProductDescriptionMeta(product.desc);
+    const title = overlay.querySelector('#productDetailTitle');
+    const summary = overlay.querySelector('#productDetailSummary');
+    const status = overlay.querySelector('#productDetailStatus');
+    const price = overlay.querySelector('#productDetailPrice');
+    const body = overlay.querySelector('#productDetailBody');
+    const imageWrap = overlay.querySelector('#productDetailImageWrap');
+    const addButton = overlay.querySelector('#productDetailAddCart');
+    if (title) title.textContent = product.name || 'รายละเอียดแพ็กเกจ';
+    if (summary) summary.textContent = meta.summary || 'แพ็กเกจจาก JOKEMOO';
+    if (status) {
+        status.textContent = product.available ? 'พร้อมขาย' : 'ไม่พร้อมใช้งาน';
+        status.className = `product-status ${product.available ? 'available' : 'unavailable'}`;
+    }
+    if (price) price.textContent = `฿${Number(product.price || 0).toLocaleString('th-TH')}`;
+    if (body) body.innerHTML = productDetailsListHtml(meta.details, meta.summary);
+    if (imageWrap) {
+        const image = getOptimizedLocalImageUrl(product.image || '');
+        imageWrap.innerHTML = image
+            ? `<img src="${escapeMovieText(image)}" alt="${escapeMovieText(product.name || 'แพ็กเกจ')}" loading="lazy" decoding="async">`
+            : `<div class="product-detail-image-empty"><i class="fas fa-box-open"></i><span>ยังไม่มีรูปแพ็กเกจ</span></div>`;
+    }
+    if (addButton) {
+        addButton.disabled = !product.available;
+        addButton.setAttribute('aria-disabled', product.available ? 'false' : 'true');
+        addButton.innerHTML = product.available
+            ? '<i class="fas fa-cart-plus"></i> เพิ่มเข้าตะกร้า'
+            : '<i class="fas fa-ban"></i> สินค้าไม่พร้อมใช้งาน';
+        addButton.onclick = () => {
+            if (!product.available) return;
+            addToCart(product.id);
+            overlay.classList.add('hidden');
+        };
+    }
+    overlay.classList.remove('hidden');
+}
+
 function renderProducts() {
     if (!productsContainer) return;
 
-    const categoryOrder = activeProductCategory === 'all'
-        ? ["netflix", "other"]
-        : [activeProductCategory];
-    const categoryHtml = categoryOrder
-        .map((category) => {
-            const group = state.products.filter((item) => item.category === category);
-            if (group.length === 0) return "";
+    // V78 package render signature: realtime may poll often, but identical data should not rebuild the DOM.
+    const renderSignature = activeProductCategory + '|' + state.products.map((item) => [item.id,item.name,item.price,item.category,item.available,item.image,item.desc].join('~')).join('||');
+    if (renderSignature === lastProductsDomSignature) return;
+    lastProductsDomSignature = renderSignature;
 
+    const totalCountEl = document.getElementById('productTotalCountV74');
+    const availableCountEl = document.getElementById('productAvailableCountV74');
+    if (totalCountEl) totalCountEl.textContent = String(state.products.length || 0);
+    if (availableCountEl) availableCountEl.textContent = String(state.products.filter((item) => item.available).length || 0);
+
+    const categoryOrder = activeProductCategory === 'all' ? ["netflix", "other"] : [activeProductCategory];
+    const categoryHtml = categoryOrder.map((category) => {
+        const group = state.products.filter((item) => item.category === category);
+        if (!group.length) return '';
+
+        const categoryIcon = category === 'netflix' ? 'fa-play' : 'fa-mobile-screen-button';
+        const categoryLabel = productCategories[category] || 'แพ็กเกจ';
+        const categorySub = category === 'netflix'
+            ? 'แพ็กเกจ Netflix เลือกระยะเวลาที่เหมาะกับคุณ'
+            : 'แพ็กเกจพรีเมียมจากแอปอื่น ๆ ของทางร้าน';
+
+        const cards = group.map((product) => {
+            const meta = parseProductDescriptionMeta(product.desc);
+            const safeName = escapeMovieText(product.name || 'แพ็กเกจ');
+            const safeSummary = escapeMovieText(meta.summary || 'กดดูรายละเอียดแพ็กเกจก่อนสั่งซื้อ');
+            const safeImage = escapeMovieText(getOptimizedLocalImageUrl(product.image || ''));
+            const price = Number(product.price || 0).toLocaleString('th-TH');
             return `
-                <section class="category-block">
-                    <div class="category-header">
-                        <h3>${productCategories[category]}</h3>
-                        <p>${category === "netflix" ? "แพ็กเกจ Netflix Premium ทั้งหมด" : "แพ็กเกจแอพอื่น ๆ"}</p>
+                <article class="product-card package-card-v75 ${product.available ? '' : 'is-unavailable'}">
+                    <div class="package-card-body-v75">
+                        <button class="package-media-v75" type="button" data-product-detail="${product.id}" aria-label="ดูรายละเอียด ${safeName}">
+                            ${safeImage ? `<img src="${safeImage}" alt="${safeName}" class="product-image" loading="lazy" decoding="async">` : `<span class="package-image-empty-v75"><i class="fas fa-box-open"></i></span>`}
+                        </button>
+                        <div class="package-info-v75">
+                            <div class="package-badges-v75">
+                                <span class="package-brand-v75"><i class="fas ${categoryIcon}"></i>${category === 'netflix' ? 'Netflix' : 'Premium App'}</span>
+                                <span class="product-status ${product.available ? 'available' : 'unavailable'}">${product.available ? 'พร้อมขาย' : 'ปิดขาย'}</span>
+                            </div>
+                            <h4>${safeName}</h4>
+                            <p>${safeSummary}</p>
+                            <div class="package-price-v75"><small>ราคาแพ็กเกจ</small><strong>฿${price}</strong></div>
+                        </div>
                     </div>
-                    <div class="product-grid">
-                        ${group
-                            .map((product) => `
-                                <div class="product-card">
-                                    <div class="product-card-header">
-                                        <h4>${product.name}</h4>
-                                        <div class="product-status ${product.available ? "available" : "unavailable"}">${product.available ? "พร้อมขาย" : "ไม่พร้อมใช้งาน"}</div>
-                                    </div>
-                                    <p>${product.desc}</p>
-                                    <div class="product-image-wrap">
-                                        <img src="${getOptimizedLocalImageUrl(product.image)}" alt="${product.name}" class="product-image" loading="lazy" decoding="async" />
-                                    </div>
-                                    <div>
-                                        <div class="price">฿${product.price} <span class="price-unit">/ บาท</span></div>
-                                        <button class="button button-primary full-width" data-id="${product.id}" ${product.available ? "" : "disabled aria-disabled='true'"}>
-                                            <i class="fas fa-plus"></i> ${product.available ? "เพิ่มเข้าตะกร้า" : "สินค้าไม่พร้อมใช้งาน"}
-                                        </button>
-                                    </div>
-                                </div>
-                            `)
-                            .join("")}
+                    <div class="package-actions-v75">
+                        <button class="button package-detail-btn-v75" type="button" data-product-detail="${product.id}"><i class="fas fa-circle-info"></i><span>ดูรายละเอียด</span></button>
+                        <button class="button button-primary package-cart-btn-v75" type="button" data-id="${product.id}" ${product.available ? '' : "disabled aria-disabled='true'"}>
+                            <i class="fas ${product.available ? 'fa-cart-plus' : 'fa-ban'}"></i><span>${product.available ? 'เพิ่มลงตะกร้า' : 'ปิดขาย'}</span>
+                        </button>
                     </div>
-                </section>
-            `;
-        })
-        .join("");
+                </article>`;
+        }).join('');
+
+        return `
+            <section class="package-category-v75">
+                <header class="package-category-head-v75">
+                    <div class="package-category-name-v75">
+                        <span><i class="fas ${categoryIcon}"></i></span>
+                        <div><h3>${categoryLabel}</h3><p>${categorySub}</p></div>
+                    </div>
+
+                </header>
+                <div class="package-grid-v75">${cards}</div>
+            </section>`;
+    }).join('');
 
     if (!categoryHtml.trim()) {
-        productsContainer.innerHTML = `
-            <div class="empty-state">
-                <p>กำลังโหลดข้อมูลสินค้าจาก API หรือยังไม่มีสินค้าในระบบ</p>
-            </div>
-        `;
+        productsContainer.innerHTML = `<div class="empty-state package-empty-v75"><span><i class="fas fa-box-open"></i></span><h3>ยังไม่มีแพ็กเกจในหมวดนี้</h3><p>ลองเลือกหมวดอื่น หรือรอข้อมูลอัปเดตจากระบบ</p></div>`;
         return;
     }
 
-    productsContainer.innerHTML = `<div class="category-wrapper">${categoryHtml}</div>`;
+    productsContainer.innerHTML = `<div class="package-category-list-v75">${categoryHtml}</div>`;
 
-    productsContainer.querySelectorAll("button[data-id]").forEach((button) => {
+    productsContainer.querySelectorAll('button[data-id]').forEach((button) => {
         const productId = Number(button.dataset.id);
-        const product = state.products.find((item) => item.id === productId);
+        const product = state.products.find((item) => Number(item.id) === productId);
         if (!product || !product.available) return;
-        button.addEventListener("click", () => addToCart(productId));
+        button.addEventListener('click', () => addToCart(productId));
+    });
+    productsContainer.querySelectorAll('[data-product-detail]').forEach((button) => {
+        button.addEventListener('click', () => openProductDetail(Number(button.dataset.productDetail)));
     });
 }
 
@@ -2413,7 +2604,7 @@ function setCheckoutStep(step) {
     });
     // Render only what is visible. This avoids rebuilding all checkout sections on every click.
     if (step === 1) renderCheckoutSummary(checkoutSummaryStep1);
-    else if (step === 2) renderCheckoutSummary(checkoutSummaryStep2);
+    else if (step === 2) { renderCheckoutSummary(checkoutSummaryStep2); if (checkoutState.paymentMethod) renderPaymentDetail(); }
     else if (step === 3) renderCheckoutFinal();
 }
 
@@ -2491,6 +2682,101 @@ function applyDiscountFromInput() {
     return result.ok;
 }
 
+function sanitizePromptPayTarget(value) {
+    return String(value || '').replace(/\D/g, '');
+}
+
+function formatPromptPayTarget(value) {
+    const digits = sanitizePromptPayTarget(value);
+    if (digits.length === 10) {
+        if (!digits.startsWith('0')) throw new Error('เบอร์พร้อมเพย์ต้องขึ้นต้นด้วย 0');
+        return { type: '01', value: `0066${digits.slice(1)}` };
+    }
+    if (digits.length === 13) return { type: '02', value: digits };
+    if (digits.length === 15) return { type: '03', value: digits };
+    throw new Error('พร้อมเพย์ต้องเป็นเบอร์ 10 หลัก หรือเลขบัตร/เลขภาษี 13 หลัก');
+}
+
+function promptPayTlv(id, value) {
+    const text = String(value ?? '');
+    return `${id}${String(text.length).padStart(2, '0')}${text}`;
+}
+
+function promptPayCrc16(text) {
+    let crc = 0xFFFF;
+    for (let i = 0; i < text.length; i += 1) {
+        crc ^= text.charCodeAt(i) << 8;
+        for (let bit = 0; bit < 8; bit += 1) {
+            crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1);
+            crc &= 0xFFFF;
+        }
+    }
+    return crc.toString(16).toUpperCase().padStart(4, '0');
+}
+
+function generatePromptPayPayload(target, amount) {
+    const formatted = formatPromptPayTarget(target);
+    const numericAmount = Number(amount);
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) throw new Error('ยอดชำระต้องมากกว่า 0 บาท');
+    const merchantInfo = promptPayTlv('00', 'A000000677010111') + promptPayTlv(formatted.type, formatted.value);
+    const payload = [
+        promptPayTlv('00', '01'),
+        promptPayTlv('01', '12'),
+        promptPayTlv('29', merchantInfo),
+        promptPayTlv('58', 'TH'),
+        promptPayTlv('53', '764'),
+        promptPayTlv('54', numericAmount.toFixed(2)),
+    ].join('');
+    const withCrcHeader = `${payload}6304`;
+    return withCrcHeader + promptPayCrc16(withCrcHeader);
+}
+
+function getQrDataUrlFromBox(box) {
+    if (!box) return '';
+    const canvas = box.querySelector('canvas');
+    if (canvas && typeof canvas.toDataURL === 'function') {
+        try { return canvas.toDataURL('image/png'); } catch (_) {}
+    }
+    const img = box.querySelector('img');
+    return img ? String(img.src || '') : '';
+}
+
+function renderGeneratedPromptPayQr(target, amount, fallbackImage = '') {
+    const box = document.getElementById('checkoutDynamicQr');
+    const saveBtn = paymentDetail ? paymentDetail.querySelector('.save-qr-image') : null;
+    if (!box) return;
+    try {
+        if (typeof window.QRCode !== 'function') throw new Error('ตัวสร้าง QR ยังโหลดไม่สำเร็จ');
+        const payload = generatePromptPayPayload(target, amount);
+        box.innerHTML = '';
+        new window.QRCode(box, {
+            text: payload,
+            width: 512,
+            height: 512,
+            correctLevel: window.QRCode.CorrectLevel ? window.QRCode.CorrectLevel.M : undefined,
+        });
+        requestAnimationFrame(() => {
+            const src = getQrDataUrlFromBox(box);
+            if (saveBtn && src) {
+                saveBtn.dataset.qrSrc = src;
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fas fa-download"></i> บันทึก QR';
+            }
+        });
+    } catch (error) {
+        console.warn('PromptPay QR generation failed', error);
+        const fallback = String(fallbackImage || '').trim();
+        box.innerHTML = fallback
+            ? `<img src="${escapeMovieText(fallback)}" alt="QR ชำระเงินสำรอง">`
+            : `<div class="payment-qr-empty"><i class="fas fa-triangle-exclamation"></i><strong>สร้าง QR ไม่สำเร็จ</strong><small>${escapeMovieText(error.message || 'กรุณาตรวจสอบพร้อมเพย์ในหลังบ้าน')}</small></div>`;
+        if (saveBtn) {
+            saveBtn.disabled = !fallback;
+            saveBtn.dataset.qrSrc = fallback;
+            saveBtn.innerHTML = fallback ? '<i class="fas fa-download"></i> บันทึก QR สำรอง' : '<i class="fas fa-qrcode"></i> ไม่มี QR';
+        }
+    }
+}
+
 function renderPaymentDetail() {
     if (!paymentDetail) return;
     const cfg = getPaymentSettings();
@@ -2500,20 +2786,30 @@ function renderPaymentDetail() {
         return;
     }
     if (method === 'qr') {
-        const image = String(cfg.qrImage || '').trim();
+        const fallbackImage = String(cfg.qrImage || '').trim();
+        const promptpayId = String(cfg.promptpayId || '').trim();
         const { total } = getCheckoutTotals();
+        const promptpayDigits = sanitizePromptPayTarget(promptpayId);
+        const canGenerate = [10, 13, 15].includes(promptpayDigits.length) && Number(total) > 0;
+        const qrContent = canGenerate
+            ? `<div id="checkoutDynamicQr" class="payment-qr-generated" aria-label="QR พร้อมเพย์ยอด ${escapeMovieText(Number(total).toFixed(2))} บาท"></div>`
+            : fallbackImage
+                ? `<img src="${escapeMovieText(fallbackImage)}" alt="QR ชำระเงินสำรอง">`
+                : `<div class="payment-qr-empty"><i class="fas fa-qrcode"></i><strong>${Number(total) <= 0 ? 'ยอดสุทธิ 0 บาท' : 'ยังไม่ได้ตั้งค่าพร้อมเพย์'}</strong><small>${Number(total) <= 0 ? 'ออเดอร์นี้ไม่มียอดต้องโอน' : 'ใส่เบอร์/เลขพร้อมเพย์ในเมนูจัดการเว็บ'}</small></div>`;
+        const qrSrc = !canGenerate && fallbackImage ? fallbackImage : '';
         paymentDetail.innerHTML = `<div class="payment-qr-layout">
             <span class="payment-label">QR พร้อมเพย์</span>
             <div class="payment-due-chip"><span>ยอดที่ต้องชำระ</span><strong>${money(total)}</strong></div>
-            <div class="payment-qr-box">${image ? `<img src="${escapeMovieText(image)}" alt="QR ชำระเงิน">` : `<div class="payment-qr-empty"><i class="fas fa-qrcode"></i><strong>ยังไม่ได้ตั้งค่า QR</strong><small>ตั้งค่า QR ในเมนูจัดการเว็บ</small></div>`}</div>
+            <div class="payment-qr-box">${qrContent}</div>
             <div class="payment-qr-caption">
                 <div class="payment-qr-caption-head">
                     <h5>${escapeMovieText(cfg.accountName || 'JokeMoo Store')}</h5>
-                    ${image ? `<button class="button button-outline save-qr-image" type="button" data-qr-src="${escapeMovieText(image)}"><i class="fas fa-download"></i> บันทึก QR</button>` : ''}
+                    ${(canGenerate || qrSrc) ? `<button class="button button-outline save-qr-image" type="button" data-qr-src="${escapeMovieText(qrSrc)}" ${canGenerate ? 'disabled' : ''}><i class="fas ${canGenerate ? 'fa-spinner fa-spin' : 'fa-download'}"></i> ${canGenerate ? 'กำลังสร้าง QR...' : 'บันทึก QR'}</button>` : ''}
                 </div>
                 <p>สแกน QR แล้วตรวจสอบชื่อและยอดก่อนโอน</p>
             </div>
         </div>`;
+        if (canGenerate) renderGeneratedPromptPayQr(promptpayId, total, fallbackImage);
     } else {
         const number = String(cfg.accountNumber || '').trim();
         const bankImage = String(cfg.bankImage || '').trim();
@@ -3093,10 +3389,8 @@ async function init() {
 
     attachPromotionBannerEvents();
 
-    // Avoid unnecessary background work while this tab is hidden.
-    setInterval(() => {
-        if (!document.hidden) refreshSiteDataIfChanged();
-    }, SITE_DATA_POLL_INTERVAL_MS);
+    // V72 Fast Realtime polling: adaptive and faster while the page is active.
+    startSmartSitePolling();
     // Update promotion banner every minute only while visible.
     setInterval(() => {
         if (!document.hidden) renderPromotionBanner();

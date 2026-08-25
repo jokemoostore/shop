@@ -1,7 +1,7 @@
 const DEFAULT_ADMIN_API_URL = (window.JokeMooConfig && window.JokeMooConfig.apiBaseUrl)
   ? window.JokeMooConfig.apiBaseUrl
-  : 'https://script.google.com/macros/s/AKfycbwWCUnFiqCqz_bpzSV4uDeRDigbibQU474pUtpW8NnVdI58hLKC_353e-Y7H5KfuCsg/exec';
-const LEGACY_ADMIN_API_URL = 'https://script.google.com/macros/s/AKfycbwWCUnFiqCqz_bpzSV4uDeRDigbibQU474pUtpW8NnVdI58hLKC_353e-Y7H5KfuCsg/exec';
+  : 'https://script.google.com/macros/s/AKfycbwt0fMJ8FZqx3w2W6E7pR67WemP1IRhlfoteuSaJLRc1CgnLqaErl8eruZYop_-Haqf/exec';
+const LEGACY_ADMIN_API_URL = 'https://script.google.com/macros/s/AKfycbwt0fMJ8FZqx3w2W6E7pR67WemP1IRhlfoteuSaJLRc1CgnLqaErl8eruZYop_-Haqf/exec';
 const CONFIG_ADMIN_API_FALLBACKS = (window.JokeMooConfig && Array.isArray(window.JokeMooConfig.apiFallbackUrls))
   ? window.JokeMooConfig.apiFallbackUrls.map(url => String(url || '').trim()).filter(Boolean)
   : [];
@@ -141,11 +141,20 @@ const adminState = {
 
 const ADMIN_LIVE_SYNC_STORAGE_KEY = 'jokemoo_live_sync';
 const ADMIN_LIVE_SYNC_CHANNEL_NAME = 'jokemoo_live_sync_v1';
-const ADMIN_REALTIME_POLL_MS = 5000;
+// V72 Fast Realtime: one adaptive adminData stream, faster while the page is
+// actively used and paused while hidden. Presence is synchronized separately
+// from content so online/offline changes do not force a full Admin UI rerender.
+const ADMIN_REALTIME_ACTIVE_POLL_MS = 2500;
+const ADMIN_REALTIME_NORMAL_POLL_MS = 4500;
+const ADMIN_REALTIME_IDLE_POLL_MS = 9000;
+const ADMIN_REALTIME_ACTIVE_WINDOW_MS = 60000;
+const ADMIN_REALTIME_IDLE_AFTER_MS = 120000;
 let adminLiveSyncChannel = null;
 let adminRealtimeInFlight = false;
 let adminRealtimeTimer = 0;
+let adminSmartPollTimer = 0;
 let lastAdminDataSignature = '';
+const adminGetInFlight = new Map();
 
 function showAdminToast(message, type = 'success') {
   if (!adminToast) return;
@@ -369,6 +378,34 @@ function createNewReview() {
   renderReviewTable(adminState.reviews, adminState.reviewSearchQuery);
   updateAdminStats();
   showAdminToast('เพิ่มรีวิวใหม่เรียบร้อยแล้ว กรุณากดบันทึกเพื่อเก็บข้อมูล', 'success');
+}
+
+const PRODUCT_DESC_META_PREFIX = 'JM_PRODUCT_V2:';
+
+function parseAdminProductDescription(value) {
+  const raw = String(value || '').trim();
+  if (raw.startsWith(PRODUCT_DESC_META_PREFIX)) {
+    try {
+      const parsed = JSON.parse(raw.slice(PRODUCT_DESC_META_PREFIX.length));
+      return {
+        summary: String(parsed.summary || parsed.short || '').trim(),
+        details: String(parsed.details || parsed.detail || '').trim(),
+      };
+    } catch (_) {}
+  }
+  return { summary: raw, details: '' };
+}
+
+function encodeAdminProductDescription(summary, details) {
+  const cleanSummary = String(summary || '').trim();
+  const cleanDetails = String(details || '').trim();
+  if (!cleanDetails) return cleanSummary;
+  return PRODUCT_DESC_META_PREFIX + JSON.stringify({ summary: cleanSummary, details: cleanDetails });
+}
+
+function formatAdminProductDescriptionForAudit(value) {
+  const meta = parseAdminProductDescription(value);
+  return [meta.summary, meta.details].filter(Boolean).join(' | ');
 }
 
 function createNewProduct() {
@@ -611,6 +648,7 @@ function parseAdminUserPromotionRecord(promo) {
     totpEnabled: meta.totpEnabled === true, totpSecret: String(meta.totpSecret || ''), totpVerifiedAt: meta.totpVerifiedAt || '',
     createdAt: meta.createdAt || '', updatedAt: meta.updatedAt || '',
     lastLoginAt: meta.lastLoginAt || '', lastSeenAt: meta.lastSeenAt || '', lastActivityAt: meta.lastActivityAt || '', lastLogoutAt: meta.lastLogoutAt || '',
+    presenceOnline: meta.presenceOnline === true ? true : (meta.presenceOnline === false ? false : null),
     currentSessionStartedAt: meta.currentSessionStartedAt || '', currentSessionId: meta.currentSessionId || '', currentDeviceId: meta.currentDeviceId || '',
     lastSessionDurationSec: Math.max(0, Number(meta.lastSessionDurationSec) || 0), totalOnlineSec: Math.max(0, Number(meta.totalOnlineSec) || 0),
     isRoot: username === ROOT_ADMIN_USERNAME, synced: true
@@ -622,7 +660,7 @@ function adminUserToPromotionPayload(user) {
   const normalizedRole = (user.role === 'manager' || user.role === 'owner' || user.isRoot) ? 'manager' : 'admin';
   return {
     title: `${ADMIN_USER_PROMO_PREFIX}|${username}`,
-    description: JSON.stringify({ username, displayName: String(user.displayName || username), role: normalizedRole, enabled: user.enabled !== false, salt: user.salt, hash: user.hash, iterations: Number(user.iterations) || 120000, totpEnabled: user.totpEnabled === true, totpSecret: String(user.totpSecret || ''), totpVerifiedAt: user.totpVerifiedAt || '', createdAt: user.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString(), lastLoginAt: user.lastLoginAt || '', lastSeenAt: user.lastSeenAt || '', lastActivityAt: user.lastActivityAt || '', lastLogoutAt: user.lastLogoutAt || '', currentSessionStartedAt: user.currentSessionStartedAt || '', currentSessionId: user.currentSessionId || '', currentDeviceId: user.currentDeviceId || '', lastSessionDurationSec: Math.max(0, Number(user.lastSessionDurationSec) || 0), totalOnlineSec: Math.max(0, Number(user.totalOnlineSec) || 0) }),
+    description: JSON.stringify({ username, displayName: String(user.displayName || username), role: normalizedRole, enabled: user.enabled !== false, salt: user.salt, hash: user.hash, iterations: Number(user.iterations) || 120000, totpEnabled: user.totpEnabled === true, totpSecret: String(user.totpSecret || ''), totpVerifiedAt: user.totpVerifiedAt || '', createdAt: user.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString(), lastLoginAt: user.lastLoginAt || '', lastSeenAt: user.lastSeenAt || '', lastActivityAt: user.lastActivityAt || '', lastLogoutAt: user.lastLogoutAt || '', presenceOnline: user.presenceOnline === true, currentSessionStartedAt: user.currentSessionStartedAt || '', currentSessionId: user.currentSessionId || '', currentDeviceId: user.currentDeviceId || '', lastSessionDurationSec: Math.max(0, Number(user.lastSessionDurationSec) || 0), totalOnlineSec: Math.max(0, Number(user.totalOnlineSec) || 0) }),
     startAt: '', endAt: '', image: '', enabled: false
   };
 }
@@ -961,6 +999,18 @@ function rememberWorkingAdminApiUrl(url) {
   if (url) adminState.apiUrl = url;
 }
 
+const ADMIN_API_GET_TIMEOUT_MS = 6500;
+
+async function fetchAdminWithTimeout(url, options = {}, timeoutMs = ADMIN_API_GET_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function fetchAdminGet(action, params = {}) {
   if (isAdminLocalFileMode()) {
     const error = new Error('LOCAL_FILE_MODE');
@@ -974,7 +1024,7 @@ async function fetchAdminGet(action, params = {}) {
     try {
       const url = new URL(baseUrl);
       url.search = new URLSearchParams({ action, apiKey: adminState.apiKey, ...params }).toString();
-      const response = await fetch(url.toString(), { cache: 'no-store', mode: 'cors' });
+      const response = await fetchAdminWithTimeout(url.toString(), { cache: 'no-store', mode: 'cors' });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const result = await response.json();
       if (!result || !result.success) throw new Error((result && result.message) || 'API error');
@@ -989,7 +1039,16 @@ async function fetchAdminGet(action, params = {}) {
 }
 
 async function adminApiFetch(action, params = {}) {
-  return await fetchAdminGet(action, params);
+  const stableParams = Object.keys(params || {}).sort().map((key) => `${key}=${String(params[key])}`).join('&');
+  const requestKey = `${action}?${stableParams}`;
+  if (adminGetInFlight.has(requestKey)) return await adminGetInFlight.get(requestKey);
+  const promise = fetchAdminGet(action, params);
+  adminGetInFlight.set(requestKey, promise);
+  try {
+    return await promise;
+  } finally {
+    if (adminGetInFlight.get(requestKey) === promise) adminGetInFlight.delete(requestKey);
+  }
 }
 
 function notifyIndexReload(reason = 'admin-change') {
@@ -1108,7 +1167,7 @@ function auditProductChanges(action, payload) {
   const before = auditFindById(adminState.products, payload.id) || {};
   const after = mode === 'delete' ? before : { ...before, ...payload };
   const fields = [
-    {path:'name',label:'ชื่อสินค้า'}, {path:'desc',label:'รายละเอียดสินค้า'},
+    {path:'name',label:'ชื่อสินค้า'}, {path:'desc',label:'รายละเอียดสินค้า',format:formatAdminProductDescriptionForAudit},
     {path:'price',label:'ราคา',format:v=>v===undefined||v===null||v===''?'—':adminMoney(v)},
     {path:'category',label:'หมวดสินค้า'}, {path:'available',label:'สถานะขาย',format:v=>auditBoolText(v,'เปิดขาย','ปิดขาย')},
     {path:'image',label:'รูปสินค้า',format:auditImageText},
@@ -1155,7 +1214,7 @@ function auditPromotionChanges(action, payload) {
     const after = normalizeAdminWebSettings(meta);
     const fields = [
       {path:'lineUrl',label:'ลิงก์ LINE'}, {path:'contacts.pageUrl',label:'ลิงก์เพจร้าน'}, {path:'contacts.ownerUrl',label:'ลิงก์เจ้าของร้าน'},
-      {path:'payment.bankName',label:'ชื่อธนาคาร'}, {path:'payment.accountName',label:'ชื่อบัญชี'}, {path:'payment.accountNumber',label:'เลขบัญชี'},
+      {path:'payment.bankName',label:'ชื่อธนาคาร'}, {path:'payment.accountName',label:'ชื่อบัญชี'}, {path:'payment.accountNumber',label:'เลขบัญชี'}, {path:'payment.promptpayId',label:'พร้อมเพย์'},
       {path:'payment.bankImage',label:'รูปธนาคาร',format:auditImageText}, {path:'payment.qrImage',label:'รูป QR',format:auditImageText},
       {path:'wheelRates',label:'อัตรารางวัลวงล้อ',format:auditWheelRatesText},
     ];
@@ -1268,7 +1327,7 @@ async function adminApiPost(action, payload = {}) {
       if (!result || !result.success) throw new Error((result && result.message) || 'API error');
       rememberWorkingAdminApiUrl(baseUrl);
       notifyIndexReload();
-      if (auditMeta) await writeAdminAuditLog(auditMeta);
+      if (auditMeta) void writeAdminAuditLog(auditMeta);
       return result.data || result;
     } catch (error) {
       lastError = error;
@@ -1331,6 +1390,8 @@ function resizeImageFile(file, maxWidth = 900, maxHeight = 900) {
   });
 }
 
+let lastAdminProductsDomSignature = '__INIT__'; // V78: avoid repainting unchanged product manager
+
 const adminCategories = {
   netflix: 'Netflix Premium',
   other: 'แอพอื่น'
@@ -1338,6 +1399,11 @@ const adminCategories = {
 
 function renderProductTable(products) {
   if (!productTable) return;
+
+  // V78 admin product render signature: preserve focus/editor state and reduce realtime repaint work.
+  const renderSignature = products.map((item) => [item.id,item.name,item.price,item.category,item.available,item.image,item.desc].join('~')).join('||');
+  if (renderSignature === lastAdminProductsDomSignature) return;
+  lastAdminProductsDomSignature = renderSignature;
   if (!products.length) {
     productTable.innerHTML = '<div class="empty-state">ยังไม่มีสินค้าพร้อมจัดการ</div>';
     return;
@@ -1355,80 +1421,80 @@ function renderProductTable(products) {
     if (!items.length) return '';
 
     return `
-      <div class="admin-category-block">
-        <div class="admin-category-header">
-          <h4>${adminCategories[category]}</h4>
-          <span>${items.length} รายการ</span>
+      <section class="admin-product-group-v75">
+        <header class="admin-product-group-head-v75">
+          <div><span><i class="fas ${category === 'netflix' ? 'fa-play' : 'fa-mobile-screen-button'}"></i></span><div><h4>${adminCategories[category]}</h4><p>${category === 'netflix' ? 'จัดการแพ็กเกจ Netflix' : 'จัดการแพ็กเกจแอปพรีเมียมอื่น'}</p></div></div>
+          <b>${items.length} รายการ</b>
+        </header>
+        <div class="admin-product-list-v75">
+          ${items.map((product) => {
+            const content = parseAdminProductDescription(product.desc);
+            const safeName = escapeAdminHtml(product.name || 'สินค้าใหม่');
+            const safeSummary = escapeAdminHtml(content.summary || 'ยังไม่ได้ใส่คำอธิบายสั้น');
+            const safeDetails = escapeAdminHtml(content.details || '');
+            const safeImage = escapeAdminHtml(product.image || '');
+            const price = Number(product.price || 0).toLocaleString('th-TH');
+            return `
+            <article class="admin-product-card admin-product-card-v75" data-id="${product.id}">
+              <div class="admin-product-summary-v75">
+                <div class="admin-product-thumb-v75 admin-product-preview">
+                  ${safeImage ? `<img src="${safeImage}" alt="${safeName}" loading="lazy" decoding="async">` : `<div class="empty-image"><i class="fas fa-image"></i><span>ไม่มีรูป</span></div>`}
+                </div>
+                <div class="admin-product-main-v75">
+                  <div class="admin-product-title-v75"><strong>${safeName}</strong><span class="admin-status-badge ${product.available ? 'status-success' : 'status-error'}">${getProductStatus(product)}</span></div>
+                  <p>${safeSummary}</p>
+                  <div class="admin-product-meta-v75">
+                    <span><i class="fas fa-tag"></i>${adminCategories[category]}</span>
+                    <span class="${content.details ? 'has-detail' : ''}"><i class="fas fa-circle-info"></i>${content.details ? 'มีรายละเอียดแล้ว' : 'ยังไม่มีรายละเอียด'}</span>
+                  </div>
+                </div>
+                <div class="admin-product-price-v75"><small>ราคา</small><strong>฿${price}</strong></div>
+                <div class="admin-product-actions-v75">
+                  <button type="button" class="button button-outline admin-toggle-product-edit" data-id="${product.id}"><i class="fas fa-pen"></i><span>แก้ไข</span></button>
+                  <button type="button" class="button button-secondary admin-delete-product" data-id="${product.id}" aria-label="ลบสินค้า"><i class="fas fa-trash-alt"></i></button>
+                </div>
+              </div>
+
+              <div class="admin-edit-panel admin-product-editor-panel-v75 hidden">
+                <div class="admin-product-editor-v75">
+                  <section class="admin-product-editor-section-v75">
+                    <div class="admin-editor-section-head-v75"><span><i class="fas fa-pen-to-square"></i></span><div><h5>ข้อมูลแพ็กเกจ</h5><p>ชื่อ ราคา หมวดหมู่ และสถานะการขาย</p></div></div>
+                    <div class="admin-product-fields admin-product-fields-v75 admin-product-fields-main-v75">
+                      <div class="field-row field-span-2"><label>ชื่อสินค้า</label><input type="text" data-id="${product.id}" data-field="name" value="${safeName}" placeholder="ชื่อสินค้า"></div>
+                      <div class="field-row"><label>ราคา</label><input type="number" data-id="${product.id}" data-field="price" step="1" min="0" value="${product.price || 0}"></div>
+                      <div class="field-row"><label>หมวดหมู่</label><select data-id="${product.id}" data-field="category">${Object.keys(adminCategories).map((cat) => `<option value="${cat}" ${product.category === cat ? 'selected' : ''}>${adminCategories[cat]}</option>`).join('')}</select></div>
+                      <div class="field-row field-span-2"><label>สถานะ</label><select data-id="${product.id}" data-field="available"><option value="true" ${product.available ? 'selected' : ''}>พร้อมขาย</option><option value="false" ${!product.available ? 'selected' : ''}>ไม่พร้อมใช้งาน</option></select></div>
+                    </div>
+                  </section>
+
+                  <section class="admin-product-editor-section-v75">
+                    <div class="admin-editor-section-head-v75"><span><i class="fas fa-align-left"></i></span><div><h5>ข้อความที่ลูกค้าเห็น</h5><p>แยกข้อความบนการ์ดและรายละเอียดเต็มให้ชัดเจน</p></div></div>
+                    <div class="admin-product-fields admin-product-fields-v75">
+                      <div class="field-row field-span-2 admin-product-copy-field"><label>คำอธิบายสั้น <small>แสดงบนการ์ดแพ็กเกจ</small></label><textarea data-id="${product.id}" data-field="descSummary" placeholder="เช่น Netflix แท้ รับชมได้ทุกเรื่อง">${escapeAdminHtml(content.summary)}</textarea></div>
+                      <div class="field-row field-span-2 admin-product-detail-field"><label>รายละเอียดแพ็กเกจ <small>แสดงเมื่อกด “ดูรายละเอียด”</small></label><textarea data-id="${product.id}" data-field="descDetails" placeholder="ใส่รายละเอียดเพิ่มเติมได้หลายบรรทัด เช่น&#10;- อายุแพ็กเกจ 7 วัน&#10;- รองรับมือถือ / iPad / คอม&#10;- สอบถามแอดมินได้ตลอด">${safeDetails}</textarea><span class="admin-field-hint"><i class="fas fa-lightbulb"></i>พิมพ์แยกบรรทัด ระบบจะแสดงเป็นรายการให้อ่านง่ายอัตโนมัติ</span></div>
+                    </div>
+                  </section>
+
+                  <section class="admin-product-editor-section-v75 admin-product-image-section-v75">
+                    <div class="admin-editor-section-head-v75"><span><i class="fas fa-image"></i></span><div><h5>รูปสินค้า</h5><p>ใส่ URL หรืออัปโหลดไฟล์ใหม่</p></div></div>
+                    <div class="admin-product-image-editor-v75">
+                      <div class="admin-product-preview admin-product-preview-editor-v75">${safeImage ? `<img src="${safeImage}" alt="${safeName}" loading="lazy" decoding="async">` : `<div class="empty-image"><i class="fas fa-image"></i><span>ยังไม่มีรูปสินค้า</span></div>`}</div>
+                      <div class="admin-product-image-fields-v75">
+                        <div class="field-row"><label>ลิงก์รูปภาพ</label><input type="text" data-id="${product.id}" data-field="imageUrl" value="${safeImage}" placeholder="ใส่ URL รูปภาพ หรือเลือกไฟล์"></div>
+                        <div class="field-row file-row"><label class="file-input-button"><input class="admin-file-input" type="file" accept="image/*" data-id="${product.id}" data-field="image"><span><i class="fas fa-upload"></i> เลือกรูปจากเครื่อง</span></label><span class="file-note">รองรับ JPG / PNG / GIF / WEBP สูงสุด 5MB</span></div>
+                      </div>
+                    </div>
+                  </section>
+                </div>
+                <div class="admin-product-savebar-v75">
+                  <span><i class="fas fa-circle-info"></i>ตรวจสอบข้อมูลให้เรียบร้อยก่อนบันทึก</span>
+                  <button type="button" class="button button-primary admin-save-product" data-id="${product.id}"><i class="fas fa-floppy-disk"></i> บันทึกสินค้า</button>
+                </div>
+              </div>
+            </article>`;
+          }).join('')}
         </div>
-        <div class="admin-product-grid">
-          ${items.map((product) => `
-            <article class="admin-product-card" data-id="${product.id}">
-              <div class="admin-product-card-header">
-                <div>
-                  <strong>${product.name || 'สินค้าใหม่'}</strong>
-                  <div class="admin-card-meta">
-                    <span>${product.desc || 'รายละเอียดสินค้าจะปรากฎที่นี่'}</span>
-                    <span class="admin-status-badge ${product.available ? 'status-success' : 'status-error'}">${getProductStatus(product)}</span>
-                  </div>
-                </div>
-                <div class="admin-product-card-actions">
-                  <button type="button" class="button button-outline admin-toggle-product-edit" data-id="${product.id}">แก้ไข</button>
-                  <button type="button" class="button button-secondary admin-delete-product" data-id="${product.id}"><i class="fas fa-trash-alt"></i></button>
-                </div>
-              </div>
-              <div class="admin-product-preview">
-                ${product.image ? `<img src="${normalizeReviewImageUrl(product.image)}" alt="${product.name || 'สินค้า'}">` : `<div class="empty-image">ยังไม่มีรูปสินค้า</div>`}
-              </div>
-              <div class="admin-edit-panel hidden">
-                <div class="admin-product-fields">
-                  <div class="field-row">
-                    <label>ชื่อสินค้า</label>
-                    <input type="text" data-id="${product.id}" data-field="name" value="${product.name || ''}" placeholder="ชื่อสินค้า">
-                  </div>
-                  <div class="field-row">
-                    <label>รายละเอียด</label>
-                    <textarea data-id="${product.id}" data-field="desc" placeholder="คำอธิบายสินค้า">${product.desc || ''}</textarea>
-                  </div>
-                  <div class="field-row">
-                    <label>ราคา</label>
-                    <input type="number" data-id="${product.id}" data-field="price" step="1" min="0" value="${product.price || 0}">
-                  </div>
-                  <div class="field-row">
-                    <label>หมวดหมู่</label>
-                    <select data-id="${product.id}" data-field="category">
-                      ${Object.keys(adminCategories).map((cat) => `
-                        <option value="${cat}" ${product.category === cat ? 'selected' : ''}>${adminCategories[cat]}</option>
-                      `).join('')}
-                    </select>
-                  </div>
-                  <div class="field-row">
-                    <label>สถานะ</label>
-                    <select data-id="${product.id}" data-field="available">
-                      <option value="true" ${product.available ? 'selected' : ''}>พร้อมขาย</option>
-                      <option value="false" ${!product.available ? 'selected' : ''}>ไม่พร้อมใช้งาน</option>
-                    </select>
-                  </div>
-                  <div class="field-row">
-                    <label>ลิงก์รูปภาพ</label>
-                    <input type="text" data-id="${product.id}" data-field="imageUrl" value="${product.image || ''}" placeholder="ใส่ URL รูปภาพ หรือเลือกไฟล์">
-                  </div>
-                  <div class="field-row file-row">
-                    <label class="file-input-button">
-                      <input class="admin-file-input" type="file" accept="image/*" data-id="${product.id}" data-field="image">
-                      <span><i class="fas fa-image"></i> เลือกรูป</span>
-                    </label>
-                    <span class="file-note">รองรับ JPG/PNG/GIF/WEBP สูงสุด 5MB</span>
-                  </div>
-                </div>
-              </div>
-              <div class="admin-product-card-footer">
-                <button type="button" class="button button-primary admin-save-product" data-id="${product.id}">บันทึก</button>
-              </div>
-            </article>
-          `).join('')}
-        </div>
-      </div>
-    `;
+      </section>`;
   }).join('');
 }
 
@@ -1930,7 +1996,8 @@ function attachAdminEvents() {
         const card = saveButton.closest('.admin-product-card');
         if (!card) return;
         const nameInput = card.querySelector('[data-field="name"]');
-        const descTextarea = card.querySelector('[data-field="desc"]');
+        const descSummaryTextarea = card.querySelector('[data-field="descSummary"]');
+        const descDetailsTextarea = card.querySelector('[data-field="descDetails"]');
         const priceInput = card.querySelector('[data-field="price"]');
         const categorySelect = card.querySelector('[data-field="category"]');
         const availableSelect = card.querySelector('[data-field="available"]');
@@ -1939,7 +2006,10 @@ function attachAdminEvents() {
 
         const payload = {
           name: nameInput ? String(nameInput.value).trim() : '',
-          desc: descTextarea ? String(descTextarea.value).trim() : '',
+          desc: encodeAdminProductDescription(
+            descSummaryTextarea ? String(descSummaryTextarea.value).trim() : '',
+            descDetailsTextarea ? String(descDetailsTextarea.value).trim() : ''
+          ),
           price: Number(priceInput ? priceInput.value : 0) || 0,
           category: categorySelect ? String(categorySelect.value) : 'other',
           available: availableSelect ? availableSelect.value === 'true' : true,
@@ -2011,7 +2081,7 @@ function attachAdminEvents() {
       if (!fileInput || !fileInput.files || fileInput.files.length === 0) return;
       const productCard = fileInput.closest('.admin-product-card');
       if (!productCard) return;
-      const previewContainer = productCard.querySelector('.admin-product-preview');
+      const previewContainer = productCard.querySelector('.admin-product-preview-editor-v75') || productCard.querySelector('.admin-product-preview');
       const file = fileInput.files[0];
       if (!isSupportedReviewImage(file)) {
         showAdminToast('รองรับเฉพาะไฟล์ JPG, PNG, WEBP, GIF เท่านั้น', 'error');
@@ -2388,6 +2458,7 @@ function normalizePromotionForRealtimeSignature(promo) {
     delete stableMeta.lastActivityAt;
     delete stableMeta.lastLoginAt;
     delete stableMeta.lastLogoutAt;
+    delete stableMeta.presenceOnline;
     return { ...promo, description: JSON.stringify(stableMeta) };
   }
   return promo;
@@ -2437,6 +2508,17 @@ function applyRealtimeAdminData(result) {
   updateMaintenanceStatus();
 }
 
+function applyRealtimeAdminPresence(result) {
+  const promotions = Array.isArray(result?.promotions) ? result.promotions : [];
+  const freshUsers = promotions.map(parseAdminUserPromotionRecord).filter(Boolean);
+  adminState.adminTotpResetRequests = promotions.map(parseAdminTotpResetPromotionRecord).filter(Boolean).sort((a,b)=>new Date(b.requestedAt||0)-new Date(a.requestedAt||0));
+  if (!freshUsers.length) return;
+  adminState.adminUsers = freshUsers;
+  const currentFresh = freshUsers.find((u) => u.username === adminState.currentAdminUser?.username);
+  if (currentFresh) adminState.currentAdminUser = { ...adminState.currentAdminUser, ...currentFresh };
+  renderAdminUsers();
+}
+
 async function refreshAdminPresenceOnly() {
   if (isAdminLocalFileMode()) return;
   if (!adminState.currentAdminUser || adminPresenceWriteBusy) return;
@@ -2458,10 +2540,11 @@ async function refreshAdminPresenceOnly() {
 async function refreshAdminDataRealtime(force = false) {
   if (isAdminLocalFileMode()) return;
   if (adminRealtimeInFlight || document.hidden || !adminState.currentAdminUser) return;
-  if (adminHasUnsavedEditorFocus()) return;
+  if (!force && adminHasUnsavedEditorFocus()) return;
   adminRealtimeInFlight = true;
   try {
     const result = await adminApiFetch('adminData');
+    applyRealtimeAdminPresence(result);
     const signature = makeAdminDataSignature(result);
     if (signature === lastAdminDataSignature) return;
     lastAdminDataSignature = signature;
@@ -2479,25 +2562,41 @@ function scheduleAdminRealtimeRefresh(delay = 100, force = false) {
   adminRealtimeTimer = setTimeout(() => refreshAdminDataRealtime(force), Math.max(0, Number(delay) || 0));
 }
 
+function getSmartAdminPollDelay() {
+  const idleFor = Date.now() - (adminLastInteractionAt || Date.now());
+  if (idleFor <= ADMIN_REALTIME_ACTIVE_WINDOW_MS) return ADMIN_REALTIME_ACTIVE_POLL_MS;
+  if (idleFor >= ADMIN_REALTIME_IDLE_AFTER_MS) return ADMIN_REALTIME_IDLE_POLL_MS;
+  return ADMIN_REALTIME_NORMAL_POLL_MS;
+}
+
+function scheduleNextAdminSmartPoll(delay) {
+  clearTimeout(adminSmartPollTimer);
+  const wait = Math.max(1000, Number(delay) || getSmartAdminPollDelay());
+  adminSmartPollTimer = setTimeout(async () => {
+    if (!document.hidden && adminState.currentAdminUser) await refreshAdminDataRealtime(false);
+    scheduleNextAdminSmartPoll();
+  }, wait);
+}
+
 function initAdminRealtimeSync() {
   try {
     if ('BroadcastChannel' in window) {
       adminLiveSyncChannel = new BroadcastChannel(ADMIN_LIVE_SYNC_CHANNEL_NAME);
-      adminLiveSyncChannel.addEventListener('message', () => scheduleAdminRealtimeRefresh(50, false));
+      adminLiveSyncChannel.addEventListener('message', () => scheduleAdminRealtimeRefresh(35, true));
     }
   } catch (_) { adminLiveSyncChannel = null; }
   window.addEventListener('storage', (event) => {
-    if (event.key === ADMIN_LIVE_SYNC_STORAGE_KEY || event.key === 'jokemoo_admin_reload') scheduleAdminRealtimeRefresh(60, false);
+    if (event.key === ADMIN_LIVE_SYNC_STORAGE_KEY || event.key === 'jokemoo_admin_reload') scheduleAdminRealtimeRefresh(40, true);
   });
-  window.addEventListener('focus', () => scheduleAdminRealtimeRefresh(20, false), { passive: true });
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) scheduleAdminRealtimeRefresh(20, false); }, { passive: true });
-  setInterval(() => {
-    if (!document.hidden && adminState.currentAdminUser) refreshAdminDataRealtime(false);
-  }, ADMIN_REALTIME_POLL_MS);
-  // Online/presence updates are intentionally isolated from content rendering.
-  setInterval(() => {
-    if (adminState.currentAdminUser) refreshAdminPresenceOnly();
-  }, 10000);
+  window.addEventListener('focus', () => { noteAdminInteraction(); scheduleAdminRealtimeRefresh(20, true); scheduleNextAdminSmartPoll(ADMIN_REALTIME_ACTIVE_POLL_MS); }, { passive: true });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      noteAdminInteraction();
+      scheduleAdminRealtimeRefresh(20, true);
+      scheduleNextAdminSmartPoll(ADMIN_REALTIME_ACTIVE_POLL_MS);
+    }
+  }, { passive: true });
+  scheduleNextAdminSmartPoll(ADMIN_REALTIME_ACTIVE_POLL_MS);
 }
 
 async function loadAdminData() {
@@ -2625,6 +2724,7 @@ function normalizeAdminWebSettings(settings) {
       bankName: String(payment.bankName || fallbackPayment.bankName || '').trim(),
       accountName: String(payment.accountName || fallbackPayment.accountName || '').trim(),
       accountNumber: String(payment.accountNumber || fallbackPayment.accountNumber || '').trim(),
+      promptpayId: String(payment.promptpayId || fallbackPayment.promptpayId || '').trim(),
       bankImage: String(payment.bankImage || fallbackPayment.bankImage || '').trim(),
       qrImage: String(payment.qrImage || fallbackPayment.qrImage || '').trim(),
     },
@@ -2669,6 +2769,7 @@ function renderWebSettingsEditor() {
   setValue('webBankName', settings.payment.bankName);
   setValue('webAccountName', settings.payment.accountName);
   setValue('webAccountNumber', settings.payment.accountNumber);
+  setValue('webPromptPayId', settings.payment.promptpayId);
   setValue('webBankImageUrl', /^data:/i.test(settings.payment.bankImage) ? '' : settings.payment.bankImage);
   renderWebBankPreview(settings.payment.bankImage);
   setValue('webQrImageUrl', /^data:/i.test(settings.payment.qrImage) ? '' : settings.payment.qrImage);
@@ -2723,6 +2824,7 @@ function collectStoreSettingsFromEditor() {
       bankName: String(document.getElementById('webBankName')?.value || '').trim(),
       accountName: String(document.getElementById('webAccountName')?.value || '').trim(),
       accountNumber: String(document.getElementById('webAccountNumber')?.value || '').trim(),
+      promptpayId: String(document.getElementById('webPromptPayId')?.value || '').trim(),
       bankImage: typedBank || String(current.payment?.bankImage || '').trim(),
       qrImage: typedQr || String(current.payment?.qrImage || '').trim(),
     }
@@ -2749,6 +2851,8 @@ async function saveWebSettings() {
   if(storeSettings.lineUrl && !/^https?:\/\//i.test(storeSettings.lineUrl)){ showAdminToast('ลิงก์ LINE ต้องขึ้นต้นด้วย http:// หรือ https://','error'); return; }
   if(storeSettings.contacts?.pageUrl && !/^https?:\/\//i.test(storeSettings.contacts.pageUrl)){ showAdminToast('ลิงก์เพจร้านต้องขึ้นต้นด้วย http:// หรือ https://','error'); return; }
   if(storeSettings.contacts?.ownerUrl && !/^https?:\/\//i.test(storeSettings.contacts.ownerUrl)){ showAdminToast('ลิงก์เจ้าของร้านต้องขึ้นต้นด้วย http:// หรือ https://','error'); return; }
+  const promptPayDigits = String(storeSettings.payment?.promptpayId || '').replace(/\D/g,'');
+  if(promptPayDigits && ![10,13,15].includes(promptPayDigits.length)){ showAdminToast('พร้อมเพย์ต้องเป็นเบอร์มือถือ 10 หลัก, เลขบัตร/เลขภาษี 13 หลัก หรือ e-Wallet 15 หลัก','error'); return; }
   const settings={ ...storeSettings, wheelRates:rates, updatedAt:new Date().toISOString() };
   const payload={ title:`${SETTINGS_PROMO_PREFIX}|main`, description:JSON.stringify(settings), startAt:'', endAt:'', image:'', enabled:false };
   setButtonLoading(btn,'กำลังบันทึก...');
@@ -3149,7 +3253,7 @@ function applyAdminRoleUi(){
   document.body.classList.toggle('admin-role-manager',manager);
   document.body.classList.toggle('admin-role-admin',!!adminState.currentAdminUser&&!manager);
   document.querySelectorAll('[data-manager-only]').forEach(el=>el.classList.toggle('role-hidden',!manager));
-  const activeManagerSection=document.querySelector('#adminUsersSection:not(.hidden),#adminAuditSection:not(.hidden)');
+  const activeManagerSection=document.querySelector('#adminUsersSection:not(.hidden),#admin2faRecoverySection:not(.hidden),#adminAuditSection:not(.hidden)');
   if(!manager&&activeManagerSection){
     const fallback=document.querySelector('.admin-tab-button[data-target="productSection"]');
     fallback?.click();
@@ -3189,6 +3293,10 @@ async function handleAdminLogin(event){
 }
 async function initializeAdminAuth(){
   setAdminAuthLocked(true);
+
+  // V84: if the browser had to close before its final OFFLINE request completed,
+  // finish that pending write before restoring a remembered session.
+  try{await flushPendingAdminOffline();}catch(_){}
 
   // V58: read the remembered 30-day session BEFORE waiting for the API.
   // This prevents F5 from throwing the user back to the login gate when the
@@ -3247,7 +3355,40 @@ async function initializeAdminAuth(){
   const username=document.getElementById('adminLoginUsername');
   if(username) setTimeout(()=>username.focus(),80);
 }
-async function logoutAdmin(){ try{await markCurrentAdminPresence({logout:true});}catch(_){} stopAdminPresence(); clearAdminSessions(); adminState.currentAdminUser=null; updateCurrentAdminUi(); setAdminAuthLocked(true); showAdminPasswordStep(); const p=document.getElementById('adminLoginPassword');if(p)p.value=''; setAdminLoginError(''); setTimeout(()=>document.getElementById('adminLoginUsername')?.focus(),80); }
+async function logoutAdmin(){
+  if(adminLogoutInProgress)return;
+  adminLogoutInProgress=true;
+  const logoutButtons=[document.getElementById('adminLogoutBtn'),document.getElementById('adminSidebarLogoutBtn')].filter(Boolean);
+  logoutButtons.forEach(btn=>btn.disabled=true);
+  const username=adminState.currentAdminUser?.username||'';
+  adminPresenceShuttingDown=true;
+  adminPagePresenceOfflineSent=true;
+  stopAdminPresence();
+  try{adminPresenceAbortController?.abort();}catch(_){}
+
+  // Let an already-started online heartbeat settle/cancel, then make OFFLINE the final server write.
+  if(adminPresenceWritePromise){
+    try{await Promise.race([adminPresenceWritePromise,new Promise(r=>setTimeout(r,2200))]);}catch(_){}
+  }
+  try{
+    await markCurrentAdminPresence({logout:true,online:false});
+  }catch(error){
+    console.warn('final logout presence write failed; using keepalive fallback',error);
+    sendAdminPresenceBeacon(false,{logout:true});
+  }
+
+  try{localStorage.setItem(ADMIN_LIVE_SYNC_STORAGE_KEY,JSON.stringify({at:Date.now(),reason:'logout'}));}catch(_){}
+  clearAdminSessions();
+  adminState.currentAdminUser=null;
+  updateCurrentAdminUi();
+  setAdminAuthLocked(true);
+  showAdminPasswordStep();
+  const p=document.getElementById('adminLoginPassword');if(p)p.value='';
+  setAdminLoginError('');
+  logoutButtons.forEach(btn=>btn.disabled=false);
+  adminLogoutInProgress=false;
+  setTimeout(()=>document.getElementById('adminLoginUsername')?.focus(),80);
+}
 function formatAdminUserDate(value){ if(!value)return '-';const d=new Date(value);return Number.isNaN(d.getTime())?'-':d.toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'}); }
 function formatAdminPresenceAgo(value){
   if(!value)return 'ยังไม่เคยออนไลน์'; const t=new Date(value).getTime(); if(!Number.isFinite(t))return '-';
@@ -3256,19 +3397,27 @@ function formatAdminPresenceAgo(value){
   return formatAdminUserDate(value);
 }
 const ADMIN_PRESENCE_INTERVAL_MS=20000;
-const ADMIN_PRESENCE_ONLINE_MS=65000;
-const ADMIN_PRESENCE_ACTIVE_MS=90000;
+const ADMIN_PRESENCE_ONLINE_MS=75000;
+const ADMIN_PRESENCE_ACTIVE_MS=15000;
 let adminPresenceTimer=0;
 let adminPresenceEventsBound=false;
 let adminLastInteractionAt=Date.now();
 let adminPresenceWriteBusy=false;
+let adminPresenceWritePromise=null;
+let adminPresenceAbortController=null;
+let adminPresenceShuttingDown=false;
+let adminLogoutInProgress=false;
+let adminPagePresenceOfflineSent=false;
+const ADMIN_PENDING_OFFLINE_KEY='jokemoo_admin_pending_offline_v84';
 function adminPresenceInfo(user){
-  // V59: online state is server-shared only. Never force the current account to
-  // appear online just because this browser has it selected; every device sees
-  // the same truth from lastSeenAt/lastLogoutAt stored in the API.
+  // V83: a signed-in Admin account stays online while this Admin tab/window remains open.
+  // Merely hiding, minimizing, or switching away from the tab no longer marks it offline.
+  // pagehide/beforeunload/logout explicitly mark it offline; heartbeat expiry is only a safety net.
   const now=Date.now(); const seen=new Date(user?.lastSeenAt||0).getTime(); const activeAt=new Date(user?.lastActivityAt||0).getTime(); const logoutAt=new Date(user?.lastLogoutAt||0).getTime();
   const explicitLogout=Number.isFinite(logoutAt)&&logoutAt>0&&Number.isFinite(seen)&&logoutAt>=seen;
-  const online=!explicitLogout && Number.isFinite(seen) && seen>0 && now-seen<=ADMIN_PRESENCE_ONLINE_MS;
+  const heartbeatFresh=Number.isFinite(seen)&&seen>0&&now-seen<=ADMIN_PRESENCE_ONLINE_MS;
+  const explicitPresence=user?.presenceOnline;
+  const online=!explicitLogout && explicitPresence!==false && heartbeatFresh;
   const active=online && Number.isFinite(activeAt) && activeAt>0 && now-activeAt<=ADMIN_PRESENCE_ACTIVE_MS;
   return {online,active};
 }
@@ -3285,54 +3434,205 @@ function formatAdminDuration(seconds){
   if(day>0)return `${day} วัน ${hr%24} ชม.`; if(hr>0)return `${hr} ชม. ${min%60} นาที`; if(min>0)return `${min} นาที`; return `${Math.max(0,total)} วินาที`;
 }
 function noteAdminInteraction(){ adminLastInteractionAt=Date.now(); }
-function bindAdminPresenceEvents(){
-  if(adminPresenceEventsBound)return; adminPresenceEventsBound=true;
-  ['pointerdown','keydown','touchstart','scroll'].forEach(type=>window.addEventListener(type,noteAdminInteraction,{passive:true}));
-  document.addEventListener('visibilitychange',()=>{ if(!document.hidden && adminState.currentAdminUser){ noteAdminInteraction(); markCurrentAdminPresence().catch(()=>{}); } });
+function buildAdminPresenceUpdate(user,{login=false,logout=false,online=true}={}){
+  const now=new Date(); const nowIso=now.toISOString(); const activityIso=new Date(adminLastInteractionAt||Date.now()).toISOString();
+  const existingStart=user.currentSessionStartedAt||user.lastLoginAt||'';
+  const sessionStart=login?nowIso:(existingStart||nowIso);
+  const sessionId=login?(crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(36).slice(2,8)}`):(user.currentSessionId||'');
+  let durationSec=Math.max(0,Number(user.lastSessionDurationSec)||0); let totalOnlineSec=Math.max(0,Number(user.totalOnlineSec)||0);
+  if(logout){
+    const startMs=new Date(existingStart||user.lastLoginAt||nowIso).getTime();
+    durationSec=Number.isFinite(startMs)?Math.max(0,Math.floor((now.getTime()-startMs)/1000)):0;
+    totalOnlineSec+=durationSec;
+  }
+  return {...user,
+    lastLoginAt:login?nowIso:(user.lastLoginAt||''),
+    lastSeenAt:nowIso,
+    lastActivityAt:(logout||online===false)?(user.lastActivityAt||activityIso):activityIso,
+    lastLogoutAt:logout?nowIso:(login?'':(user.lastLogoutAt||'')),
+    presenceOnline:logout?false:online!==false,
+    currentSessionStartedAt:logout?'':sessionStart,
+    currentSessionId:logout?'':sessionId,
+    currentDeviceId:logout?'':ADMIN_DEVICE_ID,
+    lastSessionDurationSec:logout?durationSec:(user.lastSessionDurationSec||0),
+    totalOnlineSec,
+    _presenceDurationSec:durationSec,
+    _presenceSessionId:sessionId
+  };
 }
-async function markCurrentAdminPresence({login=false,logout=false}={}){
-  if(adminPresenceWriteBusy)return; const username=adminState.currentAdminUser?.username; if(!username)return;
-  const user=findAdminUser(username)||adminState.currentAdminUser; if(!user?.synced || !Number.isFinite(Number(user.id)))return;
-  adminPresenceWriteBusy=true;
+function buildAdminPresencePayload(user,{login=false,logout=false,online=true}={}){
+  const updated=buildAdminPresenceUpdate(user,{login,logout,online});
+  const cleanUpdated={...updated};
+  delete cleanUpdated._presenceDurationSec;
+  delete cleanUpdated._presenceSessionId;
+  const payload=adminUserToPromotionPayload(cleanUpdated);
+  payload.id=Number(user.id);
+  return {updated:cleanUpdated,payload,durationSec:updated._presenceDurationSec,sessionId:updated._presenceSessionId};
+}
+function rememberPendingAdminOffline(user,payload){
   try{
-    const now=new Date(); const nowIso=now.toISOString(); const activityIso=new Date(adminLastInteractionAt||Date.now()).toISOString();
-    const existingStart=user.currentSessionStartedAt||user.lastLoginAt||'';
-    const sessionStart=login?nowIso:(existingStart||nowIso);
-    const sessionId=login?(crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(36).slice(2,8)}`):(user.currentSessionId||'');
-    let durationSec=Math.max(0,Number(user.lastSessionDurationSec)||0); let totalOnlineSec=Math.max(0,Number(user.totalOnlineSec)||0);
-    if(logout){
-      const startMs=new Date(existingStart||user.lastLoginAt||nowIso).getTime();
-      durationSec=Number.isFinite(startMs)?Math.max(0,Math.floor((now.getTime()-startMs)/1000)):0;
-      totalOnlineSec+=durationSec;
+    localStorage.setItem(ADMIN_PENDING_OFFLINE_KEY,JSON.stringify({
+      at:Date.now(), username:String(user?.username||''), payload
+    }));
+  }catch(_){}
+}
+function clearPendingAdminOffline(username=''){
+  try{
+    const raw=localStorage.getItem(ADMIN_PENDING_OFFLINE_KEY);
+    if(!raw)return;
+    if(!username){localStorage.removeItem(ADMIN_PENDING_OFFLINE_KEY);return;}
+    const item=JSON.parse(raw);
+    if(!item?.username || item.username===username)localStorage.removeItem(ADMIN_PENDING_OFFLINE_KEY);
+  }catch(_){ try{localStorage.removeItem(ADMIN_PENDING_OFFLINE_KEY);}catch(__){} }
+}
+async function postAdminPresencePayload(payload,{timeoutMs=5500,keepalive=false}={}){
+  const candidates=getAdminApiCandidates();
+  if(!candidates.length)throw new Error('กรุณาใส่ Google Script API URL ก่อน');
+  const requestBody=new URLSearchParams({action:'adminUpdatePromotion',apiKey:adminState.apiKey,...payload}).toString();
+  let lastError=new Error('ไม่สามารถเชื่อมต่อ API ได้');
+  for(const baseUrl of candidates){
+    const controller=new AbortController();
+    adminPresenceAbortController=controller;
+    const timer=setTimeout(()=>controller.abort(),Math.max(1200,Number(timeoutMs)||5500));
+    try{
+      const response=await fetch(baseUrl,{
+        method:'POST', mode:'cors', keepalive,
+        headers:{'Accept':'application/json','Content-Type':'application/x-www-form-urlencoded'},
+        body:requestBody, signal:controller.signal
+      });
+      if(!response.ok)throw new Error(`HTTP ${response.status}`);
+      const result=await response.json();
+      if(!result||!result.success)throw new Error((result&&result.message)||'API error');
+      rememberWorkingAdminApiUrl(baseUrl);
+      return result.data||result;
+    }catch(error){
+      lastError=error;
+      if(controller.signal.aborted && adminPresenceShuttingDown)break;
+    }finally{
+      clearTimeout(timer);
+      if(adminPresenceAbortController===controller)adminPresenceAbortController=null;
     }
-    const updated={...user,
-      lastLoginAt:login?nowIso:(user.lastLoginAt||''),
-      lastSeenAt:nowIso,
-      lastActivityAt:logout?(user.lastActivityAt||activityIso):activityIso,
-      lastLogoutAt:logout?nowIso:(login?'':(user.lastLogoutAt||'')),
-      currentSessionStartedAt:logout?'':sessionStart,
-      currentSessionId:logout?'':sessionId,
-      currentDeviceId:logout?'':ADMIN_DEVICE_ID,
-      lastSessionDurationSec:logout?durationSec:(user.lastSessionDurationSec||0),
-      totalOnlineSec
-    };
-    const payload=adminUserToPromotionPayload(updated); payload.id=Number(user.id);
-    await adminApiPostSilent('adminUpdatePromotion',payload);
-    Object.assign(user,updated); Object.assign(adminState.currentAdminUser,updated);
+  }
+  throw lastError;
+}
+function sendAdminPresenceBeacon(online=false,{logout=!online}={}){
+  const username=adminState.currentAdminUser?.username;
+  if(!username)return false;
+  const user=findAdminUser(username)||adminState.currentAdminUser;
+  if(!user?.synced||!Number.isFinite(Number(user.id)))return false;
+  const {updated,payload}=buildAdminPresencePayload(user,{logout,online});
+  const requestBody=new URLSearchParams({action:'adminUpdatePromotion',apiKey:adminState.apiKey,...payload}).toString();
+  const candidates=getAdminApiCandidates();
+  if(!candidates.length)return false;
+  Object.assign(user,updated);
+  Object.assign(adminState.currentAdminUser,updated);
+  if(!online)rememberPendingAdminOffline(user,payload);
+  try{localStorage.setItem(ADMIN_LIVE_SYNC_STORAGE_KEY,JSON.stringify({at:Date.now(),reason:online?'presence-online':'presence-offline'}));}catch(_){}
+
+  // pagehide/unload: keepalive fetch survives page teardown more reliably with Apps Script redirects.
+  // If creating the request fails synchronously, fall back to sendBeacon.
+  for(const baseUrl of candidates){
+    try{
+      fetch(baseUrl,{
+        method:'POST',mode:'no-cors',keepalive:true,
+        headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
+        body:requestBody
+      }).catch(()=>{});
+      return true;
+    }catch(_){}
+    try{
+      const body=new Blob([requestBody],{type:'application/x-www-form-urlencoded;charset=UTF-8'});
+      if(navigator.sendBeacon&&navigator.sendBeacon(baseUrl,body))return true;
+    }catch(_){}
+  }
+  return false;
+}
+function setAdminPagePresenceOfflineImmediate(){
+  if(adminPagePresenceOfflineSent||!adminState.currentAdminUser)return;
+  adminPagePresenceOfflineSent=true;
+  adminPresenceShuttingDown=true;
+  stopAdminPresence();
+  try{adminPresenceAbortController?.abort();}catch(_){}
+  sendAdminPresenceBeacon(false,{logout:true});
+  renderAdminUsers();
+}
+function bindAdminPresenceEvents(){
+  if(adminPresenceEventsBound)return;
+  adminPresenceEventsBound=true;
+  ['pointerdown','keydown','touchstart','scroll'].forEach(type=>window.addEventListener(type,noteAdminInteraction,{passive:true}));
+  document.addEventListener('visibilitychange',()=>{
+    if(!adminState.currentAdminUser||adminPresenceShuttingDown)return;
+    // Switching tabs/minimizing is NOT a logout. Keep the account online.
+    if(!document.hidden){
+      adminPagePresenceOfflineSent=false;
+      noteAdminInteraction();
+      markCurrentAdminPresence({online:true}).catch(()=>{});
+      scheduleAdminRealtimeRefresh(20,true);
+    }
+  },{passive:true});
+  window.addEventListener('pagehide',setAdminPagePresenceOfflineImmediate,{capture:true});
+  window.addEventListener('beforeunload',setAdminPagePresenceOfflineImmediate,{capture:true});
+}
+async function markCurrentAdminPresence({login=false,logout=false,online=true}={}){
+  const isFinal=logout||online===false;
+  if(adminPresenceShuttingDown&&!isFinal)return;
+  const username=adminState.currentAdminUser?.username;
+  if(!username)return;
+  const user=findAdminUser(username)||adminState.currentAdminUser;
+  if(!user?.synced||!Number.isFinite(Number(user.id)))return;
+
+  // Normal heartbeats are allowed to collapse into one write. Final offline/logout writes are never skipped.
+  if(adminPresenceWriteBusy){
+    if(!isFinal)return;
+    try{await Promise.race([adminPresenceWritePromise||Promise.resolve(),new Promise(r=>setTimeout(r,2600))]);}catch(_){}
+  }
+  if(adminPresenceShuttingDown&&!isFinal)return;
+
+  const run=(async()=>{
+    const {updated,payload,durationSec,sessionId}=buildAdminPresencePayload(user,{login,logout,online});
+    await postAdminPresencePayload(payload,{timeoutMs:isFinal?6000:5200,keepalive:isFinal});
+    Object.assign(user,updated);
+    if(adminState.currentAdminUser?.username===username)Object.assign(adminState.currentAdminUser,updated);
+    if(isFinal)clearPendingAdminOffline(username);
     renderAdminUsers();
-    if(login) await writeAdminAuditLog({kind:'session',action:'login',label:'เข้าสู่ระบบหลังบ้าน',target:username,sessionId});
-    if(logout) await writeAdminAuditLog({kind:'session',action:'logout',label:'ออกจากระบบหลังบ้าน',target:username,detail:`ออนไลน์ ${formatAdminDuration(durationSec)}`,sessionId:user.currentSessionId||sessionId});
-  }catch(error){ console.warn('admin presence update skipped',error); }
-  finally{ adminPresenceWriteBusy=false; }
+    try{localStorage.setItem(ADMIN_LIVE_SYNC_STORAGE_KEY,JSON.stringify({at:Date.now(),reason:isFinal?'presence-offline':'presence-online'}));}catch(_){}
+    if(login)writeAdminAuditLog({kind:'session',action:'login',label:'เข้าสู่ระบบหลังบ้าน',target:username,sessionId}).catch(()=>{});
+    if(logout)writeAdminAuditLog({kind:'session',action:'logout',label:'ออกจากระบบหลังบ้าน',target:username,detail:`ออนไลน์ ${formatAdminDuration(durationSec)}`,sessionId:user.currentSessionId||sessionId}).catch(()=>{});
+  })();
+  adminPresenceWriteBusy=true;
+  adminPresenceWritePromise=run;
+  try{return await run;}
+  catch(error){console.warn('admin presence update skipped',error);throw error;}
+  finally{
+    if(adminPresenceWritePromise===run){adminPresenceWritePromise=null;adminPresenceWriteBusy=false;}
+  }
+}
+async function flushPendingAdminOffline(){
+  let pending=null;
+  try{pending=JSON.parse(localStorage.getItem(ADMIN_PENDING_OFFLINE_KEY)||'null');}catch(_){}
+  if(!pending?.payload||!pending?.username)return false;
+  // Ignore ancient leftovers; heartbeat timeout already handles those.
+  if(Date.now()-Number(pending.at||0)>10*60*1000){clearPendingAdminOffline();return false;}
+  try{
+    await postAdminPresencePayload(pending.payload,{timeoutMs:5000,keepalive:true});
+    clearPendingAdminOffline(pending.username);
+    return true;
+  }catch(_){return false;}
 }
 function startAdminPresence(){
-  bindAdminPresenceEvents(); clearInterval(adminPresenceTimer);
-  // Keep a lightweight heartbeat even when the tab is in the background. This
-  // makes b1/b2 status visible consistently across different computers.
-  if(adminState.currentAdminUser) markCurrentAdminPresence().catch(()=>{});
-  adminPresenceTimer=setInterval(()=>{ if(adminState.currentAdminUser) markCurrentAdminPresence().catch(()=>{}); },ADMIN_PRESENCE_INTERVAL_MS);
+  bindAdminPresenceEvents();
+  clearInterval(adminPresenceTimer);
+  adminPresenceShuttingDown=false;
+  adminPagePresenceOfflineSent=false;
+  if(adminState.currentAdminUser)markCurrentAdminPresence({online:true}).catch(()=>{});
+  adminPresenceTimer=setInterval(()=>{
+    if(adminState.currentAdminUser&&!adminPresenceShuttingDown)markCurrentAdminPresence({online:true}).catch(()=>{});
+  },ADMIN_PRESENCE_INTERVAL_MS);
 }
-function stopAdminPresence(){ clearInterval(adminPresenceTimer); adminPresenceTimer=0; }
+function stopAdminPresence(){
+  clearInterval(adminPresenceTimer);
+  adminPresenceTimer=0;
+}
 function renderAdminUsers(){
   const listEl=document.getElementById('adminUsersList');if(!listEl)return; const users=getEffectiveAdminUsers(); const current=adminState.currentAdminUser?.username||''; const canManage=isCurrentAdminManager();
   const onlineCount=users.filter(u=>adminPresenceInfo(u).online && u.enabled!==false).length;

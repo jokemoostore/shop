@@ -7,9 +7,9 @@
     <title>JokeMoo Store Admin</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../styles.css?v=20260825-v59">
+    <link rel="stylesheet" href="../styles.css?v=20260825-v77">
     <link rel="stylesheet" href="code-manager/scoped.css">
-    <link rel="stylesheet" href="admin.css?v=20260825-v67">
+    <link rel="stylesheet" href="admin.css?v=20260825-v77">
     <link rel="icon" type="image" href="../logo.png">
 </head>
 <body class="admin-shell-body admin-auth-locked">
@@ -24,7 +24,7 @@
             <form id="adminLoginForm" class="admin-auth-form" autocomplete="on" action="javascript:void(0)">
                 <label><span><i class="fas fa-user"></i> Username</span><input id="adminLoginUsername" name="username" type="text" autocomplete="username" placeholder="ชื่อผู้ใช้" required></label>
                 <label><span><i class="fas fa-lock"></i> Password</span><div class="admin-password-wrap"><input id="adminLoginPassword" name="password" type="password" autocomplete="current-password" placeholder="รหัสผ่าน" required><button id="adminLoginPasswordToggle" type="button" aria-label="แสดงรหัสผ่าน"><i class="fas fa-eye"></i></button></div></label>
-                <label class="admin-remember-row"><input id="adminRememberLogin" type="checkbox"><span><b>จดจำการเข้าสู่ระบบ</b><small>ติ๊กเพื่อจดจำการเข้า</small></span></label>
+                <label class="admin-remember-row"><input id="adminRememberLogin" type="checkbox"><span><b>จดจำการเข้าสู่ระบบ</b><small>หากติกจะไม่หลุด 30 วัน</small></span></label>
                 <div id="adminLoginError" class="admin-auth-error hidden" role="alert"></div>
                 <button id="adminLoginBtn" class="admin-auth-submit" type="submit"><i class="fas fa-right-to-bracket"></i><span>เข้าสู่ระบบ</span></button>
             </form>
@@ -131,6 +131,7 @@
                     </button>
                     <div class="admin-nav-submenu">
                         <button type="button" class="admin-tab-button admin-subtab-button" data-target="adminUsersSection" data-admin-title="จัดการผู้ดูแล"><i class="fas fa-user-shield"></i><span>จัดการผู้ดูแล</span></button>
+                        <button type="button" class="admin-tab-button admin-subtab-button" data-target="admin2faRecoverySection" data-admin-title="2FA Recovery Center"><i class="fas fa-shield-halved"></i><span>2FA Recovery Center</span></button>
                         <button type="button" class="admin-tab-button admin-subtab-button" data-target="adminAuditSection" data-admin-title="ประวัติการทำงาน"><i class="fas fa-clock-rotate-left"></i><span>ประวัติการทำงาน</span></button>
                     </div>
                 </div>
@@ -201,6 +202,7 @@
                                 <label class="admin-field"><span>ชื่อธนาคาร</span><input id="webBankName" type="text" placeholder="เช่น กสิกรไทย"></label>
                                 <label class="admin-field"><span>ชื่อบัญชี</span><input id="webAccountName" type="text" placeholder="ชื่อเจ้าของบัญชี"></label>
                                 <label class="admin-field"><span>เลขบัญชี</span><input id="webAccountNumber" type="text" inputmode="numeric" placeholder="xxx-x-xxxxx-x"></label>
+                                <label class="admin-field"><span>พร้อมเพย์สำหรับ QR ตามยอด</span><input id="webPromptPayId" type="text" inputmode="numeric" placeholder="08x-xxx-xxxx หรือเลขบัตร/เลขภาษี"><small>ใช้สร้าง QR อัตโนมัติตามยอดสุทธิของออเดอร์ รองรับเบอร์มือถือ 10 หลัก หรือเลขบัตร/เลขภาษี 13 หลัก</small></label>
                                 <label class="admin-field field-span-2"><span>URL รูป/โลโก้ธนาคาร</span><input id="webBankImageUrl" type="text" placeholder="https://.../bank-logo.png หรืออัปโหลดรูปด้านล่าง"><small>รูปนี้จะแสดงแทนไอคอนธนาคารในหน้าชำระเงิน</small></label>
                                 <div class="website-bank-upload field-span-2">
                                     <div id="webBankPreview" class="website-bank-preview"><i class="fas fa-building-columns"></i><span>ยังไม่มีรูปธนาคาร</span></div>
@@ -210,13 +212,13 @@
                                         <small>แนะนำ PNG/WebP พื้นหลังโปร่ง หรือรูปสี่เหลี่ยมไม่เกิน 800×800 px</small>
                                     </div>
                                 </div>
-                                <label class="admin-field field-span-2"><span>URL รูป QR</span><input id="webQrImageUrl" type="text" placeholder="https://.../qr.png หรืออัปโหลดรูปด้านล่าง"><small>ถ้าอัปโหลดรูป ระบบจะใช้รูปที่อัปโหลดแทน URL</small></label>
+                                <label class="admin-field field-span-2"><span>QR สำรอง (ไม่บังคับ)</span><input id="webQrImageUrl" type="text" placeholder="https://.../qr.png หรืออัปโหลดรูปด้านล่าง"><small>ระบบจะใช้รูปนี้เฉพาะกรณียังไม่ได้ตั้งค่าพร้อมเพย์ หรือสร้าง QR ไม่สำเร็จ</small></label>
                                 <div class="website-qr-upload field-span-2">
                                     <div id="webQrPreview" class="website-qr-preview"><i class="fas fa-qrcode"></i><span>ยังไม่มีรูป QR</span></div>
                                     <div class="website-qr-actions">
                                         <label class="button button-outline website-qr-file-button"><i class="fas fa-image"></i> อัปโหลดรูป QR<input id="webQrImageFile" type="file" accept="image/png,image/jpeg,image/webp" hidden></label>
                                         <button id="removeWebQrBtn" class="button button-danger" type="button"><i class="fas fa-trash"></i> ลบรูป QR</button>
-                                        <small>แนะนำรูปสี่เหลี่ยม 800×800 px หรือน้อยกว่า</small>
+                                        <small>QR นี้เป็นรูปสำรอง ส่วน QR หลักจะสร้างตามยอดออเดอร์จากช่องพร้อมเพย์ด้านบน</small>
                                     </div>
                                 </div>
                             </div>
@@ -234,7 +236,7 @@
 
                     <section id="productSection" class="admin-section">
                         <div class="admin-section-dashboard">
-                            <div class="admin-section-heading"><span class="admin-section-icon"><i class="fas fa-boxes-stacked"></i></span><div><small>PRODUCT MANAGEMENT</small><h2>สินค้าและแพ็กเกจ</h2><p>จัดหมวด ราคา รูป และสถานะสินค้าในพื้นที่เดียว</p></div></div>
+                            <div class="admin-section-heading"><span class="admin-section-icon"><i class="fas fa-boxes-stacked"></i></span><div><small>PRODUCT MANAGEMENT</small><h2>สินค้าและแพ็กเกจ</h2><p>จัดหมวด ราคา รูป สถานะ และรายละเอียดแพ็กเกจที่ลูกค้ากดดูได้</p></div></div>
                             <div class="admin-mini-stats"><div><span>ทั้งหมด</span><b id="productStatTotal">0</b></div><div><span>พร้อมขาย</span><b id="productStatActive">0</b></div><div><span>ปิดขาย</span><b id="productStatInactive">0</b></div></div>
                         </div>
                         <div class="admin-card admin-data-card">
@@ -351,12 +353,8 @@
                         </div>
                         <div class="admin-users-overview-v66">
                             <div><span class="admin-users-overview-icon role"><i class="fas fa-users-gear"></i></span><p><b>กำหนดสิทธิ์ตามหน้าที่</b><small>แยกบทบาทแอดมินและผู้จัดการให้ชัดเจน</small></p></div>
-                            <div><span class="admin-users-overview-icon security"><i class="fas fa-fingerprint"></i></span><p><b>Authenticator ทุกบัญชี</b><small>ตรวจสอบสถานะ 2FA และรีเซ็ตได้จากจุดเดียว</small></p></div>
+                            <div><span class="admin-users-overview-icon security"><i class="fas fa-fingerprint"></i></span><p><b>Authenticator ทุกบัญชี</b><small>ตรวจสอบสถานะ 2FA ของแต่ละบัญชีได้อย่างชัดเจน</small></p></div>
                             <div><span class="admin-users-overview-icon live"><i class="fas fa-circle-nodes"></i></span><p><b>ดูสถานะการใช้งาน</b><small>เห็นเวลาเข้า–ออกและสถานะออนไลน์ของแต่ละบัญชี</small></p></div>
-                        </div>
-                        <div id="adminTotpResetRequestsPanel" class="admin-card admin-data-card admin-reset-requests-panel admin-reset-requests-panel-v66 hidden" data-manager-only>
-                            <div class="admin-reset-requests-head"><div class="admin-reset-requests-title"><span class="admin-reset-requests-icon"><i class="fas fa-shield-halved"></i></span><div><span class="admin-section-kicker">2FA RECOVERY CENTER</span><h3>คำร้องรีเซ็ต Authenticator</h3><p>อนุมัติคำร้องแล้วส่งโค้ด 8 หลักให้เจ้าของบัญชี โค้ดมีอายุ 15 นาทีและใช้ได้ครั้งเดียว</p></div></div><span class="admin-reset-pending-badge"><i class="fas fa-inbox"></i><b id="adminTotpResetPendingCount">0</b><small>คำร้องที่ต้องดู</small></span></div>
-                            <div id="adminTotpResetRequestsList" class="admin-reset-requests-list"></div>
                         </div>
                         <div class="admin-user-layout admin-user-layout-v66">
                             <div class="admin-card admin-data-card admin-user-create-card admin-user-create-card-v66">
@@ -395,6 +393,20 @@
                                 <div class="admin-card-header admin-toolbar-header admin-user-directory-head admin-user-directory-head-v66"><div class="admin-card-title-block"><span class="admin-section-kicker">ADMIN DIRECTORY</span><h3>บัญชีผู้ดูแลทั้งหมด</h3><p>ดูสถานะออนไลน์ ความปลอดภัย เวลาใช้งาน และจัดการสิทธิ์ของแต่ละบัญชีในจุดเดียว</p></div><div class="admin-user-directory-tools"><span><i class="fas fa-circle-info"></i> บัญชีหลักลบหรือปิดไม่ได้</span><button id="refreshAdminUsersBtn" class="button button-outline" type="button"><i class="fas fa-rotate"></i> รีเฟรช</button></div></div>
                                 <div id="adminUsersList" class="admin-users-list admin-users-list-v63 admin-users-list-v66"></div>
                             </div>
+                        </div>
+                    </section>
+
+                    <section id="admin2faRecoverySection" class="admin-section hidden" data-manager-only>
+                        <div class="admin-section-dashboard admin-2fa-recovery-dashboard-v70">
+                            <div class="admin-section-heading">
+                                <span class="admin-section-icon"><i class="fas fa-shield-halved"></i></span>
+                                <div><small>SECURITY & RECOVERY</small><h2>2FA Recovery Center</h2><p>จัดการคำร้องกู้คืน Authenticator และออกโค้ดรีเซ็ตแบบใช้ครั้งเดียว แยกออกจากหน้าจัดการผู้ดูแลโดยเฉพาะ</p></div>
+                            </div>
+                            <div class="admin-section-note"><i class="fas fa-lock"></i><span>เฉพาะผู้จัดการเท่านั้นที่สามารถอนุมัติ ปฏิเสธ หรือออกโค้ดกู้คืน 2FA ได้</span></div>
+                        </div>
+                        <div id="adminTotpResetRequestsPanel" class="admin-card admin-data-card admin-reset-requests-panel admin-reset-requests-panel-v66 hidden" data-manager-only>
+                            <div class="admin-reset-requests-head"><div class="admin-reset-requests-title"><span class="admin-reset-requests-icon"><i class="fas fa-shield-halved"></i></span><div><span class="admin-section-kicker">2FA RECOVERY CENTER</span><h3>คำร้องรีเซ็ต Authenticator</h3><p>อนุมัติคำร้องแล้วส่งโค้ด 8 หลักให้เจ้าของบัญชี โค้ดมีอายุ 15 นาทีและใช้ได้ครั้งเดียว</p></div></div><span class="admin-reset-pending-badge"><i class="fas fa-inbox"></i><b id="adminTotpResetPendingCount">0</b><small>คำร้องที่ต้องดู</small></span></div>
+                            <div id="adminTotpResetRequestsList" class="admin-reset-requests-list"></div>
                         </div>
                     </section>
 
@@ -657,6 +669,6 @@
 
     <script src="../config.js?v=20260825-v59"></script>
     <script src="../i18n.js"></script>
-    <script src="admin.js?v=20260825-v67"></script>
+    <script src="admin.js?v=20260825-v77"></script>
 </body>
 </html>

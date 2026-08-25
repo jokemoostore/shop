@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" type="image" href="logo.png">
-    <link rel="stylesheet" href="styles.css?v=20260825-v60">
+    <link rel="stylesheet" href="styles.css?v=20260825-v77">
 </head>
 <body class="app-shell-body">
     <div id="pageLoader" class="page-loader">
@@ -94,9 +94,9 @@
                         <i class="fas fa-chevron-down side-nav-chevron"></i>
                     </button>
                     <div class="side-subnav" id="promotionSubnav">
-                        <button class="side-subnav-item" type="button" data-page="promotions-active"><i class="fas fa-bolt"></i> เริ่ม</button>
-                        <button class="side-subnav-item" type="button" data-page="promotions-upcoming"><i class="fas fa-clock"></i> รอเริ่ม</button>
-                        <button class="side-subnav-item" type="button" data-page="promotions-disabled"><i class="fas fa-ban"></i> ปิดการใช้งาน</button>
+                        <button class="side-subnav-item" type="button" data-page="promotions-active"><i class="fas fa-bolt"></i> โปรโมชั่นเริ่มใช้งาน</button>
+                        <button class="side-subnav-item" type="button" data-page="promotions-upcoming"><i class="fas fa-clock"></i> โปรโมชั่นรอเริ่ม</button>
+                        <button class="side-subnav-item" type="button" data-page="promotions-disabled"><i class="fas fa-ban"></i> โปรโมชั่นปิดการใช้งาน</button>
                     </div>
                 </div>
 
@@ -215,20 +215,25 @@
                 </section>
 
                 <!-- PRODUCTS -->
-                <section class="app-page" data-page-view="products">
-                    <div class="page-section-header">
-                        <div>
-                            <span class="page-kicker">SHOP</span>
+                <section class="app-page products-catalog-page-v75" data-page-view="products">
+                    <header class="packages-head-v75">
+                        <div class="packages-head-copy-v75">
+                            <span class="packages-kicker-v75"><i class="fas fa-bag-shopping"></i> JOKEMOO PACKAGES</span>
                             <h2 id="productsPageHeading">แพ็คเกจทั้งหมด</h2>
-                            <p>เลือกหมวดสินค้าจากเมนูด้านซ้าย แล้วเพิ่มแพ็กเกจที่ต้องการลงตะกร้า</p>
+                            <p>เลือกแพ็กเกจที่ต้องการ ดูข้อมูลให้ครบก่อนสั่งซื้อ และเพิ่มลงตะกร้าได้ทันที</p>
                         </div>
-                        <div class="product-filter-pills" aria-label="ตัวกรองสินค้า">
-                            <button class="product-filter-pill is-active" type="button" data-product-filter="all">ทั้งหมด</button>
-                            <button class="product-filter-pill" type="button" data-product-filter="netflix">Netflix</button>
-                            <button class="product-filter-pill" type="button" data-product-filter="other">แอปอื่น</button>
+                    </header>
+
+                    <div class="packages-toolbar-v75">
+                        <div class="packages-toolbar-label-v75"><i class="fas fa-filter"></i><span>หมวดหมู่</span></div>
+                        <div class="product-filter-pills packages-filter-pills-v75" role="tablist" aria-label="เลือกหมวดแพ็กเกจ">
+                            <button class="product-filter-pill is-active" type="button" data-product-filter="all"><i class="fas fa-border-all"></i><span>ทั้งหมด</span></button>
+                            <button class="product-filter-pill" type="button" data-product-filter="netflix"><i class="fas fa-play"></i><span>Netflix</span></button>
+                            <button class="product-filter-pill" type="button" data-product-filter="other"><i class="fas fa-mobile-screen-button"></i><span>แอปทั้งหมด</span></button>
                         </div>
                     </div>
-                    <section class="products products-page-section">
+
+                    <section class="products products-page-section products-page-section-v75">
                         <div id="products" class="product-grid"></div>
                     </section>
                 </section>
@@ -274,7 +279,7 @@
                         <div>
                             <span class="page-kicker">TOP MOVIES</span>
                             <h2>หนังติด TOP</h2>
-                            <p>หนังยอดนิยมที่กำลังติดอันดับ จัดอันดับและแก้ไขรายการได้จากหลังบ้าน</p>
+                            <p>หนังยอดนิยมที่กำลังติดอันดับ</p>
                         </div>
                         <div class="movie-page-counts" aria-label="สรุปหนังติด TOP">
                             <span><i class="fas fa-trophy"></i><b id="topMovieCount">0</b> เรื่อง</span>
@@ -283,7 +288,7 @@
                     <section class="movie-shelf movie-shelf-top movie-single-page-shelf">
                         <div class="movie-shelf-heading">
                             <div><span class="movie-shelf-icon"><i class="fas fa-fire"></i></span><div><span>RANKING NOW</span><h3>หนังติด TOP</h3></div></div>
-                            <small>เรียงตามอันดับที่กำหนดจากหลังบ้าน</small>
+                            <small>เรียงตามอันดับที่ความนิยม</small>
                         </div>
                         <div id="topMoviesGrid" class="movie-grid"></div>
                     </section>
@@ -295,7 +300,7 @@
                         <div>
                             <span class="page-kicker">COMING SOON</span>
                             <h2>หนังที่ใกล้จะเข้า</h2>
-                            <p>เช็กหนังที่กำลังจะเข้ารับชม พร้อมวันกำหนดเข้าและรายละเอียดล่าสุด</p>
+                            <p>เช็คหนังที่กำลังจะเข้ารับชม พร้อมวันกำหนดเข้าและรายละเอียดล่าสุด</p>
                         </div>
                         <div class="movie-page-counts" aria-label="สรุปหนังใกล้เข้า">
                             <span><i class="fas fa-calendar-days"></i><b id="upcomingMovieCount">0</b> เรื่อง</span>
@@ -404,7 +409,7 @@
                                 <div id="reviewListWrapper" class="review-list-wrapper">
                                     <div id="reviewList" class="review-list"></div>
                                 </div>
-                                <div id="reviewNoData" class="no-reviews">ยังไม่มีรีวิว สามารถแชร์ประสบการณ์ได้เลย</div>
+                                <div id="reviewNoData" class="no-reviews">ยังไม่มีรีวิว สามารถแชร์ประสบการณ์ของคุณได้เลย</div>
                             </div>
 
                             <div class="review-card review-form-card">
@@ -419,7 +424,7 @@
                                 <form id="reviewForm" class="review-form">
                                     <div class="review-form-group">
                                         <label for="reviewName">ชื่อ</label>
-                                        <input id="reviewName" type="text" placeholder="เช่น น้องพี" required>
+                                        <input id="reviewName" type="text" placeholder="เช่น Jokemoo" required>
                                     </div>
                                     <div class="review-form-group">
                                         <label for="reviewRating">คะแนน</label>
@@ -478,18 +483,18 @@
                         </div>
                         <div class="promotion-overview-card">
                             <span class="promotion-overview-icon"><i class="fas fa-calendar-alt"></i></span>
-                            <div><strong id="promotionUpcomingCount">0</strong><small>โปรที่กำลังจะมา</small></div>
+                            <div><strong id="promotionUpcomingCount">0</strong><small>โปรที่กำลังจะมาเร็วๆนี้</small></div>
                         </div>
                         <div class="promotion-overview-card promotion-overview-card-wide">
                             <span class="promotion-overview-icon"><i class="fas fa-sync-alt"></i></span>
-                            <div><strong>อัปเดตอัตโนมัติ</strong><small>เพิ่ม แก้ไข หรือปิดโปรจากหลังบ้านได้ โดยไม่ต้องแก้หน้าเว็บ</small></div>
+                            <div><strong>อัปเดตอัตโนมัติ</strong><small>ระบบจะอัปเดตโปรโมชั่นใหม่โดยอัตโนมัติ</small></div>
                         </div>
                     </div>
 
                     <section id="promotionBanner" class="promotion-showcase hidden" aria-live="polite"></section>
                     <div id="promotionEmptyState" class="promotion-page-empty">
                         <span><i class="fas fa-gift"></i></span>
-                        <div><strong>ยังไม่มีโปรโมชั่นที่กำลังแสดง</strong><small>เมื่อเปิดโปรโมชั่นจากหลังบ้าน รายการจะขึ้นในหน้านี้อัตโนมัติ</small></div>
+                        <div><strong>ยังไม่มีโปรโมชั่นที่กำลังแสดง</strong><small>หากมีโปรโมชั่นใหม่ รายการจะขึ้นในหน้านี้อัตโนมัติ</small></div>
                         <a href="https://line.me/R/ti/p/%40106zyrpm" target="_blank" rel="noopener noreferrer">สอบถามโปร <i class="fab fa-line"></i></a>
                     </div>
                 </section>
@@ -513,7 +518,7 @@
 
                     <div class="my-orders-device-note"><i class="fas fa-shield-halved"></i><div><strong>ประวัติของอุปกรณ์นี้</strong><small>ระบบประวัติการใช้จ่าย</small></div></div>
                     <div id="myOrdersList" class="my-orders-list" aria-live="polite">
-                        <div class="my-orders-empty"><i class="fas fa-bag-shopping"></i><strong>ยังไม่มีประวัติการซื้อ</strong><small>เมื่อสั่งซื้อและสร้างเลขออเดอร์สำเร็จ รายการจะขึ้นที่นี่อัตโนมัติ</small></div>
+                        <div class="my-orders-empty"><i class="fas fa-bag-shopping"></i><strong>ยังไม่มีประวัติการซื้อ</strong><small>เมื่อสั่งซื้อออเดอร์สำเร็จ รายการจะขึ้นที่นี่อัตโนมัติ</small></div>
                     </div>
                 </section>
 
@@ -534,7 +539,7 @@
                                     <i class="fas fa-chevron-down"></i>
                                 </button>
                                 <div class="faq-answer">
-                                    <p>หลังยืนยันการโอนสำเร็จ เพิ่มเพื่อน Line <strong>@106zyrpm</strong> เพื่อแจ้งสลิปโอน แอดมินจะตรวจสอบและส่งรหัสผ่านให้ภายใน 1-5 นาที</p>
+                                    <p>หลังยืนยันการโอนสำเร็จ จะได้รับเลขออเดอร์ ให้เพิ่มเพื่อน Line <strong>@106zyrpm</strong> เพื่อแจ้งเลขออเดอร์ให้กับแอดมินและแอดมินจะตรวจสอบและส่งรหัสผ่านให้ภายใน 1-5 นาที</p>
                                 </div>
                             </div>
                             <div class="faq-item">
@@ -666,8 +671,9 @@
     </div>
 
     <div id="toast" class="toast"></div>
-    <script src="config.js?v=20260825-v60"></script>
+    <script src="config.js?v=20260825-v68"></script>
     <script src="i18n.js"></script>
-    <script src="script.js?v=20260825-v63"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4O5SAGapGt4FodqL8My0mA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="script.js?v=20260825-v77"></script>
 </body>
 </html>
