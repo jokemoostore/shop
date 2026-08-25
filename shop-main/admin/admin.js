@@ -1,6 +1,6 @@
 const DEFAULT_ADMIN_API_URL = (window.JokeMooConfig && window.JokeMooConfig.apiBaseUrl)
   ? window.JokeMooConfig.apiBaseUrl
-  : 'https://script.google.com/macros/s/AKfycbwt0fMJ8FZqx3w2W6E7pR67WemP1IRhlfoteuSaJLRc1CgnLqaErl8eruZYop_-Haqf/exec';
+  : 'https://script.google.com/macros/s/AKfycbwWCUnFiqCqz_bpzSV4uDeRDigbibQU474pUtpW8NnVdI58hLKC_353e-Y7H5KfuCsg/exec';
 const DEFAULT_ADMIN_API_KEY = (window.JokeMooConfig && window.JokeMooConfig.adminApiKey)
   ? window.JokeMooConfig.adminApiKey
   : 'ldmbvu219-126dhidk;das';

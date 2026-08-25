@@ -81,15 +81,15 @@ const ADMIN_RELOAD_STORAGE_KEY = 'jokemoo_admin_reload';
 const LIVE_SYNC_STORAGE_KEY = 'jokemoo_live_sync';
 const LIVE_SYNC_CHANNEL_NAME = 'jokemoo_live_sync_v1';
 const CHECKOUT_RETURN_STORAGE_KEY = 'jokemoo_checkout_returned_from_line';
-// V72 Fast Realtime: quick sync while the customer is active, adaptive backoff
-// while idle, and fully paused while hidden. Same-browser admin changes still
-// fan out immediately through BroadcastChannel/storage.
-const SITE_DATA_ACTIVE_POLL_MS = 3000;
-const SITE_DATA_NORMAL_POLL_MS = 5000;
-const SITE_DATA_IDLE_POLL_MS = 10000;
+// V87 Fast API: keep remote polling light so Google Apps Script is not hammered.
+// Same-browser admin changes still sync immediately through BroadcastChannel/storage,
+// while remote polling runs at a safer 30-60 second cadence.
+const SITE_DATA_ACTIVE_POLL_MS = 30000;
+const SITE_DATA_NORMAL_POLL_MS = 45000;
+const SITE_DATA_IDLE_POLL_MS = 60000;
 const SITE_DATA_ACTIVE_WINDOW_MS = 45000;
 const SITE_DATA_IDLE_AFTER_MS = 90000;
-const SITE_DATA_MIN_REMOTE_GAP_MS = 1200;
+const SITE_DATA_MIN_REMOTE_GAP_MS = 10000;
 let siteRefreshInFlight = false;
 let lastSiteDataSignature = '';
 let lastSiteRemoteFetchAt = 0;
@@ -3413,7 +3413,7 @@ async function init() {
 
     attachPromotionBannerEvents();
 
-    // V72 Fast Realtime polling: adaptive and faster while the page is active.
+    // V87 Fast API polling: adaptive but intentionally light on Apps Script.
     startSmartSitePolling();
     // Update promotion banner every minute only while visible.
     setInterval(() => {

@@ -23,7 +23,7 @@ const state = {
 
 const apiBaseUrl = (window.JokeMooConfig && window.JokeMooConfig.apiBaseUrl)
     ? window.JokeMooConfig.apiBaseUrl
-    : "https://script.google.com/macros/s/AKfycbwt0fMJ8FZqx3w2W6E7pR67WemP1IRhlfoteuSaJLRc1CgnLqaErl8eruZYop_-Haqf/exec";
+    : "https://script.google.com/macros/s/AKfycbwWCUnFiqCqz_bpzSV4uDeRDigbibQU474pUtpW8NnVdI58hLKC_353e-Y7H5KfuCsg/exec";
 const productCategories = {
     netflix: "Netflix Premium",
     other: "แอพอื่น",
@@ -34,7 +34,7 @@ const REVIEWS_PER_PAGE = 4;
 const PENDING_REVIEWS_STORAGE_KEY = 'jokemoo_pending_reviews';
 const REVIEW_SETTINGS_STORAGE_KEY = 'jokemoo_review_settings';
 const ADMIN_RELOAD_STORAGE_KEY = 'jokemoo_admin_reload';
-const SITE_DATA_POLL_INTERVAL_MS = 5000; // V72: faster legacy storefront sync while visible
+const SITE_DATA_POLL_INTERVAL_MS = 30000; // V87: lighter Apps Script polling while visible
 let lastSiteDataSignature = '';
 let reviewPageIndex = 0;
 let pendingReviewImageDataUrl = null;

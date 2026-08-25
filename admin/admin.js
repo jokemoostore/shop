@@ -141,12 +141,12 @@ const adminState = {
 
 const ADMIN_LIVE_SYNC_STORAGE_KEY = 'jokemoo_live_sync';
 const ADMIN_LIVE_SYNC_CHANNEL_NAME = 'jokemoo_live_sync_v1';
-// V72 Fast Realtime: one adaptive adminData stream, faster while the page is
-// actively used and paused while hidden. Presence is synchronized separately
-// from content so online/offline changes do not force a full Admin UI rerender.
-const ADMIN_REALTIME_ACTIVE_POLL_MS = 3000;
-const ADMIN_REALTIME_NORMAL_POLL_MS = 5000;
-const ADMIN_REALTIME_IDLE_POLL_MS = 10000;
+// V87 Fast API: one shared adminData stream with a safer remote cadence.
+// Local admin changes still fan out instantly, while Apps Script polling is kept
+// light enough to avoid slowing both the storefront and the admin dashboard.
+const ADMIN_REALTIME_ACTIVE_POLL_MS = 20000;
+const ADMIN_REALTIME_NORMAL_POLL_MS = 30000;
+const ADMIN_REALTIME_IDLE_POLL_MS = 60000;
 const ADMIN_REALTIME_ACTIVE_WINDOW_MS = 60000;
 const ADMIN_REALTIME_IDLE_AFTER_MS = 120000;
 let adminLiveSyncChannel = null;
@@ -3420,7 +3420,7 @@ function formatAdminPresenceAgo(value){
   const min=Math.floor(sec/60); if(min<60)return `${min} นาทีที่แล้ว`; const hr=Math.floor(min/60); if(hr<24)return `${hr} ชม.ที่แล้ว`;
   return formatAdminUserDate(value);
 }
-const ADMIN_PRESENCE_INTERVAL_MS=20000;
+const ADMIN_PRESENCE_INTERVAL_MS=25000;
 const ADMIN_PRESENCE_ONLINE_MS=75000;
 const ADMIN_PRESENCE_ACTIVE_MS=15000;
 let adminPresenceTimer=0;
