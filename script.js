@@ -15,7 +15,9 @@ const products = [
 const state = {
     cart: [],
     user: null,
-    products: [],
+    // V85: render the built-in package catalog immediately, then replace it with API data.
+    // This removes the empty/blocked feeling while Apps Script is waking up.
+    products: products.map((item) => ({ ...item })),
     reviews: [],
     promotions: [],
     movies: [],
@@ -82,12 +84,12 @@ const CHECKOUT_RETURN_STORAGE_KEY = 'jokemoo_checkout_returned_from_line';
 // V72 Fast Realtime: quick sync while the customer is active, adaptive backoff
 // while idle, and fully paused while hidden. Same-browser admin changes still
 // fan out immediately through BroadcastChannel/storage.
-const SITE_DATA_ACTIVE_POLL_MS = 2500;
-const SITE_DATA_NORMAL_POLL_MS = 4500;
-const SITE_DATA_IDLE_POLL_MS = 9000;
+const SITE_DATA_ACTIVE_POLL_MS = 3000;
+const SITE_DATA_NORMAL_POLL_MS = 5000;
+const SITE_DATA_IDLE_POLL_MS = 10000;
 const SITE_DATA_ACTIVE_WINDOW_MS = 45000;
 const SITE_DATA_IDLE_AFTER_MS = 90000;
-const SITE_DATA_MIN_REMOTE_GAP_MS = 800;
+const SITE_DATA_MIN_REMOTE_GAP_MS = 1200;
 let siteRefreshInFlight = false;
 let lastSiteDataSignature = '';
 let lastSiteRemoteFetchAt = 0;
@@ -340,7 +342,7 @@ async function refreshSiteDataIfChanged(force = false) {
         renderReviews();
         applyMaintenanceMode(state.maintenanceMode);
     } catch (error) {
-        console.warn('refreshSiteDataIfChanged failed:', error);
+        if (!isExpectedSiteApiTimeout(error)) console.warn('refreshSiteDataIfChanged failed:', error);
     } finally {
         siteRefreshInFlight = false;
     }
@@ -432,11 +434,21 @@ const defaultReviews = [
 
 const siteGetInFlight = new Map();
 
-const SITE_API_GET_TIMEOUT_MS = 6500;
+const SITE_API_GET_TIMEOUT_MS = 12000;
+
+function isExpectedSiteApiTimeout(error) {
+    const name = String(error?.name || '');
+    const message = String(error?.message || '');
+    return name === 'AbortError' || name === 'TimeoutError' || /abort|timeout/i.test(message);
+}
 
 async function fetchWithSiteTimeout(url, options = {}, timeoutMs = SITE_API_GET_TIMEOUT_MS) {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const safeTimeout = Math.max(2500, Number(timeoutMs) || SITE_API_GET_TIMEOUT_MS);
+    const timeoutReason = typeof DOMException === 'function'
+        ? new DOMException(`API request exceeded ${safeTimeout}ms`, 'TimeoutError')
+        : new Error(`API request exceeded ${safeTimeout}ms`);
+    const timer = setTimeout(() => controller.abort(timeoutReason), safeTimeout);
     try {
         return await fetch(url, { ...options, signal: controller.signal });
     } finally {
@@ -464,7 +476,9 @@ async function fetchGet(action) {
             return result;
         } catch (error) {
             lastError = error;
-            console.warn('API GET failed, trying fallback:', baseUrl, error && error.message ? error.message : error);
+            if (!isExpectedSiteApiTimeout(error)) {
+                console.warn('API GET failed, trying fallback:', baseUrl, error && error.message ? error.message : error);
+            }
         }
     }
     throw lastError;
@@ -1755,12 +1769,17 @@ async function loadSiteData() {
             return;
         }
     } catch (error) {
-        console.warn('loadSiteData failed:', error);
+        const timedOut = isExpectedSiteApiTimeout(error);
+        if (!timedOut) console.warn('loadSiteData failed:', error);
         const pendingLocal = loadStoredPendingReviews();
         if (pendingLocal.length) {
             state.reviews = mergeReviews(state.reviews, pendingLocal);
             renderReviews();
         }
+        // If Apps Script is only waking up / temporarily slow, keep the already-rendered
+        // local catalog and let Smart Realtime retry. Do not immediately hammer the API
+        // with products + reviews fallback requests.
+        if (timedOut) return;
     }
 
     await loadProductsAndReviewsFallback();
@@ -1790,7 +1809,7 @@ async function loadProductsAndReviewsFallback() {
         renderMovies();
         applyMaintenanceMode(false);
     } catch (error) {
-        console.warn('loadProductsAndReviewsFallback failed:', error);
+        if (!isExpectedSiteApiTimeout(error)) console.warn('loadProductsAndReviewsFallback failed:', error);
         state.products = products;
         state.reviews = defaultReviews;
         state.movies = [];
@@ -3362,14 +3381,19 @@ async function init() {
     renderMovies();
     initFAQ();
     initAppNavigation();
+    // V85: never keep the storefront blocked while Apps Script is warming up.
+    // Built-in package data is already visible; the API refresh replaces it as soon as it arrives.
     showPageLoader(true);
+    const fastLoaderTimer = setTimeout(() => showPageLoader(false), 650);
     try {
         await loadSiteData();
-        await syncPendingReviews();
+        // Review retry does not need to block first paint/API-ready state.
+        syncPendingReviews().catch((error) => console.warn('pending review sync skipped', error));
     } catch (error) {
         console.warn('loadSiteData threw error', error);
         showToast('ไม่สามารถเชื่อมต่อ API ได้ โปรดตรวจสอบการ deploy และ URL', 'error');
     } finally {
+        clearTimeout(fastLoaderTimer);
         showPageLoader(false);
     }
 

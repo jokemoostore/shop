@@ -7,12 +7,12 @@
     <title>JokeMoo Store Admin</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../styles.css?v=20260825-v77">
+    <link rel="stylesheet" href="../styles.css?v=20260825-v86">
     <link rel="stylesheet" href="code-manager/scoped.css">
-    <link rel="stylesheet" href="admin.css?v=20260825-v77">
+    <link rel="stylesheet" href="admin.css?v=20260825-v86">
     <link rel="icon" type="image" href="../logo.png">
 </head>
-<body class="admin-shell-body admin-auth-locked">
+<body class="admin-shell-body admin-auth-locked admin-session-restoring">
     <div id="adminAuthGate" class="admin-auth-gate">
         <div class="admin-auth-bg admin-auth-bg-one"></div>
         <div class="admin-auth-bg admin-auth-bg-two"></div>
@@ -24,7 +24,7 @@
             <form id="adminLoginForm" class="admin-auth-form" autocomplete="on" action="javascript:void(0)">
                 <label><span><i class="fas fa-user"></i> Username</span><input id="adminLoginUsername" name="username" type="text" autocomplete="username" placeholder="ชื่อผู้ใช้" required></label>
                 <label><span><i class="fas fa-lock"></i> Password</span><div class="admin-password-wrap"><input id="adminLoginPassword" name="password" type="password" autocomplete="current-password" placeholder="รหัสผ่าน" required><button id="adminLoginPasswordToggle" type="button" aria-label="แสดงรหัสผ่าน"><i class="fas fa-eye"></i></button></div></label>
-                <label class="admin-remember-row"><input id="adminRememberLogin" type="checkbox"><span><b>จดจำการเข้าสู่ระบบ</b><small>หากติกจะไม่หลุด 30 วัน</small></span></label>
+                <label class="admin-remember-row"><input id="adminRememberLogin" type="checkbox" checked disabled><span><b>จดจำการเข้าสู่ระบบอัตโนมัติ</b><small>ระบบจะคงสถานะไว้ 30 วัน หรือจนกว่าจะกดออกจากระบบ</small></span></label>
                 <div id="adminLoginError" class="admin-auth-error hidden" role="alert"></div>
                 <button id="adminLoginBtn" class="admin-auth-submit" type="submit"><i class="fas fa-right-to-bracket"></i><span>เข้าสู่ระบบ</span></button>
             </form>
@@ -669,6 +669,6 @@
 
     <script src="../config.js?v=20260825-v59"></script>
     <script src="../i18n.js"></script>
-    <script src="admin.js?v=20260825-v77"></script>
+    <script src="admin.js?v=20260825-v86"></script>
 </body>
 </html>

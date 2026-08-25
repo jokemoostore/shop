@@ -3389,3 +3389,7 @@ body.admin-local-file-mode #apiStatus{white-space:normal}
   .admin-product-editor-section-v75{padding:12px!important}
 }
 @media(prefers-reduced-motion:reduce){#productSection *,#productSection *::before,#productSection *::after{animation:none!important;transition:none!important}}
+
+
+/* V85 — prevent the login card flashing during F5 session restoration */
+.admin-session-restoring .admin-auth-gate{visibility:hidden!important}

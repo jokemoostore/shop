@@ -144,9 +144,9 @@ const ADMIN_LIVE_SYNC_CHANNEL_NAME = 'jokemoo_live_sync_v1';
 // V72 Fast Realtime: one adaptive adminData stream, faster while the page is
 // actively used and paused while hidden. Presence is synchronized separately
 // from content so online/offline changes do not force a full Admin UI rerender.
-const ADMIN_REALTIME_ACTIVE_POLL_MS = 2500;
-const ADMIN_REALTIME_NORMAL_POLL_MS = 4500;
-const ADMIN_REALTIME_IDLE_POLL_MS = 9000;
+const ADMIN_REALTIME_ACTIVE_POLL_MS = 3000;
+const ADMIN_REALTIME_NORMAL_POLL_MS = 5000;
+const ADMIN_REALTIME_IDLE_POLL_MS = 10000;
 const ADMIN_REALTIME_ACTIVE_WINDOW_MS = 60000;
 const ADMIN_REALTIME_IDLE_AFTER_MS = 120000;
 let adminLiveSyncChannel = null;
@@ -155,6 +155,8 @@ let adminRealtimeTimer = 0;
 let adminSmartPollTimer = 0;
 let lastAdminDataSignature = '';
 const adminGetInFlight = new Map();
+// V85: reuse the same adminData response for auth + dashboard instead of requesting it twice.
+let prefetchedAdminData = null;
 
 function showAdminToast(message, type = 'success') {
   if (!adminToast) return;
@@ -999,11 +1001,21 @@ function rememberWorkingAdminApiUrl(url) {
   if (url) adminState.apiUrl = url;
 }
 
-const ADMIN_API_GET_TIMEOUT_MS = 6500;
+const ADMIN_API_GET_TIMEOUT_MS = 12000;
+
+function isExpectedAdminApiTimeout(error) {
+  const name = String(error?.name || '');
+  const message = String(error?.message || '');
+  return name === 'AbortError' || name === 'TimeoutError' || /abort|timeout/i.test(message);
+}
 
 async function fetchAdminWithTimeout(url, options = {}, timeoutMs = ADMIN_API_GET_TIMEOUT_MS) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const safeTimeout = Math.max(2500, Number(timeoutMs) || ADMIN_API_GET_TIMEOUT_MS);
+  const timeoutReason = typeof DOMException === 'function'
+    ? new DOMException(`Admin API request exceeded ${safeTimeout}ms`, 'TimeoutError')
+    : new Error(`Admin API request exceeded ${safeTimeout}ms`);
+  const timer = setTimeout(() => controller.abort(timeoutReason), safeTimeout);
   try {
     return await fetch(url, { ...options, signal: controller.signal });
   } finally {
@@ -1032,7 +1044,7 @@ async function fetchAdminGet(action, params = {}) {
       return result.data || result;
     } catch (error) {
       lastError = error;
-      console.warn('Admin API GET failed:', baseUrl, error && error.message ? error.message : error);
+      if (!isExpectedAdminApiTimeout(error)) console.warn('Admin API GET failed:', baseUrl, error && error.message ? error.message : error);
     }
   }
   throw lastError;
@@ -2533,7 +2545,7 @@ async function refreshAdminPresenceOnly() {
     if (currentFresh) adminState.currentAdminUser = { ...adminState.currentAdminUser, ...currentFresh };
     renderAdminUsers();
   } catch (error) {
-    console.warn('presence-only refresh failed:', error);
+    if (!isExpectedAdminApiTimeout(error)) console.warn('presence-only refresh failed:', error);
   }
 }
 
@@ -2551,7 +2563,7 @@ async function refreshAdminDataRealtime(force = false) {
     applyRealtimeAdminData(result);
     updateApiStatus('ซิงก์ข้อมูลล่าสุดแล้ว', 'success');
   } catch (error) {
-    console.warn('realtime admin refresh failed:', error);
+    if (!isExpectedAdminApiTimeout(error)) console.warn('realtime admin refresh failed:', error);
   } finally {
     adminRealtimeInFlight = false;
   }
@@ -2599,14 +2611,15 @@ function initAdminRealtimeSync() {
   scheduleNextAdminSmartPoll(ADMIN_REALTIME_ACTIVE_POLL_MS);
 }
 
-async function loadAdminData() {
+async function loadAdminData(prefetchedResult = null) {
   if (isAdminLocalFileMode()) {
     loadAdminLocalPreviewData();
     return;
   }
   try {
     updateApiStatus('กำลังโหลดข้อมูลจาก API...', 'loading');
-    const result = await adminApiFetch('adminData');
+    const result = prefetchedResult || prefetchedAdminData || await adminApiFetch('adminData');
+    prefetchedAdminData = null;
     lastAdminDataSignature = makeAdminDataSignature(result);
     const products = result.products || [];
     const reviews = result.reviews || [];
@@ -2627,7 +2640,7 @@ async function loadAdminData() {
     updateAdminStats();
     updateMaintenanceStatus();
     updateApiStatus('โหลดข้อมูลเรียบร้อย', 'success');
-    return;
+    return result;
   } catch (error) {
     console.error('adminData failed:', error);
   }
@@ -2885,7 +2898,7 @@ function renderOrdersDashboard() {
   set('orderTodayRevenue',adminMoney(todayOrders.reduce((s,o)=>s+(Number(o.total)||0),0))); set('orderTodayCount',`${todayOrders.length} ออเดอร์`);
   set('orderMonthRevenue',adminMoney(monthOrders.reduce((s,o)=>s+(Number(o.total)||0),0))); set('orderMonthCount',`${monthOrders.length} ออเดอร์`);
   set('orderDiscountCount',String(orders.filter(o=>o.discount&&o.discount.code).length));
-  if(!filtered.length) table.innerHTML='<div class="admin-empty-state"><i class="fas fa-receipt"></i><strong>ยังไม่พบออเดอร์</strong><span>ออเดอร์จะขึ้นที่นี่เมื่อลูกค้ากดยืนยันชำระเงิน</span></div>';
+  if(!filtered.length) table.innerHTML='<div class="admin-empty-state"><i class="fas fa-receipt"></i> <strong>ยังไม่พบออเดอร์</strong> <span>ออเดอร์จะขึ้นที่นี่เมื่อลูกค้ากดยืนยันชำระเงิน</span></div>';
   else table.innerHTML=`<div class="order-list">${filtered.map(o=>{ const d=o.discount; return `<article class="order-row" data-order="${escapeAdminHtml(o.orderNo)}">
     <div class="order-main"><span class="order-number">${escapeAdminHtml(o.orderNo||'-')}</span><strong>${adminMoney(o.total)}</strong><small>${adminDateTime(o.createdAt)}</small></div>
     <div class="order-items-preview">${(o.items||[]).slice(0,2).map(i=>`<span>${escapeAdminHtml(i.name)} × ${Number(i.quantity)||1}</span>`).join('')}${(o.items||[]).length>2?`<small>+${(o.items||[]).length-2} รายการ</small>`:''}</div>
@@ -3235,7 +3248,6 @@ function readAdminSession(){
 }
 function writeAdminSession(user,remember){
   clearAdminSessions();
-  if(!remember) return; // ไม่ติ๊ก = ไม่บันทึก session; F5 ต้องล็อกอินใหม่
   const data={
     username:user.username,
     displayName:user.displayName||user.username,
@@ -3267,8 +3279,15 @@ function updateCurrentAdminUi(){
   applyAdminRoleUi();
 }
 async function fetchAuthUsersOnly(){
-  if(isAdminLocalFileMode()){ adminState.adminUsers=[]; return true; }
-  try{const result=await adminApiFetch('adminData');const promotions=Array.isArray(result?.promotions)?result.promotions:[];adminState.adminUsers=promotions.map(parseAdminUserPromotionRecord).filter(Boolean);adminState.adminTotpResetRequests=promotions.map(parseAdminTotpResetPromotionRecord).filter(Boolean).sort((a,b)=>new Date(b.requestedAt||0)-new Date(a.requestedAt||0));return true;}catch(error){console.warn('auth users fetch failed',error);return false;}
+  if(isAdminLocalFileMode()){ adminState.adminUsers=[]; prefetchedAdminData=null; return true; }
+  try{
+    const result=await adminApiFetch('adminData');
+    prefetchedAdminData=result;
+    const promotions=Array.isArray(result?.promotions)?result.promotions:[];
+    adminState.adminUsers=promotions.map(parseAdminUserPromotionRecord).filter(Boolean);
+    adminState.adminTotpResetRequests=promotions.map(parseAdminTotpResetPromotionRecord).filter(Boolean).sort((a,b)=>new Date(b.requestedAt||0)-new Date(a.requestedAt||0));
+    return true;
+  }catch(error){if(!isExpectedAdminApiTimeout(error)) console.warn('auth users fetch failed',error);prefetchedAdminData=null;return false;}
 }
 async function persistRootAdminIfNeeded(user){
   if(isAdminLocalFileMode()) return;
@@ -3277,7 +3296,7 @@ async function persistRootAdminIfNeeded(user){
 }
 async function completeAdminLogin(user,remember){
   adminState.currentAdminUser=user; writeAdminSession(user,remember); updateCurrentAdminUi(); setAdminAuthLocked(false); setAdminLoginError('');
-  await persistRootAdminIfNeeded(user); await loadAdminData();
+  await persistRootAdminIfNeeded(user); await loadAdminData(prefetchedAdminData);
   adminState.currentAdminUser=findAdminUser(user.username)||user; updateCurrentAdminUi(); noteAdminInteraction(); await markCurrentAdminPresence({login:true}); startAdminPresence();
 }
 async function handleAdminLogin(event){
@@ -3294,15 +3313,17 @@ async function handleAdminLogin(event){
 async function initializeAdminAuth(){
   setAdminAuthLocked(true);
 
-  // V84: if the browser had to close before its final OFFLINE request completed,
-  // finish that pending write before restoring a remembered session.
-  try{await flushPendingAdminOffline();}catch(_){}
+  // V85: read the remembered session FIRST. F5/pagehide can leave a pending
+  // offline marker; a valid same-browser session means this is a continuation,
+  // so never block the UI waiting for that old Apps Script write.
 
   // V58: read the remembered 30-day session BEFORE waiting for the API.
   // This prevents F5 from throwing the user back to the login gate when the
   // Apps Script request is slow, redirecting, or temporarily unavailable.
   const session=readAdminSession();
+  document.body.classList.remove('admin-session-restoring');
   if(session){
+    clearPendingAdminOffline(session.username);
     const cachedUser={
       username:String(session.username||'').trim().toLowerCase(),
       displayName:session.displayName||session.username,
@@ -3339,7 +3360,7 @@ async function initializeAdminAuth(){
     const shouldStartNewSession=!Number.isFinite(seenMs)||seenMs<=0||Date.now()-seenMs>ADMIN_PRESENCE_ONLINE_MS||serverDeviceId!==ADMIN_DEVICE_ID;
 
     try{
-      await loadAdminData();
+      await loadAdminData(prefetchedAdminData);
       adminState.currentAdminUser=findAdminUser(session.username)||user;
       updateCurrentAdminUi();
       noteAdminInteraction();
@@ -3350,7 +3371,10 @@ async function initializeAdminAuth(){
     return;
   }
 
-  // No remembered session: load accounts for a normal username/password login.
+  // No remembered session: finish any old offline write in the background;
+  // never make the login form wait for it.
+  flushPendingAdminOffline().catch(()=>{});
+  // Load accounts for a normal username/password login.
   await fetchAuthUsersOnly();
   const username=document.getElementById('adminLoginUsername');
   if(username) setTimeout(()=>username.focus(),80);
