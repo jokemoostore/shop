@@ -1,7 +1,7 @@
 const DEFAULT_ADMIN_API_URL = (window.JokeMooConfig && window.JokeMooConfig.apiBaseUrl)
   ? window.JokeMooConfig.apiBaseUrl
-  : 'https://script.google.com/macros/s/AKfycbwt0fMJ8FZqx3w2W6E7pR67WemP1IRhlfoteuSaJLRc1CgnLqaErl8eruZYop_-Haqf/exec';
-const LEGACY_ADMIN_API_URL = 'https://script.google.com/macros/s/AKfycbwt0fMJ8FZqx3w2W6E7pR67WemP1IRhlfoteuSaJLRc1CgnLqaErl8eruZYop_-Haqf/exec';
+  : 'https://script.google.com/macros/s/AKfycbwWCUnFiqCqz_bpzSV4uDeRDigbibQU474pUtpW8NnVdI58hLKC_353e-Y7H5KfuCsg/exec';
+const LEGACY_ADMIN_API_URL = 'https://script.google.com/macros/s/AKfycbwWCUnFiqCqz_bpzSV4uDeRDigbibQU474pUtpW8NnVdI58hLKC_353e-Y7H5KfuCsg/exec';
 const CONFIG_ADMIN_API_FALLBACKS = (window.JokeMooConfig && Array.isArray(window.JokeMooConfig.apiFallbackUrls))
   ? window.JokeMooConfig.apiFallbackUrls.map(url => String(url || '').trim()).filter(Boolean)
   : [];
