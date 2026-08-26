@@ -3067,6 +3067,7 @@ async function persistAdminTotpSetup(user,secret){
   const payload=adminUserToPromotionPayload(updated);
   if(user.synced&&Number.isFinite(Number(user.id))){ payload.id=Number(user.id); await adminApiPost('adminUpdatePromotion',payload); }
   else { await adminApiPost('adminCreatePromotion',payload); }
+  prefetchedAdminData=null;
   return updated;
 }
 async function handleAdminTotpVerify(event){
