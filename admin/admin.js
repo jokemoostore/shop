@@ -6,7 +6,7 @@ const CONFIG_ADMIN_API_FALLBACKS = (window.JokeMooConfig && Array.isArray(window
   ? window.JokeMooConfig.apiFallbackUrls.map(url => String(url || '').trim()).filter(Boolean)
   : [];
 const DEFAULT_ADMIN_API_KEY = (window.JokeMooConfig && window.JokeMooConfig.adminApiKey)
-  ? window.JokeMooConfig.adminApiKey
+  ? String(window.JokeMooConfig.adminApiKey).trim()
   : 'ldmbvu219-126dhidk;das';
 const ADMIN_REVIEWS_PER_PAGE = 6;
 
@@ -1322,7 +1322,7 @@ async function adminApiPost(action, payload = {}) {
   const auditMeta = describeAdminMutation(action, payload);
   const candidates = getAdminApiCandidates();
   if (!candidates.length) throw new Error('กรุณาใส่ Google Script API URL ก่อน');
-  const requestBody = new URLSearchParams({ action, apiKey: adminState.apiKey, ...payload }).toString();
+  const requestBody = new URLSearchParams({ ...payload, action, apiKey: String(adminState.apiKey || '').trim() }).toString();
   let lastError = new Error('ไม่สามารถเชื่อมต่อ API ได้');
   for (const baseUrl of candidates) {
     try {
@@ -1352,7 +1352,7 @@ async function adminApiPost(action, payload = {}) {
 async function adminApiPostSilent(action, payload = {}) {
   const candidates = getAdminApiCandidates();
   if (!candidates.length) throw new Error('กรุณาใส่ Google Script API URL ก่อน');
-  const requestBody = new URLSearchParams({ action, apiKey: adminState.apiKey, ...payload }).toString();
+  const requestBody = new URLSearchParams({ ...payload, action, apiKey: String(adminState.apiKey || '').trim() }).toString();
   let lastError = new Error('ไม่สามารถเชื่อมต่อ API ได้');
   for (const baseUrl of candidates) {
     try {
