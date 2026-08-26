@@ -157,6 +157,7 @@ let lastAdminDataSignature = '';
 const adminGetInFlight = new Map();
 // V85: reuse the same adminData response for auth + dashboard instead of requesting it twice.
 let prefetchedAdminData = null;
+const recentAdminTotpUpdates = new Map();
 
 function showAdminToast(message, type = 'success') {
   if (!adminToast) return;
@@ -2525,8 +2526,15 @@ function applyRealtimeAdminPresence(result) {
   const freshUsers = promotions.map(parseAdminUserPromotionRecord).filter(Boolean);
   adminState.adminTotpResetRequests = promotions.map(parseAdminTotpResetPromotionRecord).filter(Boolean).sort((a,b)=>new Date(b.requestedAt||0)-new Date(a.requestedAt||0));
   if (!freshUsers.length) return;
-  adminState.adminUsers = freshUsers;
-  const currentFresh = freshUsers.find((u) => u.username === adminState.currentAdminUser?.username);
+  adminState.adminUsers = freshUsers.map((user) => {
+    const recent = recentAdminTotpUpdates.get(user.username);
+    if (recent && recent.expiresAt > Date.now() && recent.totpEnabled && !user.totpEnabled) {
+      return { ...user, totpEnabled: true, totpSecret: recent.totpSecret, totpVerifiedAt: recent.totpVerifiedAt };
+    }
+    if (recent && recent.expiresAt <= Date.now()) recentAdminTotpUpdates.delete(user.username);
+    return user;
+  });
+  const currentFresh = adminState.adminUsers.find((u) => u.username === adminState.currentAdminUser?.username);
   if (currentFresh) adminState.currentAdminUser = { ...adminState.currentAdminUser, ...currentFresh };
   renderAdminUsers();
 }
@@ -2541,7 +2549,7 @@ async function refreshAdminPresenceOnly() {
     adminState.adminTotpResetRequests = promotions.map(parseAdminTotpResetPromotionRecord).filter(Boolean).sort((a,b)=>new Date(b.requestedAt||0)-new Date(a.requestedAt||0));
     if (!freshUsers.length) return;
     adminState.adminUsers = freshUsers;
-    const currentFresh = freshUsers.find((u) => u.username === adminState.currentAdminUser?.username);
+    const currentFresh = adminState.adminUsers.find((u) => u.username === adminState.currentAdminUser?.username);
     if (currentFresh) adminState.currentAdminUser = { ...adminState.currentAdminUser, ...currentFresh };
     renderAdminUsers();
   } catch (error) {
@@ -3067,6 +3075,9 @@ async function persistAdminTotpSetup(user,secret){
   const payload=adminUserToPromotionPayload(updated);
   if(user.synced&&Number.isFinite(Number(user.id))){ payload.id=Number(user.id); await adminApiPost('adminUpdatePromotion',payload); }
   else { await adminApiPost('adminCreatePromotion',payload); }
+  recentAdminTotpUpdates.set(updated.username, { totpEnabled: true, totpSecret: secret, totpVerifiedAt: updated.totpVerifiedAt, expiresAt: Date.now() + 120000 });
+  adminState.adminUsers = adminState.adminUsers.map((item) => item.username === updated.username ? { ...item, ...updated } : item);
+  adminState.currentAdminUser = adminState.currentAdminUser?.username === updated.username ? { ...adminState.currentAdminUser, ...updated } : adminState.currentAdminUser;
   prefetchedAdminData=null;
   return updated;
 }
@@ -3152,6 +3163,7 @@ async function applyAdminTotpResetCode(){
     const hash=await adminRecoveryCodeHash(code,req.codeSalt); if(!adminSafeEqual(hash,req.codeHash)) throw new Error('โค้ดรีเซ็ตไม่ถูกต้อง');
     const freshUser=findAdminUser(pending.user.username)||pending.user;
     const updatedUser={...freshUser,totpEnabled:false,totpSecret:'',totpVerifiedAt:'',updatedAt:new Date().toISOString()};
+    recentAdminTotpUpdates.delete(updatedUser.username);
     const userPayload=adminUserToPromotionPayload(updatedUser); if(freshUser.synced&&Number.isFinite(Number(freshUser.id))) userPayload.id=Number(freshUser.id);
     await adminApiPostSilent(freshUser.synced&&Number.isFinite(Number(freshUser.id))?'adminUpdatePromotion':'adminCreatePromotion',userPayload);
     const used={...req,status:'used',usedAt:new Date().toISOString(),codeSalt:'',codeHash:'',expiresAt:''}; const reqPayload=adminTotpResetToPromotionPayload(used); reqPayload.id=Number(req.id);
@@ -3208,7 +3220,7 @@ async function resetAdminAuthenticator(username){
   if(!isCurrentAdminManager()){showAdminToast('เฉพาะผู้จัดการเท่านั้น','error');return;}
   const user=findAdminUser(username); if(!user)return; if(!confirm(`รีเซ็ต Authenticator ของ ${username} หรือไม่? ครั้งถัดไปที่ล็อกอินจะต้องตั้งค่าใหม่`))return;
   try{
-    const updated={...user,totpEnabled:false,totpSecret:'',totpVerifiedAt:'',updatedAt:new Date().toISOString()}; const payload=adminUserToPromotionPayload(updated);
+    const updated={...user,totpEnabled:false,totpSecret:'',totpVerifiedAt:'',updatedAt:new Date().toISOString()}; recentAdminTotpUpdates.delete(username); const payload=adminUserToPromotionPayload(updated);
     if(user.synced&&Number.isFinite(Number(user.id))){payload.id=Number(user.id);await adminApiPost('adminUpdatePromotion',payload);}else{await adminApiPost('adminCreatePromotion',payload);}
     const activeRequests=(adminState.adminTotpResetRequests||[]).filter(r=>r.username===username&&(r.status==='pending'||r.status==='approved'));
     for(const req of activeRequests){try{const closed={...req,status:'used',usedAt:new Date().toISOString(),codeSalt:'',codeHash:'',expiresAt:''};const rp=adminTotpResetToPromotionPayload(closed);rp.id=Number(req.id);await adminApiPostSilent('adminUpdatePromotion',rp);}catch(_){}}
