@@ -1,1 +1,63 @@
-'use strict';var _0x128755=_0x1458,_0x57c999=_0x1458;(function(_0x3c7101,_0x44d0fd){var _0x28e1fe=_0x1458,_0x414e10=_0x1458,_0x19ef69=_0x3c7101();while(!![]){try{var _0x36bf8a=-parseInt(_0x28e1fe(0x14f))/(-0xcae+-0x1*-0x871+-0x3*-0x16a)+-parseInt(_0x28e1fe(0x165))/(0x602+0x8c0+-0x760*0x2)+parseInt(_0x28e1fe(0x156))/(0x13c7+-0x1cb*0xf+0x721)*(parseInt(_0x414e10(0x149))/(-0xd53+0x630+-0x1*-0x727))+-parseInt(_0x414e10(0x140))/(0x24a+-0x1*-0x1f6a+0x1*-0x21af)*(parseInt(_0x414e10(0x147))/(-0x12dd*-0x2+-0xa7b+-0x3*0x913))+-parseInt(_0x28e1fe(0x138))/(0x7*-0x3eb+-0xb89+0x26fd)+parseInt(_0x414e10(0x122))/(0x54d*0x4+-0x19*0x163+0xd7f)+parseInt(_0x28e1fe(0x13b))/(0x1*0x13c8+0x1c49*-0x1+0x88a);if(_0x36bf8a===_0x44d0fd)break;else _0x19ef69['push'](_0x19ef69['shift']());}catch(_0xa15eed){_0x19ef69['push'](_0x19ef69['shift']());}}}(_0x46bd,0x1c1c1+0x5*0x10685+-0x40fc5));window[_0x128755(0x144)+'SE']=_0x57c999(0x13d)+_0x57c999(0x14e)+'m/macros/s/A'+_0x128755(0x14b)+_0x57c999(0x155)+_0x57c999(0x132)+_0x57c999(0x14d)+_0x57c999(0x130)+_0x57c999(0x146)+_0x57c999(0x127),window[_0x57c999(0x161)+'CODE']=_0x57c999(0x14c)+_0x57c999(0x133);var items=[{'name':_0x57c999(0x139)+'y','rate':0x0,'color':_0x57c999(0x136)},{'name':_0x128755(0x152)+'y','rate':0x3,'color':_0x128755(0x13a)},{'name':_0x128755(0x137)+'y','rate':0x1,'color':_0x57c999(0x15d)},{'name':_0x57c999(0x12c),'rate':0x1,'color':_0x57c999(0x15e)},{'name':_0x128755(0x153),'rate':0x3,'color':_0x128755(0x151)},{'name':_0x128755(0x163),'rate':0x0,'color':_0x57c999(0x136)},{'name':_0x57c999(0x15c),'rate':0x2f,'color':_0x57c999(0x159)}];window[_0x57c999(0x157)]=items;function _0x1458(_0x15a63c,_0x9c5e49){var _0x59396d=_0x46bd();return _0x1458=function(_0x5a5b9e,_0x2c03ae){_0x5a5b9e=_0x5a5b9e-(-0x11a5*-0x2+-0x156d+0x1*-0xcbb);var _0x2117c5=_0x59396d[_0x5a5b9e];if(_0x1458['pEfqVs']===undefined){var _0x22f10f=function(_0x59929b){var _0x2bf97c='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/=';var _0x57cb51='',_0x516b36='';for(var _0x4998cb=-0x1c54+-0x2a3+0x1ef7,_0x348a5a,_0x29c33f,_0x27d7ad=0x1e*-0xfe+-0x152*-0xf+0x9f6;_0x29c33f=_0x59929b['charAt'](_0x27d7ad++);~_0x29c33f&&(_0x348a5a=_0x4998cb%(-0x11b3+-0x5b1+0x1768)?_0x348a5a*(-0x2232*-0x1+-0x1*0x1475+-0xd7d)+_0x29c33f:_0x29c33f,_0x4998cb++%(0x1*0x829+0x1*0x2522+0xad*-0x43))?_0x57cb51+=String['fromCharCode'](-0x23df+0x1cd2+-0x1*-0x80c&_0x348a5a>>(-(0x1*0x1693+-0x241*0x3+-0xfce)*_0x4998cb&-0x1*0x123f+-0xa3c+0x1c81)):-0x91*0x3f+-0x26e5+0x2b*0x1bc){_0x29c33f=_0x2bf97c['indexOf'](_0x29c33f);}for(var _0x128829=0x4ee*0x5+-0xb76+0xd30*-0x1,_0xbaf859=_0x57cb51['length'];_0x128829<_0xbaf859;_0x128829++){_0x516b36+='%'+('00'+_0x57cb51['charCodeAt'](_0x128829)['toString'](0x413+0x21a5+-0x8*0x4b5))['slice'](-(-0x1e49+-0x23cf+0x421a));}return decodeURIComponent(_0x516b36);};_0x1458['bbhmvw']=_0x22f10f,_0x15a63c=arguments,_0x1458['pEfqVs']=!![];}var _0x25d2d3=_0x59396d[-0x1ff0+0x1*0x2213+-0x223],_0xc881a3=_0x5a5b9e+_0x25d2d3,_0x1db897=_0x15a63c[_0xc881a3];return!_0x1db897?(_0x2117c5=_0x1458['bbhmvw'](_0x2117c5),_0x15a63c[_0xc881a3]=_0x2117c5):_0x2117c5=_0x1db897,_0x2117c5;},_0x1458(_0x15a63c,_0x9c5e49);}function _0x46bd(){var _0x3fe3c2=['sM9Rzu1VBYbtDg9Y','mJK0nJe2ofjUB3nqta','4lIQ4lI04lIx4lIy4lI04lMm4lIe4lIh4lMa4lIR4lIL4lI3','CMvWBgfJzq','wenbv0i','ue9tva','qs9LEgvJ','v3Hwu08','4lIJ4lIY4lIh4lIN4lIX4lIL','4lIN4lIX4lIz4lIx4lI14lMi','ugXTr0K','4lIQ4lMi4lIN4lIz4lIL4lIuideWjq','yxbWBgLJyxrPB24V','D2fYBG','DhjPBq','Dxe5qtK3ofqTvwPn','BM8TC3rVCMu','DJeTEeyXx2zXvLjR','Aw4UAhrTBcnJB2rL','rgLZy29Yzcb3zwjO','C3rHDhvZ','iZrdquy1ma','tMv0zMXPEcaZierH','mJa4mdq3n0Xzu2vRDG','tMv0zMXPEca3ierH','iZHcqZm0qq','ndqZnJy3nNPLug5XBG','sK1FreLtq09srf9x','Ahr0Chm6lY9Zy3jP','4lMa4lIN4lIL4lIY','Dg9ju09tDhjPBMC','mJaWqvzks1vw','8j+oGsdGUkhGUlxGUihGUllGUkpGUkVGUkhGUlJGUjNGUkC','4lMe4lIH4lMi4lIx4lIJ4lIY4lIA4lIJ4lIY4lIh4lIN4lIX','sM9Rzu1VBYbxAgvL','v0HfruXFqvbjx0jb','zMLJyxrPB24GzMfP','sK5bwMCWnLjjBZnL','mZaZnZjfrgHrDee','zwjOB29R','mtm0mJq4mfr3CunLBq','rurotvK','s2z5y2j5neHKtNuY','lI4VywrTAw4VywrT','AwztwNDRBhK0ufr6','ChqUz29Vz2XLlMnV','mJyWodmWC1z4A1HR','zwvS','iZiXotzgmW','tMv0zMXPEcaXierH','4lIQ4lMi4lIN4lIz4lIL4lIuiduL','B29RieHuvfaG','mefkEI0ZsMrWsLaX','m2PzBMflyW','AxrLBxm','CLDTsgi','i2y0ndmZnG','rgLZy29YzcbUB3rP','BgvKoG','tuLtuW','i0zgqZeWnW','i0zgotGWma','zLDyEhm','4lIh4lIL4lMj4lIT','teLos19duKvbvevF','C2vUzerPC2nVCMrx','4lIQ4lMi4lIN4lIz4lIL4lIuidiWjq','C3rYAw5NAwz5','ntaYnZa2uNnzDvvv','rujit09l','4lMc4lIe4lMj4lIu4lIx4lI14lMi4lMd4lIk4lMj'];_0x46bd=function(){return _0x3fe3c2;};return _0x46bd();}async function sendDiscordWebhook(_0x3f1bc9,_0x5310f8,_0x54dce2,_0x5941d8,_0xea77c3){var _0x52039f=_0x57c999,_0x1522db=_0x128755,_0x16ddc6={'rWmHb':function(_0x107bc3,_0x3985ef){return _0x107bc3(_0x3985ef);},'fiEyP':function(_0x93082a,_0x5920a5){return _0x93082a(_0x5920a5);},'PlmGI':_0x52039f(0x143)+'l','ZCWub':_0x1522db(0x167),'fWXxs':function(_0x4df735,_0x5d3a7c){return _0x4df735||_0x5d3a7c;},'WxVSO':_0x52039f(0x13e),'EDNMY':_0x1522db(0x168)+'e\x20•\x20Lucky\x20Wh'+_0x1522db(0x150),'XCAWB':function(_0x447c34,_0x4e5425,_0x3bec4a){return _0x447c34(_0x4e5425,_0x3bec4a);}},_0x4dfefc=_0x16ddc6[_0x1522db(0x158)](String,window[_0x1522db(0x13c)+_0x1522db(0x166)]||'')[_0x1522db(0x12f)]();if(!_0x4dfefc)return![];var _0x5bd7bb=String(_0x3f1bc9||_0x52039f(0x142)+'ล')['trim']()||_0x52039f(0x142)+'ล',_0x9fb13f=_0x16ddc6['fiEyP'](String,_0x5310f8||'-')[_0x1522db(0x12f)]()||'-',_0x112774=_0xea77c3===null||_0xea77c3===undefined||_0xea77c3===''?'-':String(_0xea77c3),_0x10cd80={'username':_0x16ddc6[_0x52039f(0x12b)],'embeds':[{'title':_0x52039f(0x141)+_0x1522db(0x160),'color':0xb6ed0,'fields':[{'name':_0x1522db(0x129),'value':_0x5bd7bb,'inline':![]},{'name':_0x16ddc6['ZCWub'],'value':'`'+_0x9fb13f[_0x52039f(0x124)](/`/g,'')+'`','inline':!![]},{'name':_0x1522db(0x123)+'อ','value':_0x112774,'inline':!![]},{'name':_0x1522db(0x12a),'value':String(_0x16ddc6[_0x52039f(0x15f)](_0x54dce2,'-')),'inline':!![]},{'name':_0x16ddc6[_0x1522db(0x128)],'value':String(_0x5941d8||'-'),'inline':!![]}],'footer':{'text':_0x16ddc6[_0x52039f(0x14a)]},'timestamp':new Date()[_0x1522db(0x13f)]()}],'allowed_mentions':{'parse':[]}};try{var _0xc9ac5e=await _0x16ddc6[_0x52039f(0x125)](fetch,_0x4dfefc,{'method':_0x1522db(0x126),'headers':{'Content-Type':_0x1522db(0x12d)+'json'},'body':JSON[_0x1522db(0x164)](_0x10cd80),'cache':_0x52039f(0x131),'keepalive':!![]});if(!_0xc9ac5e['ok']&&_0xc9ac5e[_0x1522db(0x135)]!==-0x659+0x6*0x5d0+-0x1bbb)throw new Error(_0x52039f(0x134)+_0x1522db(0x154)+_0xc9ac5e[_0x1522db(0x135)]);return!![];}catch(_0x20b24e){return console[_0x52039f(0x12e)](_0x52039f(0x15a)+_0x1522db(0x145)+_0x1522db(0x15b),_0x20b24e),![];}}window[_0x128755(0x162)+_0x57c999(0x148)]=sendDiscordWebhook;
+'use strict';
+window.WHEEL_API_BASE = 'https://script.google.com/macros/s/AKfycby4HdNu20AJz-3JdpJP1v1-xF1_fqVRkifSZwkly4PTzuq9A978T-UjMJNAZg06RIo3eA/exec';
+window.LINK_CREATE_CODE = '../admin/admin.html#code';
+
+// Default prize setup from the original wheel. `rate` is a relative weight.
+var items = [
+  { name: 'Netflix 7 Day', rate: 0, color: '#4CAF50' },
+  { name: 'Netflix 1 Day', rate: 3, color: '#8BC34A' },
+  { name: 'Netflix 3 Day', rate: 1, color: '#FFC107' },
+  { name: 'ส่วนลด 10%', rate: 1, color: '#FF9800' },
+  { name: 'ส่วนลด 5%', rate: 3, color: '#2196F3' },
+  { name: 'ส่วนลด 20%', rate: 0, color: '#4CAF50' },
+  { name: 'MISS', rate: 47, color: '#f44336' }
+];
+window.items = items;
+
+// V15: Generic Discord notification. It works with every prize name, including
+// prizes added later from Admin -> จัดการเว็บ, because no prize whitelist is used.
+async function sendDiscordWebhook(prize, code, dateStr, timeStr, spinsLeft) {
+  var webhook = String(window.JM_DISCORD_WEBHOOK || '').trim();
+  if (!webhook) return false;
+
+  var prizeName = String(prize || 'ไม่ทราบรางวัล').trim() || 'ไม่ทราบรางวัล';
+  var codeText = String(code || '-').trim() || '-';
+  var leftText = (spinsLeft === null || spinsLeft === undefined || spinsLeft === '') ? '-' : String(spinsLeft);
+
+  var payload = {
+    username: 'JokeMoo Wheel',
+    embeds: [{
+      title: '🎁 มีการหมุนวงล้อ',
+      color: 0x0B6ED0,
+      fields: [
+        { name: 'รางวัล', value: prizeName, inline: false },
+        { name: 'โค้ดที่ใช้', value: '`' + codeText.replace(/`/g, '') + '`', inline: true },
+        { name: 'สิทธิ์คงเหลือ', value: leftText, inline: true },
+        { name: 'วันที่', value: String(dateStr || '-'), inline: true },
+        { name: 'เวลา', value: String(timeStr || '-'), inline: true }
+      ],
+      footer: { text: 'JokeMoo Store • Lucky Wheel' },
+      timestamp: new Date().toISOString()
+    }],
+    allowed_mentions: { parse: [] }
+  };
+
+  try {
+    var response = await fetch(webhook, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      cache: 'no-store',
+      keepalive: true
+    });
+    if (!response.ok && response.status !== 204) {
+      throw new Error('Discord webhook HTTP ' + response.status);
+    }
+    return true;
+  } catch (error) {
+    console.warn('Discord notification failed:', error);
+    return false;
+  }
+}
+window.sendDiscordWebhook = sendDiscordWebhook;
+

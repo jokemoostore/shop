@@ -1,1 +1,397 @@
-(function(_0x1b3ab1,_0x28d909){const _0x10184f=_0x41d8,_0x44d766=_0x41d8,_0x35fd57=_0x1b3ab1();while(!![]){try{const _0x48f32a=-parseInt(_0x10184f(0x141))/(-0x63d+0x676+0x1c*-0x2)+-parseInt(_0x10184f(0x1b1))/(-0xaf*0x1+0x5*0x741+-0x2394)+parseInt(_0x10184f(0x11e))/(0x24e0+-0x1ca1+-0x83c)*(-parseInt(_0x44d766(0x13a))/(0x4*-0xa5+-0x1*-0x2034+-0x1d9c))+parseInt(_0x44d766(0x2ef))/(-0x2475+-0x140*0x1+0x25ba)+-parseInt(_0x44d766(0x29d))/(0x5a*-0x1d+-0x5*-0x3f2+-0x2*0x4c1)+parseInt(_0x44d766(0x149))/(0x2b*-0x27+-0x10e5+-0x1779*-0x1)*(parseInt(_0x44d766(0x181))/(-0x1cf7+0xfd3*0x1+0xd2c))+parseInt(_0x44d766(0x31f))/(0x1aba+-0x24ed+0x106*0xa);if(_0x48f32a===_0x28d909)break;else _0x35fd57['push'](_0x35fd57['shift']());}catch(_0xb48ce0){_0x35fd57['push'](_0x35fd57['shift']());}}}(_0x403d,0x12340+-0x2072+0x3ab18),((()=>{'use strict';const _0xa892ef=_0x41d8,_0x23be2a=_0x41d8,_0x30768a={'zrYnc':function(_0x573430,_0x6d4355){return _0x573430??_0x6d4355;},'bhcBo':function(_0x1dfa69,_0x223e9c){return _0x1dfa69!==_0x223e9c;},'cIQPN':_0xa892ef(0x14b),'pIsat':function(_0x17127f,_0x5e45f7){return _0x17127f(_0x5e45f7);},'jSbZr':function(_0x422dbe,_0x184209){return _0x422dbe in _0x184209;},'LWDLF':_0x23be2a(0x159),'JCnBY':_0x23be2a(0x233),'WDWEY':function(_0x3f0d6f,_0x4e5270){return _0x3f0d6f(_0x4e5270);},'LRWyy':'flag-en','TEDsI':function(_0x3058b4,_0x42f5bd){return _0x3058b4===_0x42f5bd;},'woiEz':_0x23be2a(0x1b6)+_0xa892ef(0x2a3),'HxStQ':_0xa892ef(0x350),'NGSqQ':function(_0xa699f4){return _0xa699f4();},'GOYhF':_0xa892ef(0x325),'krTrR':_0x23be2a(0x203),'atBOJ':function(_0x1076c4,_0x297db4,_0x33d8d2){return _0x1076c4(_0x297db4,_0x33d8d2);},'xIamA':function(_0xe6510,_0x57c132){return _0xe6510!==_0x57c132;},'FIVyP':function(_0x1d0c50){return _0x1d0c50();},'stPig':'jokemoo_lang'+_0x23be2a(0x173),'pklEc':_0x23be2a(0x2c2)+_0x23be2a(0x12c),'EjpXI':'The\x20website\x20'+_0x23be2a(0x150)+_0xa892ef(0x2a9)+_0x23be2a(0x12b)+_0x23be2a(0x15b)+_0xa892ef(0x2ff)+_0xa892ef(0x19b)+'elow.','MoSkx':_0x23be2a(0x344),'KlzKs':'Movie\x20Picks','FuPsv':_0x23be2a(0x234),'XxRve':_0x23be2a(0x17f),'pChJC':_0x23be2a(0x139)+_0xa892ef(0x2fb),'lFmqm':_0x23be2a(0x1cc)+_0x23be2a(0x108)+_0xa892ef(0x281)+'pear\x20here\x20au'+_0xa892ef(0x35d),'nIQkg':_0x23be2a(0x295),'Ypipx':'All\x20Movies','MYpnL':_0xa892ef(0x213)+_0x23be2a(0x201),'foOvX':_0x23be2a(0x1b2),'FsxVy':_0x23be2a(0x288)+'ils','KVfSk':_0x23be2a(0x123),'QMEfY':_0xa892ef(0x184),'pxkOa':_0xa892ef(0x156)+_0x23be2a(0x2f4),'SQgLo':'Other\x20apps','mSkur':_0xa892ef(0x1a2),'OKoOD':_0xa892ef(0x1a9),'idtyV':_0x23be2a(0x1a5),'RIjny':_0xa892ef(0x2b7)+_0xa892ef(0x33e),'mTgCW':_0xa892ef(0x2b9)+_0xa892ef(0x364)+_0x23be2a(0x255)+'ear\x20here\x20aut'+_0xa892ef(0x314),'wjoRI':'Secure\x20•\x20Dai'+_0x23be2a(0x1cd),'uAxcB':_0x23be2a(0x1ad)+_0x23be2a(0x20f)+_0xa892ef(0x144),'RGyEG':_0x23be2a(0x32a)+'ge','habcO':'Fast\x20verific'+_0x23be2a(0x19f)+_0x23be2a(0x2e8)+'ry','FbAld':_0x23be2a(0x2ab),'beUqg':'Netflix\x20and\x20'+_0xa892ef(0x303)+_0x23be2a(0x10b),'ptvoP':_0x23be2a(0x1a1)+_0x23be2a(0x19a)+_0x23be2a(0x1a0),'hLQCF':_0xa892ef(0x230)+_0x23be2a(0x2af)+_0xa892ef(0x231)+',\x20then\x20add\x20y'+_0x23be2a(0x1db)+_0x23be2a(0x133)+_0xa892ef(0x185),'YjucQ':_0xa892ef(0x29e),'lBkzf':_0x23be2a(0x1d0),'aSFKj':_0xa892ef(0x1c8)+_0xa892ef(0x299)+_0x23be2a(0x16b)+'the\x20order\x20vi'+_0x23be2a(0x2bd),'rESLV':_0x23be2a(0x18a),'rLAfO':_0xa892ef(0x276)+_0x23be2a(0x1ff),'gDImx':'Ready\x20to\x20spi'+'n','ilDNW':_0xa892ef(0x191)+'ge','xXnFH':_0x23be2a(0x285),'fzVbq':_0x23be2a(0x1ec)+'promo','aPmez':_0xa892ef(0x18d),'bRbdn':_0x23be2a(0x218)+'n','MdHEQ':_0x23be2a(0x15c),'sagvY':_0xa892ef(0x1ce)+'ard','zMasy':_0xa892ef(0x268),'YEWcm':_0xa892ef(0x1e0)+'es','ZNRGc':_0xa892ef(0x188)+'e','uECHk':'Ready\x20to\x20use','NKllb':_0xa892ef(0x2bf)+_0x23be2a(0x208),'YQxGE':_0x23be2a(0x1a8),'TUtQJ':'Add\x20Product','lUCDc':_0xa892ef(0x2cb),'XYayg':_0x23be2a(0x28c)+_0xa892ef(0x2c1)+_0x23be2a(0x2c8)+_0xa892ef(0x348)+_0xa892ef(0x128),'RMvjO':_0xa892ef(0x22f),'WHWJa':'Create\x20New\x20C'+_0x23be2a(0x1f5),'VdkjE':_0xa892ef(0x1f4)+_0xa892ef(0x2b0),'DDaMc':_0xa892ef(0x2b6),'wfgML':_0xa892ef(0x163),'KTjuH':_0xa892ef(0x1b4),'CyyAc':_0x23be2a(0x2f6),'JUJgU':_0xa892ef(0x2a1),'uFPGf':_0x23be2a(0x19c),'fsWqn':_0xa892ef(0x183),'VnkaU':_0x23be2a(0x2f7)+'e','Fqamq':_0xa892ef(0x20d)+_0x23be2a(0x18d),'nMoPv':_0x23be2a(0x17d)+_0x23be2a(0x177),'ELWUe':_0x23be2a(0x2db)+_0x23be2a(0x2e0)+_0x23be2a(0x366)+_0x23be2a(0x2a5)+'tatus\x20in\x20one'+_0xa892ef(0x260),'gtBJX':_0xa892ef(0x30c)+_0x23be2a(0x2f9)+_0xa892ef(0x235)+'g\x20campaigns.','rzmqq':_0x23be2a(0x134)+_0xa892ef(0x1f8),'MISDp':_0xa892ef(0x192)+_0xa892ef(0x2da)+_0xa892ef(0x34c)+_0xa892ef(0x14c)+_0xa892ef(0x23f)+'ie\x20Picks\x20pag'+'e.','FAkvj':'Set\x20rank\x201,\x20'+'2,\x203…','lSdsK':_0x23be2a(0x267)+'\x20URL\x20or\x20uplo'+_0x23be2a(0x283),'pezcw':_0xa892ef(0x122)+'\x20URL','KDBRg':_0x23be2a(0x2bb)+_0xa892ef(0x35a)+_0x23be2a(0x315)+'the\x20movie\x20pi'+'cks\x20page.','FsFpi':'Lucky\x20Wheel\x20'+_0xa892ef(0x113),'hUZkH':_0xa892ef(0x251)+_0x23be2a(0x270)+_0xa892ef(0x323)+_0x23be2a(0x319)+_0x23be2a(0x1d4)+_0x23be2a(0x308),'hKhsa':_0x23be2a(0x2ea)+_0xa892ef(0x15e)+_0x23be2a(0x10c)+_0xa892ef(0x342)+_0xa892ef(0x35b)+_0xa892ef(0x31e)+_0xa892ef(0x353)+_0x23be2a(0x1d9),'azxGC':_0xa892ef(0x26f),'mFMRK':_0xa892ef(0x34a)+_0x23be2a(0x23b),'aQGVz':_0x23be2a(0x27a),'YzRGF':_0x23be2a(0x35e)+_0x23be2a(0x2fd),'frPml':_0xa892ef(0x2fe)+_0xa892ef(0x1b7)+_0x23be2a(0x369),'KmbfR':_0xa892ef(0x1c4)+_0x23be2a(0x189)+_0x23be2a(0x2f8)+'your\x20order\x20s'+_0x23be2a(0x170)+_0x23be2a(0x28f)+'he\x20payment\x20s'+_0x23be2a(0x313),'IbUFs':_0xa892ef(0x33a)+'unt\x20Codes','usAqy':_0x23be2a(0x2d8),'tdPmb':_0x23be2a(0x352),'xzbFd':_0x23be2a(0x317)+'RL','ZWwaQ':_0xa892ef(0x216)+_0x23be2a(0x2cc)+_0xa892ef(0x2ba)+_0x23be2a(0x1d8)+'ner.'};const _0x3cfc3e=_0x30768a[_0xa892ef(0x290)],_0x59a877=new Map(Object['entries']({'กำลังโหลดเว็บไซต์...':_0x30768a[_0x23be2a(0x11d)],'เว็บไซต์กำลังอัพเดท':_0x23be2a(0x125)+_0xa892ef(0x2cd),'ขณะนี้เว็บไซต์อยู่ในโหมดอัพเดท\x20กรุณาติดต่อข่าวสารหรือสอบถามผ่านช่องทางด้านล่าง':_0x30768a[_0xa892ef(0x14a)],'ภาษา\x20/\x20Language':_0x23be2a(0x228)+_0xa892ef(0x25b),'ประเทศไทย':_0xa892ef(0x1fa),'ภาษาไทย':_0xa892ef(0x2ae),'หน้าแรก':_0x30768a[_0x23be2a(0x2d9)],'แพ็คเกจทั้งหมด':_0x23be2a(0x2c4),'แพ็กเกจทั้งหมด':_0xa892ef(0x2c4),'หนังแนะนำ':_0x30768a[_0xa892ef(0x339)],'หนังแนะนำจากทางร้าน':_0x23be2a(0x2d4),'หนังติด\x20TOP':_0x30768a[_0x23be2a(0x29c)],'หนังที่ใกล้จะเข้า':_0xa892ef(0x17f),'ใกล้จะเข้า':_0x30768a[_0xa892ef(0x2be)],'รวมหนังติด\x20TOP\x20และหนังที่ใกล้จะเข้า\x20อัปเดตข้อมูลได้จากหลังบ้าน':_0x23be2a(0x349)+_0x23be2a(0x220)+'releases,\x20ma'+_0xa892ef(0x27f)+_0xa892ef(0x12a)+'n.','เรียงตามอันดับที่กำหนดจากหลังบ้าน':_0xa892ef(0x277)+_0x23be2a(0x1df)+_0xa892ef(0x164),'แสดงวันกำหนดเข้าและรายละเอียดที่แอดมินตั้งไว้':_0xa892ef(0x10d)+_0xa892ef(0x2c9)+_0xa892ef(0x2c3)+'igured\x20by\x20Ad'+_0xa892ef(0x1ed),'ยังไม่มีหนังติด\x20TOP':_0x30768a[_0xa892ef(0x180)],'ยังไม่มีหนังที่ใกล้จะเข้า':_0x23be2a(0x18b)+_0x23be2a(0x305),'เพิ่มหนังจากหลังบ้าน\x20แล้วรายการจะมาแสดงตรงนี้อัตโนมัติ':_0x30768a[_0x23be2a(0x2de)],'กำหนดเข้า':_0xa892ef(0x28a),'จัดการหนังแนะนำ':'Movie\x20Picks','เพิ่มหนังใหม่':_0x30768a['nIQkg'],'จัดการหนังติด\x20TOP\x20และหนังที่ใกล้จะเข้า':_0xa892ef(0x2bc)+_0x23be2a(0x1f0)+'coming\x20relea'+_0x23be2a(0x354),'หนังทั้งหมด':_0x30768a[_0x23be2a(0x272)],'หนัง\x20TOP':'Top\x20Movies','หนังใกล้เข้า':_0x30768a[_0xa892ef(0x205)],'ชื่อหนัง':_0x23be2a(0x32c),'ชื่อภาษาอังกฤษ':_0x23be2a(0x1aa)+'e','ประเภทการแสดง':_0x23be2a(0x34d),'อันดับ\x20TOP':_0x23be2a(0x1ac),'วันที่กำหนดเข้า':_0x30768a[_0x23be2a(0x1ba)],'รายละเอียดหนัง':_0x23be2a(0x2b1)+'s','รายละเอียดภาษาอังกฤษ':_0x30768a[_0x23be2a(0x22e)],'รูปโปสเตอร์':_0x30768a[_0x23be2a(0x242)],'เปิดแสดง':_0x23be2a(0x2ad),'ปิดแสดง':'Hidden','ทั้งหมด':_0x30768a[_0xa892ef(0x1e5)],'YouTube\x20/\x20แอปอื่น':_0x30768a[_0xa892ef(0x16f)],'แอปอื่น':_0x30768a['SQgLo'],'วงล้อสุ่มโชค':_0x30768a[_0xa892ef(0x202)],'รีวิวลูกค้า':_0xa892ef(0x1c0)+_0x23be2a(0x287),'โปรโมชั่น':_0xa892ef(0x30e),'คำถามที่พบบ่อย':_0x23be2a(0x280),'ติดต่อแอดมิน':_0xa892ef(0x32b)+'n','ประวัติการซื้อของฉัน':_0x23be2a(0x1e7),'เพจร้าน':_0x23be2a(0x340),'LINE\x20ร้าน':_0x30768a[_0xa892ef(0x15d)],'เจ้าของร้าน':_0x30768a[_0x23be2a(0x32d)],'รีเฟรชประวัติ':_0x23be2a(0x316)+_0x23be2a(0x130),'ออเดอร์ทั้งหมด':'Total\x20Orders','ยอดซื้อรวม':_0xa892ef(0x217),'ออเดอร์ที่ใช้ส่วนลด':_0x23be2a(0x291)+_0x23be2a(0x263),'ประวัติของอุปกรณ์นี้':_0xa892ef(0x124)+_0x23be2a(0x338),'แสดงเฉพาะออเดอร์ที่สร้างจากเบราว์เซอร์/อุปกรณ์นี้\x20เพื่อให้ตรวจสอบเลขออเดอร์และยอดชำระย้อนหลังได้ง่าย':_0x23be2a(0x13b)+_0xa892ef(0x2c6)+_0x23be2a(0x358)+_0xa892ef(0x25f)+_0x23be2a(0x13c)+'\x20can\x20review\x20'+_0x23be2a(0x1f3)+'s\x20and\x20paymen'+_0xa892ef(0x13f),'ระบบใช้รหัสประจำเบราว์เซอร์ในการแยกออเดอร์\x20หากล้างข้อมูลเว็บไซต์หรือเปลี่ยนอุปกรณ์\x20ประวัติเดิมอาจไม่แสดงในหน้านี้':_0xa892ef(0x1e8)+_0x23be2a(0x148)+_0x23be2a(0x302)+_0xa892ef(0x21d)+_0x23be2a(0x359)+_0x23be2a(0x282)+_0x23be2a(0x10e)+'make\x20older\x20h'+_0x23be2a(0x264)+_0xa892ef(0x293),'ยังไม่มีประวัติการซื้อ':_0x30768a[_0xa892ef(0x17a)],'เมื่อสั่งซื้อและสร้างเลขออเดอร์สำเร็จ\x20รายการจะขึ้นที่นี่อัตโนมัติ':_0x30768a['mTgCW'],'ปลอดภัย\x20•\x20บริการทุกวัน':_0x30768a[_0x23be2a(0x279)],'วงล้อ':_0x23be2a(0x31d),'ตะกร้า':_0xa892ef(0x351),'ดูหนังง่าย\x20จ่ายคุ้ม':'Easy\x20streami'+_0x23be2a(0x30f)+'alue','เลือกบริการจากเมนูซ้ายได้เลย':_0x30768a[_0x23be2a(0x186)],'เลือกแพ็กเกจ':_0x30768a[_0x23be2a(0x24b)],'ดูรีวิวลูกค้า':_0x23be2a(0x110),'รับรหัสไว':_0xa892ef(0x152)+'y','ตรวจสอบและส่งรหัสรวดเร็ว':_0x30768a[_0xa892ef(0x12d)],'การันตีการใช้งาน':_0xa892ef(0x269)+_0xa892ef(0x14f),'มีปัญหาติดต่อแอดมินได้':'Contact\x20admi'+'n\x20if\x20you\x20hav'+_0xa892ef(0x284),'ดูแลลูกค้า':_0x23be2a(0x1ee)+_0xa892ef(0x16e),'ติดต่อผ่าน\x20LINE\x20ได้ทันที':_0xa892ef(0x15a)+'nstantly\x20via'+_0x23be2a(0x289),'แพ็คเกจสินค้า':_0x30768a[_0x23be2a(0x256)],'Netflix\x20และบริการ\x20Premium':_0x30768a[_0xa892ef(0x20a)],'เข้าไปสุ่มรางวัลในหน้านี้':_0x23be2a(0x1c2)+'ards\x20on\x20this'+_0x23be2a(0x2df),'ดูและส่งรีวิวแยกเป็นหน้า':_0x30768a[_0xa892ef(0x237)],'เลือกหมวดสินค้าจากเมนูด้านซ้าย\x20แล้วเพิ่มแพ็กเกจที่ต้องการลงตะกร้า':_0x30768a[_0xa892ef(0x335)],'เพิ่มเข้าตะกร้า':'Add\x20to\x20Cart','สินค้าไม่พร้อมใช้งาน':_0x30768a[_0xa892ef(0x1c3)],'พร้อมขาย':_0x30768a['lBkzf'],'ยังไม่พร้อม':_0x23be2a(0x29e),'ยังไม่มีสินค้าในตะกร้า':_0x23be2a(0x2d0)+_0x23be2a(0x226),'เลือกแพ็กเกจจากหน้าสินค้า\x20แล้วรายการจะมาแสดงตรงนี้':_0x23be2a(0x115)+_0x23be2a(0x1be)+_0x23be2a(0x171)+_0xa892ef(0x330)+_0x23be2a(0x19d),'ตรวจสอบแพ็กเกจก่อนส่งคำสั่งซื้อผ่าน\x20LINE':_0x30768a[_0x23be2a(0x346)],'รวมตามจำนวนที่เลือก':_0xa892ef(0x2a0)+_0xa892ef(0x21a)+_0xa892ef(0x109),'ชำระเงินหลังแอดมินยืนยันรายการเท่านั้น':_0x23be2a(0x36b)+_0xa892ef(0x1f7)+_0x23be2a(0x28d)+_0x23be2a(0x2a6),'จำนวน':_0x23be2a(0x221),'ยอดรวมทั้งหมด':'Order\x20Total','กดคลิกเพื่อสั่งซื้อ':_0xa892ef(0x107)+'NE','เมื่อกดแล้วจะเปิดแชท\x20Line\x20เพื่อแจ้งแอดมินและสั่งซื้อสินค้า':_0xa892ef(0x136)+'ll\x20open\x20so\x20y'+_0xa892ef(0x19e)+_0x23be2a(0x11f)+_0xa892ef(0x18c),'ตะกร้าสินค้าของคุณ':_0x30768a[_0xa892ef(0x2e3)],'ลบ':_0x23be2a(0x137),'กำลังโหลดวงล้อ...':_0x30768a[_0x23be2a(0x306)],'พร้อมสุ่ม':_0x30768a['gDImx'],'เปิดเต็มหน้า':_0x30768a[_0xa892ef(0x23e)],'สุ่มรางวัลได้ในหน้าเดียว\x20ไม่ต้องออกจากร้าน':_0x23be2a(0x1c2)+'ards\x20without'+_0x23be2a(0x2e4)+_0x23be2a(0x2e2),'ใส่โค้ดที่ได้รับจากร้าน\x20แล้วเริ่มหมุนวงล้อได้ทันที':_0xa892ef(0x155)+_0xa892ef(0x36c)+_0xa892ef(0x21f)+_0x23be2a(0x27e)+_0xa892ef(0x223),'สอบถามโปรโมชั่น':_0xa892ef(0x327)+'omotions','ไปวงล้อสุ่มโชค':_0xa892ef(0x292)+'Wheel','โปรที่กำลังใช้งาน':_0x30768a[_0xa892ef(0x28e)],'โปรที่กำลังจะมา':_0xa892ef(0x365)+'ls','อัปเดตอัตโนมัติ':_0x23be2a(0x206),'เพิ่ม\x20แก้ไข\x20หรือปิดโปรจากหลังบ้านได้\x20โดยไม่ต้องแก้หน้าเว็บ':_0xa892ef(0x239)+_0xa892ef(0x212)+_0xa892ef(0x2aa)+_0xa892ef(0x2b4)+_0x23be2a(0x356)+_0xa892ef(0x2ec)+'nt.','ยังไม่มีโปรโมชั่นที่กำลังแสดง':'No\x20promotion'+_0xa892ef(0x160)+_0x23be2a(0x278)+'e','เมื่อเปิดโปรโมชั่นจากหลังบ้าน\x20รายการจะขึ้นในหน้านี้อัตโนมัติ':_0xa892ef(0x244)+_0xa892ef(0x200)+_0x23be2a(0x2d5)+_0x23be2a(0x1b9)+_0xa892ef(0x1fd),'สอบถามโปร':_0x30768a[_0xa892ef(0x1ae)],'กำลังใช้งาน':_0x30768a[_0xa892ef(0x368)],'เร็ว\x20ๆ\x20นี้':'Coming\x20Soon','รับโปรโมชั่น':_0x30768a[_0xa892ef(0x1ab)],'ไม่จำกัดวัน':_0x23be2a(0x297)+'t','โปร':_0x30768a[_0x23be2a(0x187)],'รวมคำถามสำคัญไว้ในหน้าเดียว\x20เพื่อหาคำตอบได้เร็วขึ้น':'Important\x20qu'+_0xa892ef(0x367)+_0x23be2a(0x165)+_0xa892ef(0x2f2)+_0xa892ef(0x310),'แดชบอร์ดจัดการ':_0x30768a[_0x23be2a(0x1c6)],'จัดการสินค้า':_0x23be2a(0x225),'จัดการรีวิว':_0x30768a[_0xa892ef(0x29b)],'จัดการโปรโมชั่น':_0xa892ef(0x30e),'สร้างโค้ดสุ่ม':_0x30768a[_0x23be2a(0x347)],'กลับหน้าหลัก':_0x30768a[_0x23be2a(0x121)],'ภาพรวมระบบ':'System\x20Overv'+_0xa892ef(0x360),'ตั้งค่าร้านและตรวจสอบสถานะระบบ':_0xa892ef(0x2b8)+_0x23be2a(0x20c)+_0xa892ef(0x331),'พร้อมใช้งานทันที':_0x30768a[_0xa892ef(0x12e)],'เชื่อมต่อค่าจาก\x20config.js':_0x23be2a(0x1dc)+_0x23be2a(0x196)+'s','เปลี่ยนหมวดได้โดยไม่โหลดหน้าใหม่':_0x23be2a(0x1d7)+'ons\x20without\x20'+_0x23be2a(0x1f9)+'e\x20page','ระบบเชื่อมต่อ\x20Google\x20Apps\x20Script\x20โดยตรงจากหน้าเว็บ\x20ไม่ต้องกรอกค่า\x20API\x20ด้วยตัวเอง':_0xa892ef(0x253)+'rectly\x20to\x20Go'+_0xa892ef(0x224)+_0x23be2a(0x27c)+_0xa892ef(0x211),'กำลังตรวจสอบการเชื่อมต่อ...':_0x30768a[_0x23be2a(0x16a)],'โหมดอัพเดทเว็บ':_0xa892ef(0x20d)+_0xa892ef(0x1b5),'เปิดระบบ':'Enable\x20Site','ปิดปรับปรุง':_0x30768a[_0xa892ef(0x345)],'เพิ่มสินค้าใหม่':_0x30768a[_0xa892ef(0x153)],'รีเฟรช':_0x23be2a(0x1eb),'เพิ่มรีวิวใหม่':_0x30768a['lUCDc'],'ค้นหาด้วยวันที่\x20ชื่อ\x20หรือข้อความ':_0xa892ef(0x36d)+_0xa892ef(0x116)+_0xa892ef(0x326),'เพิ่มโปรโมชั่น':'Add\x20Promotio'+'n','เพิ่ม\x20แก้ไข\x20หรือปิดใช้งานโปรโมชั่นที่จะโชว์บนหน้าร้าน':_0x23be2a(0x239)+_0x23be2a(0x212)+_0x23be2a(0x26c)+_0xa892ef(0x320)+_0xa892ef(0x138),'สร้างและจัดการโค้ดสุ่ม':_0xa892ef(0x2eb)+_0x23be2a(0x178)+_0x23be2a(0x1f5),'สร้างโค้ดสำหรับวงล้อ\x20กำหนดจำนวนสิทธิ์และวันหมดอายุ\x20พร้อมดูประวัติการใช้งานได้ในหน้าเดียว':'Create\x20wheel'+_0xa892ef(0x29a)+_0x23be2a(0x26b)+_0xa892ef(0x118)+_0x23be2a(0x1b8)+_0x23be2a(0x112)+_0xa892ef(0x304),'รีเฟรชระบบโค้ด':_0xa892ef(0x1e9)+_0x23be2a(0x261),'กำลังเตรียมระบบสร้างโค้ด...':_0xa892ef(0x34f)+'de\x20manager..'+'.','กำลังโหลด...':_0x23be2a(0x10a),'รีเฟรชข้อมูลแล้ว':'Data\x20refresh'+'ed','ยังไม่ได้ใช้':_0xa892ef(0x119),'ระบบจัดการโค้ดสุ่มวงล้อ':_0xa892ef(0x33b)+'Code\x20Manager','สร้างโค้ด\x20กำหนดสิทธิ์\x20และตรวจสอบประวัติการใช้งาน':_0x30768a[_0x23be2a(0x1a4)],'โค้ดทั้งหมด':_0x30768a[_0xa892ef(0x1dd)],'โค้ดที่ยังใช้ได้':_0x23be2a(0x16c),'สิทธิ์หมุนคงเหลือ':_0xa892ef(0x343)+_0x23be2a(0x13e),'รางวัลที่ได้':'Rewards\x20Won','สร้างโค้ดใหม่':_0x30768a['WHWJa'],'ความยาวโค้ด':_0xa892ef(0x1c9),'จำนวนสิทธิ์การสุ่ม':_0xa892ef(0x2d7),'จำนวนโค้ดที่สร้าง':_0x23be2a(0x168)+_0xa892ef(0x301),'อายุโค้ด\x20(วัน)':_0xa892ef(0x2d2)+_0x23be2a(0x111),'สร้างโค้ด':_0x30768a[_0x23be2a(0x347)],'รายการโค้ดทั้งหมด':_0xa892ef(0x31b),'ลบที่เลือก':_0x30768a[_0xa892ef(0x2f5)],'ลบทั้งหมด':_0x23be2a(0x25a),'ค้นหาโค้ด...':_0x23be2a(0x190)+_0xa892ef(0x34e),'เลือกทั้งหมด':_0xa892ef(0x30d),'ถังขยะ':_0xa892ef(0x182),'รายละเอียดโค้ด':'Code\x20Details','ใช้ไปแล้ว':_0xa892ef(0x194),'คงเหลือ':_0xa892ef(0x140),'ประวัติการสุ่ม':_0x30768a[_0x23be2a(0x286)],'สร้าง:':_0x30768a['wfgML'],'หมดอายุ:':_0x30768a[_0x23be2a(0x129)],'ใช้ล่าสุด:':_0x30768a[_0xa892ef(0x24d)],'วันนี้':_0x23be2a(0x2e1),'7\x20วัน':_0xa892ef(0x24a),'30\x20วัน':_0x23be2a(0x232),'รางวัลทั้งหมด':_0x23be2a(0x162)+'s','จำนวนครั้งสุ่ม':_0x30768a[_0xa892ef(0x151)],'อัตราสำเร็จ':_0x30768a['uFPGf'],'รายละเอียดรางวัล':_0x23be2a(0x2f1)+'ls','ยืนยันการดำเนินการ':_0xa892ef(0x1a7)+'on','คุณต้องการดำเนินการนี้หรือไม่?':_0xa892ef(0x1e2)+_0x23be2a(0x2c7),'ยกเลิก':_0x23be2a(0x1d6),'ยืนยัน':_0x30768a[_0x23be2a(0x1bc)],'จัดการร้าน':_0x23be2a(0x355),'สินค้า\x20รีวิว\x20โปรโมชั่น\x20และโค้ดสุ่มในระบบเดียว':_0xa892ef(0x18e)+_0x23be2a(0x11b)+_0xa892ef(0x1e3)+_0xa892ef(0x147)+_0x23be2a(0x126),'สถานะระบบ':_0xa892ef(0x318)+'s','จัดการข้อมูลร้านได้จากเมนูซ้าย':_0xa892ef(0x1e1)+_0xa892ef(0x1cf)+_0x23be2a(0x294)+_0xa892ef(0x143),'ระบบใช้งานปกติ':_0x30768a[_0x23be2a(0x273)],'ปิดปรับปรุงอยู่':_0x30768a[_0xa892ef(0x2b3)],'สินค้าและแพ็กเกจ':_0x30768a[_0xa892ef(0x258)],'จัดหมวด\x20ราคา\x20รูป\x20และสถานะสินค้าในพื้นที่เดียว':_0x30768a[_0x23be2a(0x23d)],'พร้อมขาย':_0xa892ef(0x1d0),'ปิดขาย':_0x30768a[_0x23be2a(0x1c3)],'รีวิวทั้งหมด':_0x23be2a(0x33d)+'s','5\x20ดาว':_0xa892ef(0x172),'รูปรีวิว':_0xa892ef(0x2b2)+'s','โปรโมชั่นร้าน':_0xa892ef(0x25e)+_0x23be2a(0x2ee),'จัดโปรที่กำลังใช้งานและโปรที่เตรียมเปิดในอนาคต':_0x30768a[_0x23be2a(0x1ea)],'เปิดใช้งาน':_0x23be2a(0x337),'ปิดใช้งาน':'Disabled','หนังแนะนำหน้าเว็บ':_0x30768a['rzmqq'],'จัดหนังติด\x20TOP\x20และหนังที่ใกล้จะเข้า\x20พร้อมอันดับ\x20วันเข้า\x20และโปสเตอร์':'Manage\x20top\x20m'+_0xa892ef(0x1f0)+_0x23be2a(0x195)+_0x23be2a(0x222)+'king,\x20releas'+_0xa892ef(0x30b)+_0x23be2a(0x298),'ข้อมูลในเมนูนี้จะไปแสดงที่หน้า\x20“หนังแนะนำ”\x20ของหน้าร้านโดยอัตโนมัติ':_0x30768a[_0xa892ef(0x341)],'ใส่อันดับ\x201,\x202,\x203…':_0x30768a[_0x23be2a(0x204)],'ใส่วันที่กำหนดเข้า':_0xa892ef(0x1da)+_0xa892ef(0x27b),'ใช้\x20URL\x20รูปหรืออัปโหลดโปสเตอร์ได้':_0x30768a[_0xa892ef(0x32f)],'URL\x20รูปโปสเตอร์':_0x30768a[_0xa892ef(0x2a7)],'เลือกโปสเตอร์':_0xa892ef(0x250)+'r','ระบบจะย่อรูปก่อนบันทึก\x20เพื่อลดขนาดและทำให้เว็บลื่น':_0x23be2a(0x117)+'s\x20compressed'+_0xa892ef(0x31c)+_0xa892ef(0x229)+_0x23be2a(0x362)+'e.','บันทึกหนัง':_0x23be2a(0x22d),'หนังใหม่':_0x23be2a(0x145),'ยังไม่มีหนังแนะนำ':_0xa892ef(0x193)+'ks\x20yet','กด\x20“เพิ่มหนังใหม่”\x20เพื่อเริ่มจัดหน้าแนะนำหนัง':_0x30768a[_0x23be2a(0x2d1)],'โค้ดสำหรับวงล้อ':_0x30768a[_0xa892ef(0x176)],'สร้างสิทธิ์สุ่ม\x20ติดตามโค้ด\x20และตรวจสอบประวัติจากหน้าเดียว':_0x30768a[_0xa892ef(0x169)],'ระบบโค้ดจะโหลดเมื่อเปิดเมนูนี้เท่านั้น\x20เพื่อให้หลังบ้านส่วนอื่นทำงานลื่นขึ้น':_0x30768a['hKhsa'],'หนังยอดนิยมที่กำลังติดอันดับ\x20จัดอันดับและแก้ไขรายการได้จากหลังบ้าน':_0xa892ef(0x2dc)+_0x23be2a(0x238)+_0x23be2a(0x209)+_0x23be2a(0x1c5),'เช็กหนังที่กำลังจะเข้ารับชม\x20พร้อมวันกำหนดเข้าและรายละเอียดล่าสุด':_0x23be2a(0x17b)+_0x23be2a(0x329)+_0x23be2a(0x25c)+'es\x20and\x20the\x20l'+_0x23be2a(0x197)+'s.','เรื่อง':'titles','ชำระเงิน':'Checkout','ทำตามขั้นตอนด้านล่าง\x20แล้วกดยืนยันเพื่อส่งรายละเอียดเข้า\x20LINE\x20ร้าน':_0xa892ef(0x254)+_0xa892ef(0x1f2)+_0xa892ef(0x142)+_0xa892ef(0x332)+_0x23be2a(0x120)+_0x23be2a(0x2fa)+_0xa892ef(0x1fe),'ส่วนลด':_0x30768a[_0xa892ef(0x1ca)],'มีโค้ดส่วนลดไหม?':_0x23be2a(0x271)+_0xa892ef(0x198),'กรอกโค้ดแล้วกดใช้โค้ด\x20หรือถ้าไม่มีให้กด\x20“ไม่มีโค้ด\x20/\x20ต่อไป”\x20ได้เลย':_0x23be2a(0x2c5)+_0xa892ef(0x1bb)+_0xa892ef(0x2d3)+_0x23be2a(0x324)+_0x23be2a(0x175),'ใช้โค้ด':_0xa892ef(0x1af),'ไม่มีโค้ด\x20/\x20ต่อไป':_0x30768a[_0xa892ef(0x322)],'กลับตะกร้า':_0xa892ef(0x1de),'เลือกช่องทางชำระเงิน':_0xa892ef(0x36e)+_0xa892ef(0x1e4),'เลือก\x20QR\x20พร้อมเพย์\x20หรือโอนผ่านเลขบัญชี':_0xa892ef(0x26e)+_0xa892ef(0x14e)+_0xa892ef(0x21c)+'.','QR\x20พร้อมเพย์':_0x30768a[_0x23be2a(0x10f)],'สแกน\x20QR\x20แล้วโอนได้ทันที':_0x30768a['YzRGF'],'เลขบัญชี':'Bank\x20Account','คัดลอกเลขบัญชีเพื่อโอน':_0xa892ef(0x36a)+_0x23be2a(0x11c)+_0x23be2a(0x132),'เลือกช่องทางชำระเงินด้านบน':_0x30768a[_0x23be2a(0x23c)],'โอนเสร็จแล้ว':_0x23be2a(0x158)+_0xa892ef(0x16d),'ตรวจสอบก่อนยืนยัน':_0x23be2a(0x14d)+_0xa892ef(0x300),'เมื่อกดยืนยัน\x20ระบบจะเปิด\x20LINE\x20ร้านพร้อมสรุปรายการเพื่อส่งสลิปให้แอดมิน':_0x30768a['KmbfR'],'ยืนยันและแจ้งสลิปใน\x20LINE':_0xa892ef(0x1bd)+_0x23be2a(0x1d2)+_0x23be2a(0x22c),'สร้างโค้ดส่วนลด':_0xa892ef(0x1a6)+'es','โค้ดส่วนลด':_0xa892ef(0x1a6)+'es','จัดการโค้ดส่วนลด':_0x30768a[_0xa892ef(0x17e)],'สร้างโค้ด':_0x30768a[_0x23be2a(0x214)],'รูปแบบส่วนลด':_0xa892ef(0x252)+'e','ลดเป็น\x20%':_0x23be2a(0x17c)+_0x23be2a(0x167),'ลดเป็นจำนวนเงิน':'Fixed\x20Amount'+_0xa892ef(0x22a),'มูลค่าส่วนลด':_0x23be2a(0x24f)+'ue','ยอดขั้นต่ำ':_0x23be2a(0x127)+'d','เริ่มใช้':_0x30768a[_0xa892ef(0x2ce)],'หมดอายุ':_0xa892ef(0x2f3),'บันทึกโค้ด':_0x23be2a(0x210),'ลิงก์\x20LINE\x20ร้าน':_0x30768a[_0x23be2a(0x1f1)],'ลิงก์เพจร้าน':_0xa892ef(0x363)+'RL','ลิงก์เจ้าของร้าน':_0x23be2a(0x321)+_0xa892ef(0x265),'แสดงใต้เมนู\x20“ติดต่อแอดมิน”':_0x23be2a(0x333)+_0xa892ef(0x296)+_0xa892ef(0x21e)+'.','ใช้สำหรับช่องทางติดต่อเจ้าของร้านโดยตรง':_0x30768a[_0xa892ef(0x1ef)],'แก้\x20LINE,\x20เพจร้าน,\x20เจ้าของร้าน\x20และข้อมูลธนาคารจากจุดเดียว\x20แล้วหน้าร้านทุกหน้าจะใช้ค่าชุดนี้อัตโนมัติ':_0xa892ef(0x227)+_0x23be2a(0x131)+_0x23be2a(0x18f)+_0xa892ef(0x2b5)+_0x23be2a(0x1b3)+'one\x20place.\x20T'+'he\x20storefron'+_0xa892ef(0x1d3)+_0x23be2a(0x2dd)+_0xa892ef(0x2d6)+_0xa892ef(0x26d)})),_0x5aa36b=new WeakMap(),_0x45cbaf=new WeakMap();let _0x2fe0d1='th',_0x43842c=null;function _0x1c455d(_0x351264){const _0x13e184=_0xa892ef,_0x2160ba=_0x23be2a,_0x3670af=String(_0x30768a[_0x13e184(0x28b)](_0x351264,'')),_0x349e93=_0x3670af['trim']();if(!_0x349e93)return _0x3670af;const _0x18999f=_0x59a877[_0x13e184(0x275)](_0x349e93);if(!_0x18999f)return _0x3670af;const _0x102aff=_0x3670af[_0x2160ba(0x154)](/^\s*/)?.[0xa3*0x25+0x1508+-0x2c97]||'',_0x28e79d=_0x3670af[_0x2160ba(0x154)](/\s*$/)?.[-0x3dc*-0x6+0x190d+-0x3035]||'';return''+_0x102aff+_0x18999f+_0x28e79d;}function _0x182abb(_0x587bcb){const _0x1a0216=_0x23be2a,_0x1c6d0e=_0xa892ef;if(!_0x587bcb||_0x30768a[_0x1a0216(0x2a8)](_0x587bcb[_0x1c6d0e(0x247)],Node['TEXT_NODE']))return;const _0x35ccaf=_0x587bcb[_0x1c6d0e(0x207)+'t'];if(!_0x35ccaf||[_0x1a0216(0x166),_0x1a0216(0x334),_0x30768a[_0x1a0216(0x179)],_0x1c6d0e(0x2cf)][_0x1c6d0e(0x32e)](_0x35ccaf[_0x1c6d0e(0x307)]))return;if(_0x2fe0d1==='en'){if(!_0x5aa36b[_0x1c6d0e(0x1f6)](_0x587bcb))_0x5aa36b[_0x1a0216(0x12f)](_0x587bcb,_0x587bcb[_0x1c6d0e(0x25d)]);_0x587bcb[_0x1c6d0e(0x25d)]=_0x30768a[_0x1a0216(0x161)](_0x1c455d,_0x5aa36b[_0x1a0216(0x275)](_0x587bcb));}else _0x5aa36b[_0x1a0216(0x1f6)](_0x587bcb)&&(_0x587bcb[_0x1c6d0e(0x25d)]=_0x5aa36b[_0x1a0216(0x275)](_0x587bcb));}function _0x4e1514(_0x138ee2){const _0x10414e=_0xa892ef,_0x5515c6=_0x23be2a;if(!(_0x138ee2 instanceof Element))return;const _0xe9e9b0=[_0x30768a[_0x10414e(0x2ac)],_0x30768a['JCnBY'],'aria-label'];if(!_0x45cbaf[_0x10414e(0x1f6)](_0x138ee2))_0x45cbaf[_0x10414e(0x12f)](_0x138ee2,{});const _0x26db07=_0x45cbaf[_0x5515c6(0x275)](_0x138ee2);_0xe9e9b0[_0x10414e(0x31a)](_0x36da88=>{const _0x1dd4a0=_0x10414e,_0x9d832=_0x10414e;if(!_0x138ee2[_0x1dd4a0(0x246)](_0x36da88))return;if(!_0x30768a[_0x9d832(0x241)](_0x36da88,_0x26db07))_0x26db07[_0x36da88]=_0x138ee2[_0x9d832(0x1bf)](_0x36da88);_0x138ee2[_0x9d832(0x20b)](_0x36da88,_0x2fe0d1==='en'?_0x1c455d(_0x26db07[_0x36da88]):_0x26db07[_0x36da88]);});}function _0x933adc(_0x4b25ce=document[_0x23be2a(0x2a4)]){const _0x3352dc=_0x23be2a,_0x41de54=_0x23be2a;if(!_0x4b25ce)return;if(_0x4b25ce[_0x3352dc(0x247)]===Node[_0x3352dc(0x2a2)]){_0x182abb(_0x4b25ce);return;}if(_0x4b25ce instanceof Element)_0x30768a['WDWEY'](_0x4e1514,_0x4b25ce);const _0x22bcf9=document[_0x3352dc(0x357)+_0x41de54(0x35f)](_0x4b25ce,NodeFilter[_0x3352dc(0x11a)]|NodeFilter['SHOW_ELEMENT']);let _0x3b283e;while(_0x3b283e=_0x22bcf9[_0x3352dc(0x35c)]()){if(_0x3b283e[_0x41de54(0x247)]===Node['TEXT_NODE'])_0x182abb(_0x3b283e);else _0x4e1514(_0x3b283e);}}function _0x342f60(){const _0x1db7d=_0x23be2a,_0x4bb71b=_0xa892ef;document['querySelecto'+_0x1db7d(0x262)](_0x4bb71b(0x114)+_0x1db7d(0x309))[_0x1db7d(0x31a)](_0x4c9d9a=>{const _0x3c27fd=_0x1db7d;_0x4c9d9a[_0x3c27fd(0x135)]=_0x2fe0d1==='en'?'EN':'TH';}),document['querySelecto'+_0x4bb71b(0x262)](_0x1db7d(0x114)+_0x1db7d(0x245)+_0x4bb71b(0x199)+'g')['forEach'](_0x478bb9=>{const _0xe561b1=_0x4bb71b,_0x5e5c3e=_0x4bb71b;_0x478bb9[_0xe561b1(0x135)]='',_0x478bb9['classList'][_0xe561b1(0x2e5)](_0x5e5c3e(0x219),_0x2fe0d1!=='en'),_0x478bb9[_0xe561b1(0x2f0)][_0xe561b1(0x2e5)](_0x30768a[_0xe561b1(0x30a)],_0x30768a[_0xe561b1(0x24e)](_0x2fe0d1,'en'));}),document[_0x1db7d(0x2fc)+_0x1db7d(0x262)](_0x30768a[_0x1db7d(0x361)])[_0x4bb71b(0x31a)](_0xae83c1=>{const _0x10fb51=_0x1db7d,_0x2c7793=_0x4bb71b;_0xae83c1[_0x10fb51(0x2f0)][_0x2c7793(0x2e5)](_0x10fb51(0x1fb),_0xae83c1[_0x10fb51(0x1c7)]['jmLanguage']===_0x2fe0d1);});}function _0x1fe033(_0x231c08=_0x2fe0d1,_0x24a429=![]){const _0x3c0047=_0xa892ef,_0x3f870c=_0xa892ef;_0x2fe0d1=_0x231c08==='en'?'en':'th',document['documentElem'+_0x3c0047(0x259)][_0x3f870c(0x33f)]=_0x2fe0d1,_0x933adc(document[_0x3c0047(0x2a4)]),_0x30768a[_0x3f870c(0x243)](_0x342f60),localStorage['setItem'](_0x3cfc3e,_0x2fe0d1),document[_0x3c0047(0x15f)+'t'](new CustomEvent(_0x3c0047(0x174)+_0x3c0047(0x2c0),{'detail':{'lang':_0x2fe0d1}})),_0x24a429&&document[_0x3c0047(0x2fc)+'rAll'](_0x30768a[_0x3c0047(0x27d)])[_0x3f870c(0x31a)](_0x715f67=>{const _0x2b4753=_0x3f870c,_0x289843=_0x3c0047;try{_0x715f67[_0x2b4753(0x266)+'w']?.[_0x289843(0x157)]({'type':_0x30768a[_0x289843(0x2ca)],'lang':_0x2fe0d1},'*');}catch(_0x4a0cd6){}});}function _0x288c77(){const _0x54ff4b=_0x23be2a,_0x5b5d22=_0xa892ef,_0x17f646={'gVWZG':_0x54ff4b(0x114)+_0x54ff4b(0x33c),'SdYfd':_0x30768a[_0x5b5d22(0x336)]};document[_0x54ff4b(0x2ed)+_0x5b5d22(0x20e)](_0x5b5d22(0x2e7),_0xf64c87=>{const _0x5876d=_0x54ff4b,_0x40a0d0=_0x5b5d22,_0x2c9901=_0xf64c87[_0x5876d(0x23a)][_0x5876d(0x2e9)](_0x17f646[_0x5876d(0x311)]),_0xd8d533=_0xf64c87[_0x40a0d0(0x23a)][_0x40a0d0(0x2e9)](_0x5876d(0x1b6)+'guage]');if(_0xd8d533){_0xf64c87['preventDefau'+'lt'](),_0x1fe033(_0xd8d533[_0x40a0d0(0x1c7)][_0x5876d(0x1a3)],!![]),document[_0x5876d(0x2fc)+_0x40a0d0(0x262)](_0x5876d(0x114)+'-picker.is-o'+_0x40a0d0(0x215))[_0x5876d(0x31a)](_0x224f24=>_0x224f24[_0x40a0d0(0x2f0)]['remove'](_0x5876d(0x203)));return;}if(_0x2c9901){_0xf64c87[_0x40a0d0(0x236)+'lt'](),_0x2c9901[_0x5876d(0x2e9)](_0x5876d(0x114)+_0x40a0d0(0x1d1))?.[_0x40a0d0(0x2f0)][_0x40a0d0(0x2e5)](_0x17f646['SdYfd']);return;}document[_0x40a0d0(0x2fc)+_0x5876d(0x262)](_0x40a0d0(0x114)+'-picker.is-o'+_0x40a0d0(0x215))['forEach'](_0x36ead1=>_0x36ead1[_0x5876d(0x2f0)][_0x40a0d0(0x1fc)](_0x40a0d0(0x203)));});}function _0x552d6b(){const _0x357882=_0xa892ef,_0x45af52=_0x23be2a;if(_0x43842c)_0x43842c[_0x357882(0x249)]();const _0x1e2bb4=new Set();let _0xa14e11=![];const _0x4652ed=()=>{const _0x5180db=_0x357882,_0x1bd3a1=_0x357882;_0xa14e11=![];if(_0x30768a[_0x5180db(0x2a8)](_0x2fe0d1,'en')||document[_0x1bd3a1(0x34b)]){_0x1e2bb4[_0x1bd3a1(0x22b)]();return;}const _0x5d1c36=Array[_0x1bd3a1(0x312)](_0x1e2bb4);_0x1e2bb4['clear'](),_0x5d1c36[_0x1bd3a1(0x31a)](_0x3a4e63=>_0x933adc(_0x3a4e63));},_0x3c5b35=()=>{const _0x1405cf=_0x357882,_0x4fb40a=_0x357882;if(_0xa14e11)return;_0xa14e11=!![];if(_0x1405cf(0x1c1)+_0x1405cf(0x328)in window)_0x30768a[_0x4fb40a(0x1b0)](requestIdleCallback,_0x4652ed,{'timeout':0xb4});else _0x30768a[_0x1405cf(0x13d)](requestAnimationFrame,_0x4652ed);};_0x43842c=new MutationObserver(_0x580795=>{const _0x4a8f8b=_0x357882,_0xcc5109=_0x357882;if(_0x30768a[_0x4a8f8b(0x1cb)](_0x2fe0d1,'en'))return;for(const _0x47067d of _0x580795)_0x47067d['addedNodes'][_0x4a8f8b(0x31a)](_0x26ec07=>_0x1e2bb4[_0xcc5109(0x1d5)](_0x26ec07));if(_0x1e2bb4[_0xcc5109(0x240)])_0x3c5b35();}),_0x43842c[_0x45af52(0x1e6)](document[_0x45af52(0x2a4)],{'childList':!![],'subtree':!![]});}window[_0xa892ef(0x2ed)+_0xa892ef(0x20e)](_0xa892ef(0x274),_0x5c4796=>{const _0x786dfd=_0xa892ef,_0x1922ac=_0x23be2a;if(_0x30768a[_0x786dfd(0x24e)](_0x5c4796[_0x786dfd(0x257)],_0x3cfc3e)&&_0x5c4796['newValue'])_0x1fe033(_0x5c4796[_0x1922ac(0x146)],![]);}),window[_0xa892ef(0x2ed)+_0xa892ef(0x20e)](_0xa892ef(0x21b),_0x16e3a3=>{const _0x1ca40c=_0xa892ef,_0x12bc9e=_0x23be2a;if(_0x16e3a3[_0x1ca40c(0x24c)]&&_0x16e3a3[_0x1ca40c(0x24c)][_0x1ca40c(0x248)]===_0x12bc9e(0x350))_0x1fe033(_0x16e3a3[_0x12bc9e(0x24c)][_0x1ca40c(0x33f)],![]);}),window[_0x23be2a(0x2e6)]={get 'lang'(){return _0x2fe0d1;},'apply':_0x1fe033,'translateString':_0x1c455d,'t':(_0x234eb3,_0x8f138)=>_0x2fe0d1==='en'?_0x8f138:_0x234eb3},document[_0x23be2a(0x2ed)+_0xa892ef(0x20e)]('DOMContentLo'+_0xa892ef(0x26a),()=>{const _0x2bc157=_0xa892ef;_0x288c77(),_0x1fe033(_0x2fe0d1,![]),_0x30768a[_0x2bc157(0x29f)](_0x552d6b);});})()));function _0x41d8(_0x19d6ec,_0x556ff6){const _0x471056=_0x403d();return _0x41d8=function(_0x20b266,_0x4312b9){_0x20b266=_0x20b266-(0x20*0xa1+-0x20e9+0x1*0xdd0);let _0x4f6c77=_0x471056[_0x20b266];if(_0x41d8['GhLCRQ']===undefined){var _0x4e0c81=function(_0x449a7b){const _0x58c97e='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/=';let _0x369211='',_0x44cb75='';for(let _0x3a43d6=0x6*-0x45+0xf8c+-0x6f7*0x2,_0x2002cc,_0x10e630,_0x40a80f=0x1897+-0x7e5+-0x2*0x859;_0x10e630=_0x449a7b['charAt'](_0x40a80f++);~_0x10e630&&(_0x2002cc=_0x3a43d6%(-0x188d+-0x3*0xd+0x18b8)?_0x2002cc*(-0x1829+-0x3e7+0x1c50)+_0x10e630:_0x10e630,_0x3a43d6++%(-0xc3*-0x14+-0x241+-0x1*0xcf7))?_0x369211+=String['fromCharCode'](-0x1f2a+0x25fc+-0x5d3&_0x2002cc>>(-(0xaed+-0x177a+0xc8f)*_0x3a43d6&-0x2393+0x24e+0x214b)):-0x49a+0x18f1+-0x1457){_0x10e630=_0x58c97e['indexOf'](_0x10e630);}for(let _0x336bd8=0x313*0x4+0x1*0x18c1+0x7*-0x54b,_0x1922d2=_0x369211['length'];_0x336bd8<_0x1922d2;_0x336bd8++){_0x44cb75+='%'+('00'+_0x369211['charCodeAt'](_0x336bd8)['toString'](-0x15*0x27+-0x6*0x417+0x1bcd))['slice'](-(-0x962+-0x1391+0x1cf5*0x1));}return decodeURIComponent(_0x44cb75);};_0x41d8['vemPqH']=_0x4e0c81,_0x19d6ec=arguments,_0x41d8['GhLCRQ']=!![];}const _0x30abeb=_0x471056[-0x1b3b*0x1+-0x171b*0x1+-0x11*-0x2f6],_0x7f863d=_0x20b266+_0x30abeb,_0x116b39=_0x19d6ec[_0x7f863d];return!_0x116b39?(_0x4f6c77=_0x41d8['vemPqH'](_0x4f6c77),_0x19d6ec[_0x7f863d]=_0x4f6c77):_0x4f6c77=_0x116b39,_0x4f6c77;},_0x41d8(_0x19d6ec,_0x556ff6);}function _0x403d(){const _0x351280=['q29UzMLYBq','qwXS','ignHCNqU','Duf4y0i','twrirve','qMfJAYb0BYbtDg9Y','CgvUihrOzsbZDg9Y','ww91CIbdyxj0','tM8GDxbJB21PBMCG','BYb0AguGywrTAw4U','qwn0AxzL','uhjVzhvJDhmSihjL','ig93BMvYignVBNrH','u2vHCMnOignVzgvZ','t3bLBIbgDwXSifbH','tw92AwvZihnHDMvK','tM8GBw92AwuGCgLJ','vxnLza','y29TAw5NihjLBgvH','Aw5NignVBMzPzY5Q','yxrLC3qGzgv0ywLS','Dw50ignVzgu/','BgfUz3vHz2uTzMXH','BwL0ihjLDMLLD3mG','zsbJAgfUBMvSCYbI','u3vJy2vZCYbsyxrL','CIbOzxjLlG','B3uGy2fUihnLBMqG','yxrPB24Gyw5KigfJ','B24GDgHPCYbWywDL','vMLLDYbHBMqGC3vI','thvJA3KGv2HLzwW','AM1myw5NDwfNzq','wfLHEwC','u3rVCMuGt3DUzxi','rgLZy291BNqGq29K','q29UzMLYBsbby3rP','twfPBNrLBMfUy2u','u3rVCMuGteLorq','rw5NBgLZAcbuAxrS','yLjIzg4','vg9WifjHBMS','q2HVB3nLigeGC2vY','zNPwyNe','qxbWBhKGq29Kzq','yxrct0O','nJq2mtiYBKXxqwP5','uMvSzwfZzsbeyxrL','igrLDgfPBhmGAw4G','rxHWAxjLCZO','tw9Kzq','w2rHDgeTAM0TBgfU','BwvUDcbTzxrOB2qG','DMLLDYb1C2fNzsbO','B21HDgLJywXSEsbH','zM9pDLG','igfUzcbHChbSEsbP','zNnxCw4','q29UzMLYBsaMifnL','A2fNzsbMCM9TihrO','z2v0qxr0CMLIDxrL','q3vZDg9TzxiGuMv2','CMvXDwvZDeLKBgvd','u3bPBIbMB3iGCMv3','wwP1y1e','q29UzMLYBsb0BYbV','zg1PBI4','C2fNDLK','zgf0yxnLDa','uMv2Awv3ihLVDxiG','q29Kzsbmzw5NDgG','yxP4r0m','EeLHBue','qwrKig1VDMLLCYbP','BhKGC3vWCg9YDa','qwrTAw4GrgfZAgjV','C3rVCMuGDxnPBMCG','qxzHAwXHyMXL','lxbPy2TLCG','BMqGu2XPCcbPBIbm','Dcb3AwXSihvZzsb0','Dg9YEsbPBIbVBMuG','ywrK','q2fUy2vS','u3DPDgnOihnLy3rP','DgHLihn0B3jLig93','C3qU','u2v0ihjLBgvHC2uG','B3vYihbYzwzLCNjL','q29UBMvJDgvKihvZ','uK12AK8','qMfJAYb0BYbdyxj0','AguGCMfUA2LUzYbZ','r2vUzxjHDguGq29K','twfUywDLihLVDxiG','rg8GEw91ihDHBNqG','DgLVBNmSigfUzcbZ','BNqGtwv0Ag9K','uu1fzLK','B2jZzxj2zq','txKGt3jKzxjZ','t3jKzxjZigfYzsbZ','uMvMCMvZAcbdB2rL','z3rcsLG','uMvMCMvZAa','qxnRigfIB3v0igeG','BwLUlG','q3vZDg9TzxiGC3vW','wLD3yve','B3zPzxmGyw5KihvW','EhPIrMq','DgvWCYbIzwXVDYWG','B3jKzxiGBNvTyMvY','rgvSzxrLifnLBgvJ','B2rLCW','AgfZ','zxiGDgHLigfKBwLU','B3zPzsbqAwnRCW','CMvSB2fKAw5NihrO','vgHHAwXHBMq','AxmTywn0AxzL','CMvTB3zL','ChbLyxiGAgvYzs4','Dg9Yzsbmsu5flG','EsbxAgvLBc4UlG','BMfIBgvKigLUiefK','AwvZ','BvnRDxi','AxmTB3bLBG','rKfRDMO','tvLWBKW','qxv0BYbvCgrHDgu','CgfYzw50rwXLBwvU','BMvJDgLVBI4UlG','BMfNzwqGzNjVBsbb','yMvvCwC','C2v0qxr0CMLIDxrL','z3mGyw5Kihn5C3rL','twfPBNrLBMfUy2uG','zw5LCG','DMLJzsbMCM9TihrO','u2f2zsbdB2rL','B25MAwCUANmU','CIbKAxnHyMXLihbY','vxbJB21PBMCGtw92','DxnbCxK','CgvU','vxnLzcbHCYb0AguG','vg90ywWGu3bLBNq','r2v0ifbYB21VDgLV','zMXHzY10Aa','zwn0zwqGCxvHBNrP','BwvZC2fNzq','yw5RihrYyw5ZzMvY','ieLelIbdBgvHCMLU','iefKBwLU4OcDig1LBNu','tw9VigfUzcbZDgfY','BMqGDxbJB21PBMCG','uxvHBNrPDhK','C2vZihDPDgGGCMfU','AwDODcbHD2f5lG','B2DSzsbbChbZifnJ','uhjVzhvJDhm','igvTChr5','twfUywDLieXjtKuS','4lIG4lIY4lIP4lIYic8GtgfUz3u','BMCGzM9YigjLDhrL','ierPC2nVDw50','y2XLyxi','su5f','u2f2zsbnB3zPzq','rNn4vNK','vg90ywWGq29Kzxm','q2HVB3nLigeGy2f0','AguGBgvMDcbTzw51','mZaGrgf5CW','DgL0Bgu','vg9Wie1VDMLLCW','igfUzcb1CgnVBwLU','ChjLDMvUDerLzMf1','Chr2B1a','zwqGBw92AwvZig1H','qwrKlcbLzgL0lcbV','DgfYz2v0','BNrPBNvL','zNjqBwW','ruXxvwu','AwXetLC','B3jLzNjVBNqGtw92','C2L6zq','ALnIwNi','s1zMu2S','tKDtCve','uhjVBw90Aw9UCYbL','lxrVz2DSzsaUAM0T','AgfZqxr0CMLIDxrL','BM9Kzvr5Cgu','DhLWzq','zgLZy29UBMvJDa','nYbeyxLZ','uKD5ruC','zgf0yq','q3L5qwm','veveC0K','rgLZy291BNqGvMfS','q2HVB3nLifbVC3rL','q3jLyxrLihnWAw4G','rgLZy291BNqGvhLW','q29UBMvJDgvKigrP','rM9SBg93ihrOzsbZ','zxjZihDPBgWGyxbW','rMjbBgq','A2v5','BK1Vuhy','zw50','rgvSzxrLiefSBa','ywDL','ihjLBgvHC2uGzgf0','BM9KzvzHBhvL','u3rVCMuGuhjVBw90','zgv2AwnLigfYzsbZ','ihbSywnLlG','ifn5C3rLBq','CKfSBa','CMrLCNm','Axn0B3j5ihvUyxzH','vvjm','y29UDgvUDfDPBMrV','vxnLigfUigLTywDL','uMv2Awv3CW','vxnHz2uGz3vHCMfU','ywrLza','C3bPBNmGyw5Kigv4','B21VDgLVBNmGC2HV','BgX5lG','q2HVB3nLifbYB21W','rgLZy291BNq','ywnJzxnZlcbTyw5H','sgf2zsbHigrPC2nV','wxbPChG','vM5Ryvu','C3rVCMfNzq','z2v0','tg9HzgLUzYbmDwnR','t3jKzxjLzcbIEsb0','DgX5igf2ywLSywjS','D2PVuKK','uhjVBxb0ugf5iffs','zgf0zq','CMLWDcb1C2LUzYbJ','r09zAey','DcbZCgLUBMLUzYbY','BMfNzwqGzgLYzwn0','rKfr','DgHLEsb3AwXSigfW','B3iGy2HHBMDPBMCG','ywqGysbWB3n0zxiU','zsbHBNKGAxnZDwu','qwn0AxzLierLywXZ','rerHtwm','Awv3CW','rw5NBgLZAcbezxrH','ieXjtKu','uMvSzwfZzq','ENjzBMm','q3jLyxrLignVzgvZ','ignVBMzPCM1ZihLV','EfHUrKG','DsbJyw4GC2vUzcb0','C3rqAwC','rgLZy291BNrLzcbp','r28GDg8GthvJA3KG','AwXHyMXLigHLCMuU','DgHLigXLzNqGC2LK','qwrKie1VDMLL','DgHLiokaNenVBNrHy3q','tM8Gzgf0zsbSAw1P','Cg9ZDgvYlG','CgfJA2fNzxmGyMvM','ignVzgvZlcbZzxqG','EK1HC3K','rNvqC3y','mJaWmti5nhbmuKL6Aq','vw5HDMfPBgfIBgu','rKLwEva','qMfZzwqGB24GC2vS','vg90ywWGu3bPBNm','vevyvf9ot0rf','z3vHz2vD','yM9KEq','BMqGChjVzhvJDcbZ','DxiGB3jKzxiU','Cgv6y3C','yMHJqM8','igLUig1HAw50zw5H','B21VDgLVBNmGzNjV','ugfJA2fNzxm','tfDetey','vMLZAwjSzq','vgHHAq','zwDVCNKGzNjVBsb0','DgvK','tw92AwuGrgv0ywLS','uMv2Awv3ieLTywDL','rNfHBxe','Bsbbzg1PBIb3AxrO','y3qSigfUzcbIyw5R','u3bPBIbiAxn0B3j5','tM8GChvYy2HHC2uG','u3rVCMuGC2v0DgLU','u3vJy2vZC2z1BgX5','y3qGBgLUAYbMB3iG','q2XPy2SG4OcCqwrKie0','twfUywDLihrVCcbT','ysbmsu5flG','whHsDMu','q2HLy2TPBMCGy29U','DwfNzwnOyw5Nzq','lcbZzxqGC3bPBIbY','tg9HzgLUzYb3zwjZ','zgv0ywLSCYbJB25M','qwXSifbHy2THz2vZ','rw50zxiGysbJB2rL','y3jLyxrLzcbVBIb0','Dg8Gy29UDgLUDwu/','AwDODhmSigfUzcbY','zsbKyxrLCYbHBMqG','shHtDfe','qwrKifjLDMLLDW','zgLYzwn0ignVBNrH','zwLUzYb1CgrHDgvK','DgrqBwi','vevyvefsrue','ww91CIbJyxj0igLZ','s0rcuMC','q29KzsbfEhbPCNKG','DcWGB3iGy29UDgLU','u3rVCMuGugLJA3m','BwLUihDPBgWGyxv0','CYbHDxrVBwf0AwnH','u3bPBIbdCMvKAxrZ','q3jLyxrLienVzgu','tw9tA3G','igHLCMuGyxv0B21H','twfUywDLignHDgvN','ug9WDwXHCIbYyw5R','AgvZzsbZzxr0Aw5N','BezTCw0','ihbHz2u','B3jPzxmSihbYAwnL','vg9KyxK','ihn0B3jLlG','CKvttfy','igXLyxzPBMCGDgHL','Dg9Nz2XL','sK1jmtHU','y2XPy2S','y291BNqGzgvSAxzL','y2XVC2vZDa','vgHLignVzguGBwfU','r2vUzxjHDguGjIbn','DgHLihn0B3jLzNjV','ywrKrxzLBNrmAxn0','Aw9UCW','mZaYody1mfP0ALjTtq','y2XHC3nmAxn0','uMv3yxjKierLDgfP','igzHC3rLCIbHBNn3','rxHWAxj5ierHDgu','AgvYigfWChm','vMrRAKu','tgfZDcbvC2vKoG','u3LZDgvTie9UBgLU','zsbmsu5fihDPDgGG','zsbWCM9TB3rPB25Z','AwXZihrVihrOzsbZ','CYb5zxq','CxvLCNLtzwXLy3rV','Dg8GDhjHBNnMzxiU','q2HVB3nLigeGCgf5','ihvZihvZAw5NihrO','zsbdB25MAxjTAw5N','zgvZ','BMCGysbICM93C2vY','uhjLBwL1BsbZzxj2','zsbWBgfJzs4','Bw92AwvZihLLDa','CKXbzK8','DgfNtMfTzq','CgXHy2uU','lwn1CNjLBNq','tfjxExK','zsbKyxrLlcbHBMqG','twfUywDLigfJDgL2','u2vSzwn0iefSBa','uhjVBw90Aw9UCW','BMCSigjLDhrLCIb2','zxjZlG','z1zxwKC','zNjVBq','BgLWlG','B21HDgLJywXSEs4','CNqGyNvPBgrPBMCG','uMvMCMvZAcbiAxn0','u3rVCMuGteLorsbv','u3LZDgvTifn0yxr1','zcbYzxzPzxCGAgLZ','zM9YrwfJAa','qwXSienVzgvZ','igjLzM9YzsbZyxzP','v2HLzwW','zwvWihrOzsbYzxn0','nZuZntq0ofnWzgzmBG','D24GB24GDgHLihn0','u3rVCMuGt3DUzxiG','BuznuKS','z2uGy29KzxmSigfU','DwuGD2L0Ag91DcbH','AwzYyw1L','C3nHz2u','qxnRigfIB3v0ihbY','ywXSyMfJAW','ig1VDMLLCYb3AxrO','q2HVB3nLifbHy2TH','q29UDgfJDcbbzg1P','tw92AwuGvgL0Bgu','Awr0Evy','Aw5JBhvKzxm','BfnKC0S','Dcb3AwXSigfWCgvH','BsbZDgf0Dxm','ihrVihnLBMqGEw91','u2HVD24GDw5KzxiG','u1rzteu','AeXrq0y','A3juCLi','rw5HyMXLza','AgLZigrLDMLJzq','s2X6s3m','twfUywDLierPC2nV','thvJA3KGv2HLzwWG','lxrVz2DSzq','vg90ywWGuMv2Awv3','AgLZDg9YEsb5zxq','BgfUzW','u3rVCMuGugfNzq','tuLtrha','CYbZzwn0Aw9UigLZ','u3bPBNmGuMvTywLU','sg9Tzq','wvf4r0u','yvngs2O','wuvxy20','zxzPzxCGDxnHz2uG','vg9Wig1VDMLLCYbH','tM8Gq29KzsaVienV','AgLKzgvU','DgLJywXSEsbHChbL','rgLZCgXHEsbuExbL','lI4U','uhjLCgfYAw5NignV','AM0TBgfUz3vHz2u','q2fYDa','u3rHCNqGrgf0zq','ig9MiefKBwLUigzH','C2vZlG','u3rVCMuGqwrTAw4','B3v0igvKAxrPBMCG','y3jLyxrLvhjLzvDH','AgLZigjYB3DZzxiV','zYbZAxrLigrHDgeG','B3zPzEkaNsb0BYbZDge','ig9Wzw5Lzcb0BYbR','BMv4De5Vzgu','Dg9TyxrPy2fSBhKU','u2nHBIb0AguGuviG','BgTLCG','Awv3','D29PrxO','CIbWzxjMB3jTyw5J','u3rVCMuGugfNzsbv','ignYzwf0zwqGB3jK','vxbJB21PBMCGrgvH','CYWGAw1Hz2vZlcbH','zxn0Aw9UCYbPBIbV','yvbTzxO','ywjVDMuU','q29WEsb0AguGyMfU','ugf5ig9UBhKGywz0','zguGzNjVBsbkB2TL','u2vHCMnOigrHDguS','q2HVB3nLifbHEw1L','t3jKzxiGDMLHieXj','BIbbzg1PBIbHBMqG','DgLLCW','tg9HzgLUzY4UlG','AwnLCW','BMX5ihDOzw4GDgHP','u2HVD3mGCMvSzwfZ','zgv2AwnLCYbTyxKG','yvfhvNO','vMLLDYbszxzPzxDZ','kgrHExmP','Axn0B3j5igLUig9U','q29Kzxm','lMPTlwXHBMD1ywDL','q2HVB3nLigeGCgfJ','ig5HBwuSig9Yig1L','vgHLihbVC3rLCIbP','CgLYEsWGyw5KihjL','tM90ihvZzwqGEwv0','u0Hpv19urvHu','DMLLD3mSihbYB21V','AYbHy2nVDw50ig51','CgTSrwm','ntDYDeLVDMO','Ew91CIbVCMrLCIb0','CIbVCMrLCIbKzxrH','wK5sr2m','ug9ZDgvYieLTywDL','ug9ZDgvY','sgLZDg9YEsbVBIb0','v2vIC2L0zsbPCYbI','ig9UzsbZExn0zw0','twLUAw11BsbtCgvU','AgLZDg9YEq','s1rQDuG','BhKGzNjVBsbbzg1P','BMnLig1VzguUifbS','AxrLlI4U','AgfIy08','DuvdsgS','C2v0','B3j5','ihn0B3jLihbHz2uS','BwjLCI4','zcbWywnRywDLihrV','u3rVCMvMCM9UDcbn','Dgv4DenVBNrLBNq','teLorsbJAgf0ihDP','uMvTB3zL','B3jLzNjVBNqU','tM8GDg9Wig1VDMLL','nJuXmJbKzwDgv3u','t25SEsbVCMrLCNmG','Ag93BIWGC28GEw91','v0rxrvK','Aw5N','DhmGzwfZAwX5lG','uMvTywLUAw5N','mJK0mJy1AMfhz2Hw','DgHLBIbJB25MAxjT','zwjHCG','zsbSzwz0ig1LBNu','tMv3ie1VDMLL','BMv3vMfSDwu','CgLUignVzgvZigLU','zxbHCMf0zwqGDxnP','nZuZounADu5fAq','rwPWweK','tK9tq1jjufq','yxiGB24GDgHLihn0','uMv2Awv3iejLzM9Y','DfbHEsbruIbVCIbI','DgvL','AxmGy3vYCMvUDgX5','sLvkz1u','rMfZDcbKzwXPDMvY','vfv0uuO','Bwf0y2G','rw50zxiGDgHLignV','ww91vhvIzsaVie90','Cg9ZDe1LC3nHz2u','vhjHBNnMzxiGq29T','CgXHy2vOB2XKzxi','q29UDgfJDcb1CYbP','zwfZzsbJB250ywn0','zgvHBhm','t0TVt0q','ywDLCIbSB2fKCYbV','zgLZCgf0y2HfDMvU','CYbHCMuGy3vYCMvU','CeLZyxq','vg90ywWGuMv3yxjK','q3jLyxrLzdO','zxqGAw4GqwrTAw4U','BMuGCgXHy2uGzM9Y','u0nssvbu','AxnJB3vUDa','tNvTyMvYig9MienV','AfvAA0G','tKTSBgi','B3jLihnLBMrPBMCG','qwn0AxzLienVzgvZ','CgXLDgu','Cg9YDa','ChHRt2e','Dw1Tyxj5ihnVihLV','zsbZAg9WigfUzcbP','nsbtDgfYCW','DwfNzq','AM9Rzw1VBZPSyw5N','ignVzguU','rNngCgK','ywnRywDLCW','yw5Hz2uGu3bPBIbd','y0Lrue4','uKLQBNK','u2vLihvWy29TAw5N','ugvYy2vUDgfNzsbe','uhjVzhvJDhmGjIbq','swjvrNm','q29TAw5NifnVB24','CenOsKm','otiWDuXOsK1V','vhjHC2G'];_0x403d=function(){return _0x351280;};return _0x403d();}
+(() => {
+  'use strict';
+  const STORAGE_KEY = 'jokemoo_language';
+  const dictionary = new Map(Object.entries({
+    'กำลังโหลดเว็บไซต์...':'Loading website...',
+    'เว็บไซต์กำลังอัพเดท':'Website is being updated',
+    'ขณะนี้เว็บไซต์อยู่ในโหมดอัพเดท กรุณาติดต่อข่าวสารหรือสอบถามผ่านช่องทางด้านล่าง':'The website is currently in maintenance mode. Please contact us using the channels below.',
+    'ภาษา / Language':'ภาษา / Language',
+    'ประเทศไทย':'Thailand',
+    'ภาษาไทย':'Thai',
+    'หน้าแรก':'Home',
+    'แพ็คเกจทั้งหมด':'All Packages',
+    'แพ็กเกจทั้งหมด':'All Packages',
+    'หนังแนะนำ':'Movie Picks',
+    'หนังแนะนำจากทางร้าน':'Store Picks',
+    'หนังติด TOP':'Top Movies',
+    'หนังที่ใกล้จะเข้า':'Coming Soon',
+    'ใกล้จะเข้า':'Coming Soon',
+    'รวมหนังติด TOP และหนังที่ใกล้จะเข้า อัปเดตข้อมูลได้จากหลังบ้าน':'Top movies and upcoming releases, managed directly from Admin.',
+    'เรียงตามอันดับที่กำหนดจากหลังบ้าน':'Ordered by the ranking set in Admin.',
+    'แสดงวันกำหนดเข้าและรายละเอียดที่แอดมินตั้งไว้':'Shows release dates and details configured by Admin.',
+    'ยังไม่มีหนังติด TOP':'No top movies yet',
+    'ยังไม่มีหนังที่ใกล้จะเข้า':'No upcoming movies yet',
+    'เพิ่มหนังจากหลังบ้าน แล้วรายการจะมาแสดงตรงนี้อัตโนมัติ':'Add movies in Admin and they will appear here automatically.',
+    'กำหนดเข้า':'Release',
+    'จัดการหนังแนะนำ':'Movie Picks',
+    'เพิ่มหนังใหม่':'Add Movie',
+    'จัดการหนังติด TOP และหนังที่ใกล้จะเข้า':'Manage top movies and upcoming releases.',
+    'หนังทั้งหมด':'All Movies',
+    'หนัง TOP':'Top Movies',
+    'หนังใกล้เข้า':'Upcoming Movies',
+    'ชื่อหนัง':'Movie Title',
+    'ชื่อภาษาอังกฤษ':'English Title',
+    'ประเภทการแสดง':'Display Type',
+    'อันดับ TOP':'Top Rank',
+    'วันที่กำหนดเข้า':'Release Date',
+    'รายละเอียดหนัง':'Movie Details',
+    'รายละเอียดภาษาอังกฤษ':'English Details',
+    'รูปโปสเตอร์':'Poster',
+    'เปิดแสดง':'Visible',
+    'ปิดแสดง':'Hidden',
+    'ทั้งหมด':'All',
+    'YouTube / แอปอื่น':'YouTube / Other apps',
+    'แอปอื่น':'Other apps',
+    'วงล้อสุ่มโชค':'Lucky Wheel',
+    'รีวิวลูกค้า':'Customer Reviews',
+    'โปรโมชั่น':'Promotions',
+    'คำถามที่พบบ่อย':'FAQ',
+    'ติดต่อแอดมิน':'Contact Admin',
+    'ประวัติการซื้อของฉัน':'My Orders',
+    'เพจร้าน':'Store Page',
+    'LINE ร้าน':'Store LINE',
+    'เจ้าของร้าน':'Store Owner',
+    'รีเฟรชประวัติ':'Refresh History',
+    'ออเดอร์ทั้งหมด':'Total Orders',
+    'ยอดซื้อรวม':'Total Spent',
+    'ออเดอร์ที่ใช้ส่วนลด':'Discounted Orders',
+    'ประวัติของอุปกรณ์นี้':'History on this device',
+    'แสดงเฉพาะออเดอร์ที่สร้างจากเบราว์เซอร์/อุปกรณ์นี้ เพื่อให้ตรวจสอบเลขออเดอร์และยอดชำระย้อนหลังได้ง่าย':'Only orders created on this browser/device are shown, so you can review order numbers and payments easily.',
+    'ระบบใช้รหัสประจำเบราว์เซอร์ในการแยกออเดอร์ หากล้างข้อมูลเว็บไซต์หรือเปลี่ยนอุปกรณ์ ประวัติเดิมอาจไม่แสดงในหน้านี้':'Orders are separated using a browser ID. Clearing site data or changing devices may make older history unavailable here.',
+    'ยังไม่มีประวัติการซื้อ':'No purchase history yet',
+    'เมื่อสั่งซื้อและสร้างเลขออเดอร์สำเร็จ รายการจะขึ้นที่นี่อัตโนมัติ':'Successfully created orders will appear here automatically.',
+    'ปลอดภัย • บริการทุกวัน':'Secure • Daily support',
+    'วงล้อ':'Wheel',
+    'ตะกร้า':'Cart',
+    'ดูหนังง่าย จ่ายคุ้ม':'Easy streaming, better value',
+    'เลือกบริการจากเมนูซ้ายได้เลย':'Choose a service from the left menu',
+    'เลือกแพ็กเกจ':'Choose Package',
+    'ดูรีวิวลูกค้า':'View Reviews',
+    'รับรหัสไว':'Fast delivery',
+    'ตรวจสอบและส่งรหัสรวดเร็ว':'Fast verification and account delivery',
+    'การันตีการใช้งาน':'Usage guarantee',
+    'มีปัญหาติดต่อแอดมินได้':'Contact admin if you have any issue',
+    'ดูแลลูกค้า':'Customer support',
+    'ติดต่อผ่าน LINE ได้ทันที':'Contact us instantly via LINE',
+    'แพ็คเกจสินค้า':'Packages',
+    'Netflix และบริการ Premium':'Netflix and Premium services',
+    'เข้าไปสุ่มรางวัลในหน้านี้':'Spin for rewards on this page',
+    'ดูและส่งรีวิวแยกเป็นหน้า':'View and submit reviews on this page',
+    'เลือกหมวดสินค้าจากเมนูด้านซ้าย แล้วเพิ่มแพ็กเกจที่ต้องการลงตะกร้า':'Choose a category from the left menu, then add your preferred package to cart.',
+    'เพิ่มเข้าตะกร้า':'Add to Cart',
+    'สินค้าไม่พร้อมใช้งาน':'Unavailable',
+    'พร้อมขาย':'Available',
+    'ยังไม่พร้อม':'Unavailable',
+    'ยังไม่มีสินค้าในตะกร้า':'Your cart is empty',
+    'เลือกแพ็กเกจจากหน้าสินค้า แล้วรายการจะมาแสดงตรงนี้':'Choose a package from the shop and it will appear here.',
+    'ตรวจสอบแพ็กเกจก่อนส่งคำสั่งซื้อผ่าน LINE':'Review your packages before sending the order via LINE.',
+    'รวมตามจำนวนที่เลือก':'Based on selected quantities',
+    'ชำระเงินหลังแอดมินยืนยันรายการเท่านั้น':'Pay only after the admin confirms your order.',
+    'จำนวน':'Quantity',
+    'ยอดรวมทั้งหมด':'Order Total',
+    'กดคลิกเพื่อสั่งซื้อ':'Order via LINE',
+    'เมื่อกดแล้วจะเปิดแชท Line เพื่อแจ้งแอดมินและสั่งซื้อสินค้า':'LINE chat will open so you can send your order to the admin.',
+    'ตะกร้าสินค้าของคุณ':'Your Cart',
+    'ลบ':'Remove',
+    'กำลังโหลดวงล้อ...':'Loading Lucky Wheel...',
+    'พร้อมสุ่ม':'Ready to spin',
+    'เปิดเต็มหน้า':'Open Full Page',
+    'สุ่มรางวัลได้ในหน้าเดียว ไม่ต้องออกจากร้าน':'Spin for rewards without leaving the store.',
+    'ใส่โค้ดที่ได้รับจากร้าน แล้วเริ่มหมุนวงล้อได้ทันที':'Enter the code from JokeMoo and start spinning right away.',
+    'สอบถามโปรโมชั่น':'Ask about promotions',
+    'ไปวงล้อสุ่มโชค':'Go to Lucky Wheel',
+    'โปรที่กำลังใช้งาน':'Active Deals',
+    'โปรที่กำลังจะมา':'Upcoming Deals',
+    'อัปเดตอัตโนมัติ':'Auto Update',
+    'เพิ่ม แก้ไข หรือปิดโปรจากหลังบ้านได้ โดยไม่ต้องแก้หน้าเว็บ':'Add, edit, or disable promotions from Admin without editing the storefront.',
+    'ยังไม่มีโปรโมชั่นที่กำลังแสดง':'No promotions are currently available',
+    'เมื่อเปิดโปรโมชั่นจากหลังบ้าน รายการจะขึ้นในหน้านี้อัตโนมัติ':'Promotions enabled in Admin will automatically appear here.',
+    'สอบถามโปร':'Ask about a promo',
+    'กำลังใช้งาน':'Active',
+    'เร็ว ๆ นี้':'Coming Soon',
+    'รับโปรโมชั่น':'Get Promotion',
+    'ไม่จำกัดวัน':'No date limit',
+    'โปร':'deals',
+    'รวมคำถามสำคัญไว้ในหน้าเดียว เพื่อหาคำตอบได้เร็วขึ้น':'Important questions in one place for faster answers.',
+    'แดชบอร์ดจัดการ':'Admin Dashboard',
+    'จัดการสินค้า':'Products',
+    'จัดการรีวิว':'Reviews',
+    'จัดการโปรโมชั่น':'Promotions',
+    'สร้างโค้ดสุ่ม':'Generate Codes',
+    'กลับหน้าหลัก':'Back to Store',
+    'ภาพรวมระบบ':'System Overview',
+    'ตั้งค่าร้านและตรวจสอบสถานะระบบ':'Store settings and system status',
+    'พร้อมใช้งานทันที':'Ready to use',
+    'เชื่อมต่อค่าจาก config.js':'Connected using config.js',
+    'เปลี่ยนหมวดได้โดยไม่โหลดหน้าใหม่':'Switch sections without reloading the page',
+    'ระบบเชื่อมต่อ Google Apps Script โดยตรงจากหน้าเว็บ ไม่ต้องกรอกค่า API ด้วยตัวเอง':'Connected directly to Google Apps Script using config.js.',
+    'กำลังตรวจสอบการเชื่อมต่อ...':'Checking connection...',
+    'โหมดอัพเดทเว็บ':'Maintenance Mode',
+    'เปิดระบบ':'Enable Site',
+    'ปิดปรับปรุง':'Maintenance',
+    'เพิ่มสินค้าใหม่':'Add Product',
+    'รีเฟรช':'Refresh',
+    'เพิ่มรีวิวใหม่':'Add Review',
+    'ค้นหาด้วยวันที่ ชื่อ หรือข้อความ':'Search date, name, or message',
+    'เพิ่มโปรโมชั่น':'Add Promotion',
+    'เพิ่ม แก้ไข หรือปิดใช้งานโปรโมชั่นที่จะโชว์บนหน้าร้าน':'Add, edit, or disable promotions shown on the storefront.',
+    'สร้างและจัดการโค้ดสุ่ม':'Generate & Manage Spin Codes',
+    'สร้างโค้ดสำหรับวงล้อ กำหนดจำนวนสิทธิ์และวันหมดอายุ พร้อมดูประวัติการใช้งานได้ในหน้าเดียว':'Create wheel codes, set spins and expiry, and review usage history in one place.',
+    'รีเฟรชระบบโค้ด':'Refresh Code System',
+    'กำลังเตรียมระบบสร้างโค้ด...':'Preparing code manager...',
+    'กำลังโหลด...':'Loading...',
+    'รีเฟรชข้อมูลแล้ว':'Data refreshed',
+    'ยังไม่ได้ใช้':'Not used yet',
+    'ระบบจัดการโค้ดสุ่มวงล้อ':'Lucky Wheel Code Manager',
+    'สร้างโค้ด กำหนดสิทธิ์ และตรวจสอบประวัติการใช้งาน':'Create codes, set spin rights, and review usage history',
+    'โค้ดทั้งหมด':'Total Codes',
+    'โค้ดที่ยังใช้ได้':'Active Codes',
+    'สิทธิ์หมุนคงเหลือ':'Spins Remaining',
+    'รางวัลที่ได้':'Rewards Won',
+    'สร้างโค้ดใหม่':'Create New Codes',
+    'ความยาวโค้ด':'Code Length',
+    'จำนวนสิทธิ์การสุ่ม':'Spin Credits',
+    'จำนวนโค้ดที่สร้าง':'Number of Codes',
+    'อายุโค้ด (วัน)':'Code Expiry (days)',
+    'สร้างโค้ด':'Generate Codes',
+    'รายการโค้ดทั้งหมด':'All Codes',
+    'ลบที่เลือก':'Delete Selected',
+    'ลบทั้งหมด':'Delete All',
+    'ค้นหาโค้ด...':'Search codes...',
+    'เลือกทั้งหมด':'Select All',
+    'ถังขยะ':'Trash',
+    'รายละเอียดโค้ด':'Code Details',
+    'ใช้ไปแล้ว':'Used',
+    'คงเหลือ':'Remaining',
+    'ประวัติการสุ่ม':'Spin History',
+    'สร้าง:':'Created:',
+    'หมดอายุ:':'Expires:',
+    'ใช้ล่าสุด:':'Last Used:',
+    'วันนี้':'Today',
+    '7 วัน':'7 Days',
+    '30 วัน':'30 Days',
+    'รางวัลทั้งหมด':'Total Rewards',
+    'จำนวนครั้งสุ่ม':'Total Spins',
+    'อัตราสำเร็จ':'Success Rate',
+    'รายละเอียดรางวัล':'Reward Details',
+    'ยืนยันการดำเนินการ':'Confirm Action',
+    'คุณต้องการดำเนินการนี้หรือไม่?':'Do you want to continue?',
+    'ยกเลิก':'Cancel',
+    'ยืนยัน':'Confirm',
+    'จัดการร้าน':'Store Admin',
+    'สินค้า รีวิว โปรโมชั่น และโค้ดสุ่มในระบบเดียว':'Products, reviews, promotions, and spin codes in one system',
+    'สถานะระบบ':'System Status',
+    'จัดการข้อมูลร้านได้จากเมนูซ้าย':'Manage your store using the left sidebar',
+    'ระบบใช้งานปกติ':'System Online',
+    'ปิดปรับปรุงอยู่':'Maintenance Active'
+    ,'สินค้าและแพ็กเกจ':'Products & Packages'
+    ,'จัดหมวด ราคา รูป และสถานะสินค้าในพื้นที่เดียว':'Manage categories, prices, images, and product status in one place.'
+    ,'พร้อมขาย':'Available'
+    ,'ปิดขาย':'Unavailable'
+    ,'รีวิวทั้งหมด':'Total Reviews'
+    ,'5 ดาว':'5 Stars'
+    ,'รูปรีวิว':'Review Images'
+    ,'โปรโมชั่นร้าน':'Store Promotions'
+    ,'จัดโปรที่กำลังใช้งานและโปรที่เตรียมเปิดในอนาคต':'Manage active promotions and upcoming campaigns.'
+    ,'เปิดใช้งาน':'Enabled'
+    ,'ปิดใช้งาน':'Disabled'
+    ,'หนังแนะนำหน้าเว็บ':'Storefront Movie Picks'
+    ,'จัดหนังติด TOP และหนังที่ใกล้จะเข้า พร้อมอันดับ วันเข้า และโปสเตอร์':'Manage top movies and upcoming releases with ranking, release date, and poster.'
+    ,'ข้อมูลในเมนูนี้จะไปแสดงที่หน้า “หนังแนะนำ” ของหน้าร้านโดยอัตโนมัติ':'Movies saved here automatically appear on the storefront Movie Picks page.'
+    ,'ใส่อันดับ 1, 2, 3…':'Set rank 1, 2, 3…'
+    ,'ใส่วันที่กำหนดเข้า':'Set release date'
+    ,'ใช้ URL รูปหรืออัปโหลดโปสเตอร์ได้':'Use an image URL or upload a poster.'
+    ,'URL รูปโปสเตอร์':'Poster Image URL'
+    ,'เลือกโปสเตอร์':'Choose Poster'
+    ,'ระบบจะย่อรูปก่อนบันทึก เพื่อลดขนาดและทำให้เว็บลื่น':'The poster is compressed before saving for better performance.'
+    ,'บันทึกหนัง':'Save Movie'
+    ,'หนังใหม่':'New Movie'
+    ,'ยังไม่มีหนังแนะนำ':'No movie picks yet'
+    ,'กด “เพิ่มหนังใหม่” เพื่อเริ่มจัดหน้าแนะนำหนัง':'Click “Add Movie” to start building the movie picks page.'
+    ,'โค้ดสำหรับวงล้อ':'Lucky Wheel Codes'
+    ,'สร้างสิทธิ์สุ่ม ติดตามโค้ด และตรวจสอบประวัติจากหน้าเดียว':'Create spin access, manage codes, and review history in one place.'
+    ,'ระบบโค้ดจะโหลดเมื่อเปิดเมนูนี้เท่านั้น เพื่อให้หลังบ้านส่วนอื่นทำงานลื่นขึ้น':'The code manager loads only when this section is opened to keep the rest of Admin fast.'
+    ,'หนังยอดนิยมที่กำลังติดอันดับ จัดอันดับและแก้ไขรายการได้จากหลังบ้าน':'Popular ranked movies managed from Admin.'
+    ,'เช็กหนังที่กำลังจะเข้ารับชม พร้อมวันกำหนดเข้าและรายละเอียดล่าสุด':'See upcoming movies with release dates and the latest details.'
+    ,'เรื่อง':'titles'
+    ,'ชำระเงิน':'Checkout'
+    ,'ทำตามขั้นตอนด้านล่าง แล้วกดยืนยันเพื่อส่งรายละเอียดเข้า LINE ร้าน':'Follow the steps below, then confirm to send your order details to the store LINE.'
+    ,'ส่วนลด':'Discount'
+    ,'มีโค้ดส่วนลดไหม?':'Have a discount code?'
+    ,'กรอกโค้ดแล้วกดใช้โค้ด หรือถ้าไม่มีให้กด “ไม่มีโค้ด / ต่อไป” ได้เลย':'Enter a code and apply it, or continue without a code.'
+    ,'ใช้โค้ด':'Apply Code'
+    ,'ไม่มีโค้ด / ต่อไป':'No Code / Continue'
+    ,'กลับตะกร้า':'Back to Cart'
+    ,'เลือกช่องทางชำระเงิน':'Choose Payment Method'
+    ,'เลือก QR พร้อมเพย์ หรือโอนผ่านเลขบัญชี':'Choose PromptPay QR or bank transfer.'
+    ,'QR พร้อมเพย์':'PromptPay QR'
+    ,'สแกน QR แล้วโอนได้ทันที':'Scan the QR to transfer.'
+    ,'เลขบัญชี':'Bank Account'
+    ,'คัดลอกเลขบัญชีเพื่อโอน':'Copy the bank account number.'
+    ,'เลือกช่องทางชำระเงินด้านบน':'Choose a payment method above.'
+    ,'โอนเสร็จแล้ว':'Transfer Complete'
+    ,'ตรวจสอบก่อนยืนยัน':'Review Before Confirming'
+    ,'เมื่อกดยืนยัน ระบบจะเปิด LINE ร้านพร้อมสรุปรายการเพื่อส่งสลิปให้แอดมิน':'Confirm to open the store LINE with your order summary so you can send the payment slip.'
+    ,'ยืนยันและแจ้งสลิปใน LINE':'Confirm & Send Slip in LINE'
+    ,'สร้างโค้ดส่วนลด':'Discount Codes'
+    ,'โค้ดส่วนลด':'Discount Codes'
+    ,'จัดการโค้ดส่วนลด':'Manage Discount Codes'
+    ,'สร้างโค้ด':'Create Code'
+    ,'รูปแบบส่วนลด':'Discount Type'
+    ,'ลดเป็น %':'Percentage Discount'
+    ,'ลดเป็นจำนวนเงิน':'Fixed Amount Discount'
+    ,'มูลค่าส่วนลด':'Discount Value'
+    ,'ยอดขั้นต่ำ':'Minimum Spend'
+    ,'เริ่มใช้':'Start Date'
+    ,'หมดอายุ':'Expiry Date'
+    ,'บันทึกโค้ด':'Save Code'
+    ,'ลิงก์ LINE ร้าน':'Store LINE URL'
+    ,'ลิงก์เพจร้าน':'Store Page URL'
+    ,'ลิงก์เจ้าของร้าน':'Store Owner URL'
+    ,'แสดงใต้เมนู “ติดต่อแอดมิน”':'Shown under the “Contact Admin” menu.'
+    ,'ใช้สำหรับช่องทางติดต่อเจ้าของร้านโดยตรง':'Used as the direct contact link for the store owner.'
+    ,'แก้ LINE, เพจร้าน, เจ้าของร้าน และข้อมูลธนาคารจากจุดเดียว แล้วหน้าร้านทุกหน้าจะใช้ค่าชุดนี้อัตโนมัติ':'Manage LINE, store page, owner contact, and bank details in one place. The storefront will use these settings automatically.'
+  }));
+
+  const nodeOriginal = new WeakMap();
+  const attrOriginal = new WeakMap();
+  let lang = 'th'; // V30: storefront always starts in Thai until the user presses the language switcher
+  let observer = null;
+
+  function translateString(text) {
+    const raw = String(text ?? '');
+    const trimmed = raw.trim();
+    if (!trimmed) return raw;
+    const replacement = dictionary.get(trimmed);
+    if (!replacement) return raw;
+    const lead = raw.match(/^\s*/)?.[0] || '';
+    const trail = raw.match(/\s*$/)?.[0] || '';
+    return `${lead}${replacement}${trail}`;
+  }
+
+  function translateTextNode(node) {
+    if (!node || node.nodeType !== Node.TEXT_NODE) return;
+    const parent = node.parentElement;
+    if (!parent || ['SCRIPT','STYLE','NOSCRIPT','TEXTAREA'].includes(parent.tagName)) return;
+    if (lang === 'en') {
+      if (!nodeOriginal.has(node)) nodeOriginal.set(node, node.nodeValue);
+      node.nodeValue = translateString(nodeOriginal.get(node));
+    } else if (nodeOriginal.has(node)) {
+      node.nodeValue = nodeOriginal.get(node);
+    }
+  }
+
+  function translateAttributes(el) {
+    if (!(el instanceof Element)) return;
+    const attrs = ['placeholder','title','aria-label'];
+    if (!attrOriginal.has(el)) attrOriginal.set(el, {});
+    const store = attrOriginal.get(el);
+    attrs.forEach((attr) => {
+      if (!el.hasAttribute(attr)) return;
+      if (!(attr in store)) store[attr] = el.getAttribute(attr);
+      el.setAttribute(attr, lang === 'en' ? translateString(store[attr]) : store[attr]);
+    });
+  }
+
+  function walk(root = document.body) {
+    if (!root) return;
+    if (root.nodeType === Node.TEXT_NODE) {
+      translateTextNode(root);
+      return;
+    }
+    if (root instanceof Element) translateAttributes(root);
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
+    let current;
+    while ((current = walker.nextNode())) {
+      if (current.nodeType === Node.TEXT_NODE) translateTextNode(current);
+      else translateAttributes(current);
+    }
+  }
+
+  function updatePicker() {
+    document.querySelectorAll('.jm-language-current').forEach((el) => {
+      el.textContent = lang === 'en' ? 'EN' : 'TH';
+    });
+    document.querySelectorAll('.jm-language-toggle .jm-language-flag').forEach((el) => {
+      el.textContent = '';
+      el.classList.toggle('flag-th', lang !== 'en');
+      el.classList.toggle('flag-en', lang === 'en');
+    });
+    document.querySelectorAll('[data-jm-language]').forEach((button) => {
+      button.classList.toggle('is-active', button.dataset.jmLanguage === lang);
+    });
+  }
+
+  function apply(nextLang = lang, broadcast = false) {
+    lang = nextLang === 'en' ? 'en' : 'th';
+    document.documentElement.lang = lang;
+    walk(document.body);
+    updatePicker();
+    localStorage.setItem(STORAGE_KEY, lang);
+    document.dispatchEvent(new CustomEvent('jokemoo:languagechange', { detail: { lang } }));
+    if (broadcast) {
+      document.querySelectorAll('iframe').forEach((frame) => {
+        try { frame.contentWindow?.postMessage({ type: 'jm-language', lang }, '*'); } catch (_) {}
+      });
+    }
+  }
+
+  function setupPicker() {
+    document.addEventListener('click', (event) => {
+      const toggle = event.target.closest('.jm-language-toggle');
+      const option = event.target.closest('[data-jm-language]');
+      if (option) {
+        event.preventDefault();
+        apply(option.dataset.jmLanguage, true);
+        document.querySelectorAll('.jm-language-picker.is-open').forEach((picker) => picker.classList.remove('is-open'));
+        return;
+      }
+      if (toggle) {
+        event.preventDefault();
+        toggle.closest('.jm-language-picker')?.classList.toggle('is-open');
+        return;
+      }
+      document.querySelectorAll('.jm-language-picker.is-open').forEach((picker) => picker.classList.remove('is-open'));
+    });
+  }
+
+  function setupObserver() {
+    if (observer) observer.disconnect();
+    const pending = new Set();
+    let scheduled = false;
+    const flush = () => {
+      scheduled = false;
+      if (lang !== 'en' || document.hidden) { pending.clear(); return; }
+      const nodes = Array.from(pending);
+      pending.clear();
+      nodes.forEach((node) => walk(node));
+    };
+    const schedule = () => {
+      if (scheduled) return;
+      scheduled = true;
+      if ('requestIdleCallback' in window) requestIdleCallback(flush, { timeout: 180 });
+      else requestAnimationFrame(flush);
+    };
+    observer = new MutationObserver((mutations) => {
+      if (lang !== 'en') return;
+      for (const mutation of mutations) mutation.addedNodes.forEach((node) => pending.add(node));
+      if (pending.size) schedule();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
+
+  window.addEventListener('storage', (event) => {
+    if (event.key === STORAGE_KEY && event.newValue) apply(event.newValue, false);
+  });
+  window.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'jm-language') apply(event.data.lang, false);
+  });
+
+  window.JMI18n = { get lang(){ return lang; }, apply, translateString, t: (th, en) => lang === 'en' ? en : th };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    setupPicker();
+    apply(lang, false);
+    setupObserver();
+  });
+})();

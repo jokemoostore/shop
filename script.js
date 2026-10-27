@@ -71,7 +71,7 @@ function getOptimizedLocalImageUrl(url) {
     const clean = url.trim();
     if (!clean || /^(?:https?:|data:|blob:|\/\/)/i.test(clean)) return clean;
     const normalized = clean.replace(/^\.\//, '');
-    return optimizedLocalImages[normalized] || clean;
+    return clean; // Use the original file; optimized assets may not be deployed.
 }
 
 let siteDataCache = null;
@@ -508,6 +508,7 @@ async function apiGet(action) {
     const result = await fetchGet(action);
     const data = result.data || [];
     if (action === 'siteData' && data && typeof data === 'object') {
+        rememberCatalogSnapshot(data);
         siteDataCache = data;
     }
     return data;
@@ -928,11 +929,11 @@ function renderRecentOrders() {
     const badge = document.getElementById('recentOrdersMode');
     const note = document.getElementById('recentOrdersNote');
     if (heading) heading.textContent = english ? 'Sample orders' : 'ตัวอย่างการสั่งซื้อ';
-    if (description) description.textContent = english ? 'Smooth endless scrolling · Hover to pause' : 'รายการคำสั่งชื้อล่าสุด';
+    if (description) description.textContent = english ? 'Smooth endless scrolling · Hover to pause' : 'เลื่อนลื่นต่อเนื่อง · ชี้เมาส์เพื่อหยุด';
     if (badge) badge.innerHTML = `<span class="recent-orders-status-dot"></span>${english ? 'DEMO' : 'ข้อมูลจำลอง'}`;
     if (note) note.textContent = english
         ? 'Fictional nicknames and randomly generated past dates. Not actual customer orders.'
-        : 'รายการนี้ได้รับรหัสผ่านและอีเมลเรียบร้อย';
+        : 'ชื่อเล่นและวันเวลาเป็นข้อมูลจำลอง ไม่ใช่รายการซื้อจริงของลูกค้า';
     // The entire card track is rebuilt only on catalogue/language changes.
     recentOrdersSeenIndices.clear();
     // Keep the shuffled queue so previously used fictional names do not recur soon.
@@ -1924,9 +1925,7 @@ function openProductDetail(productId) {
         }
         const imgSrc = getOptimizedLocalImageUrl(portrait);
         imageWrap.innerHTML = `<img class="product-detail-portrait" src="${escapeMovieText(imgSrc)}" alt="${escapeMovieText(product.name || 'แพ็กเกจ')} — ${caption}" loading="eager" decoding="async">`;
-        imageWrap.querySelector('img')?.addEventListener('error', () => {
-            imageWrap.innerHTML = `<div class="product-detail-image-empty product-portrait-empty"><i class="fas fa-image" aria-hidden="true"></i><strong>ไม่สามารถโหลดรูป${caption}ได้</strong><small>กรุณาแจ้งร้านค้าให้ตรวจสอบลิงก์รูป</small></div>`;
-        }, { once:true });
+
     };
     const updateDevicePrice = () => {
         if (price) price.textContent = `฿${Number(pricing ? pricing[selectedDevice] : product.price || 0).toLocaleString('th-TH')}`;
@@ -2342,7 +2341,7 @@ function renderReviews() {
             </div>
             ${review.synced === false ? `<div class="review-card-status">กำลังเพิ่มรีวิว...</div>` : ""}
             <p class="review-card-comment">${review.comment}</p>
-            ${imageUrl ? `<div class="review-card-image"><img src="${imageUrl}" alt="รูปรีวิวของ ${review.name}" loading="lazy" onerror="this.parentElement.style.display='none'" /></div>` : ""}
+            ${imageUrl ? `<div class="review-card-image"><img src="${imageUrl}" alt="รูปรีวิวของ ${review.name}" loading="lazy"  /></div>` : ""}
         `;
         reviewList.appendChild(reviewEl);
     });
@@ -3792,6 +3791,7 @@ function initFAQ() {
 }
 
 async function init() {
+    const restoredCatalog = restoreCatalogSnapshot();
     initAppHeroImage();
     renderProducts();
     renderRecentOrders();
@@ -3803,7 +3803,7 @@ async function init() {
     initAppNavigation();
     // V85: never keep the storefront blocked while Apps Script is warming up.
     // Built-in package data is already visible; the API refresh replaces it as soon as it arrives.
-    showPageLoader(true);
+    showPageLoader(!restoredCatalog);
     const fastLoaderTimer = setTimeout(() => showPageLoader(false), 650);
     try {
         await loadSiteData();
@@ -3944,3 +3944,43 @@ document.addEventListener('DOMContentLoaded', init);
 document.addEventListener('jokemoo:languagechange', () => {
     try { renderMyOrders(); applyStoreSettingsToUi(); } catch (_) {}
 });
+
+
+// Image failures remain visible and do not collapse the product/review layout.
+document.addEventListener('error', (event) => {
+    const img = event.target;
+    if (!(img instanceof HTMLImageElement) || img.dataset.jmImageFallback) return;
+    const path = (img.getAttribute('src') || '').replace(/^\.\//, '');
+    if (!img.dataset.jmTriedOptimized && optimizedLocalImages[path]) {
+        img.dataset.jmTriedOptimized = '1';
+        img.onerror = null;
+        img.src = optimizedLocalImages[path];
+        return;
+    }
+    img.dataset.jmImageFallback = '1';
+    img.onerror = null;
+    img.dataset.jmOriginalSrc = img.currentSrc || img.src;
+    img.alt = img.alt || 'รูปภาพไม่พร้อมใช้งาน';
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"><rect width="600" height="600" rx="32" fill="#eef5ff"/><path d="M190 370l85-100 60 70 45-50 60 80H190z" fill="#a8c8ef"/><circle cx="360" cy="220" r="30" fill="#a8c8ef"/><text x="300" y="450" text-anchor="middle" font-family="sans-serif" font-size="26" fill="#46658a">Image unavailable</text></svg>';
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}, true);
+
+const JM_SNAPSHOT_KEY = 'jokemoo_catalog_fast_v1';
+function rememberCatalogSnapshot(data) {
+    try {
+        // Orders and discount records are intentionally never persisted here.
+        const snapshot = { products: data.products || [], reviews: data.reviews || [], savedAt: Date.now() };
+        const raw = JSON.stringify(snapshot);
+        if (raw.length < 2000000) localStorage.setItem(JM_SNAPSHOT_KEY, raw);
+    } catch (_) { /* Storage limits must not break checkout. */ }
+}
+function restoreCatalogSnapshot() {
+    try {
+        const data = JSON.parse(localStorage.getItem(JM_SNAPSHOT_KEY) || 'null');
+        if (!data || Date.now() - data.savedAt > 86400000) return;
+        if (Array.isArray(data.products)) state.products = data.products;
+        if (Array.isArray(data.reviews)) state.reviews = data.reviews;
+        return true;
+    } catch (_) {}
+    return false;
+}
